@@ -45,7 +45,7 @@
 #' @examples
 #' 
 #' \donttest{
-#' rmat <- semnetcleaner(trial, partBY = "col")
+#' rmat <- textcleaner(trial, partBY = "col")
 #' }
 #' 
 #' @references 
@@ -64,8 +64,11 @@ textcleaner <- function(data, miss = 99,
                         ID = NULL,
                         database = NULL)
 {
-  if(!is.null(ID))
-  {
+  
+    data <- as.data.frame(data)
+    
+    if(!is.null(ID))
+    {
       if(is.numeric(ID))
       {
           if(partBY == "row")
@@ -77,7 +80,7 @@ textcleaner <- function(data, miss = 99,
               data <- data[-ID,]
           }
       }else{stop("ID must be numeric")}
-  }else{
+    }else{
       if(partBY == "row")
       {
           ids <- 1:nrow(data)
@@ -89,8 +92,7 @@ textcleaner <- function(data, miss = 99,
   }
     
   #remove white space
-  for(i in 1:ncol(data))
-        data[,i]<-trimws(data[,i])    
+    data <- apply(data,2,trimws)
       
   #convert missing value to NA
   for(i in 1:nrow(data))
@@ -103,7 +105,7 @@ textcleaner <- function(data, miss = 99,
   {data<-t(data)}
     
   #ensure data is a data frame for unlist
-  data <- as.data.frame(data)
+  data <- data.frame(data,stringsAsFactors = FALSE)
   
   #initialize y matrix for later
   y <- data
@@ -207,7 +209,7 @@ textcleaner <- function(data, miss = 99,
       {
           if(!is.na(y[i,j]))
           {
-              target <- which(tolower(y[i,j])==comb[,1])
+              target <- which(as.character(tolower(y[i,j]))==comb[,1])
               
               y[i,j] <- comb[target,2]
           }
@@ -334,7 +336,9 @@ textcleaner <- function(data, miss = 99,
           colnames(chn) <- c("from","to")
       }else{chn <- NA}
       
-      chnByPart[[setdiff(ids,removed$ids)[i]]] <- chn
+      val <- as.matrix(setdiff(ids,removed$ids)[i])
+      
+      chnByPart[[val]] <- chn
   }
   
   #change ids in chnByPart to names
@@ -343,14 +347,17 @@ textcleaner <- function(data, miss = 99,
     names(chnByPart) <- seq_along(chnByPart)
     chnByPart[sapply(chnByPart, is.null)] <- NULL
   }
+  
+  results <- list(
+      binary=k,
+      responses=bin2resp(k),
+      spellcheck=spellcheck,
+      removed=rems,
+      partChanges=chnByPart
+  )
 
-  return(
-      list(
-          binary=k,
-          responses=y,
-          spellcheck=spellcheck,
-          removed=rems,
-          partChanges=chnByPart)
-      )
+  class(results) <- "textcleaner"
+
+  return(results)
 }
 #----

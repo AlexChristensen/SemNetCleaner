@@ -24,23 +24,27 @@ spell.check.database <- function (data, database)
     {
         if(database=="animals")
         {
-            base <- data("animals.database",envir = environment())
-            misnom <- data("animals.misnomer",envir = environment())
+           data("animals.database",envir = environment())
+           data("animals.misnomer",envir = environment())
+           
+           base <- animals.database
+           misnom <- animals.misnomer
         }
     }else{
         base <- database
         misnom <- NULL
     }
     
-    #corrected responses
-    resp <- data
-    
     #remove miscellaneous string additions
     for(i in 1:length(data))
     {
         data[i] <- gsub("[[:punct:]]", "", data[i])
         data[i] <- gsub("[[:digit:]]+", "", data[i])
+        data[i] <- singularize(data[i])
     }
+    
+    #corrected responses
+    resp <- data
     
     #progress bar
     pb <- txtProgressBar(min = 1, max = length(data), style=3, char="|")
@@ -82,15 +86,18 @@ spell.check.database <- function (data, database)
                     
                     if(length(opts)>1)
                     {
-                        print(spl)
-                        ans5 <- menu(c(opts,"CORRECT","TYPE MY OWN"),title = "Select best option")
+                        cat(paste("\n\n",spl))
+                        ans5 <- menu(c(opts,"CORRECT","TYPE MY OWN","BAD RESPONSE"),title = "\n\nSelect best option")
                         
                         if(ans5<=length(opts))
                         {resp[i] <- opts[ans5]
                         }else if(ans5==(length(opts)+1))
                         {resp[i] <- resp[i]
                         }else if(ans5==(length(opts)+2))
-                        {resp[i] <- readline("Type response: ")}
+                        {resp[i] <- readline("Type response: ")
+                        }else if(ans5==(length(opts)+3))
+                        {resp[i] <- "REMOVE"}
+                        
                     }else{resp[i] <- comb[which(!is.na(match(comb,base)))]}
                     
                 }else{
@@ -124,15 +131,17 @@ spell.check.database <- function (data, database)
  
                                 opts2 <- opts[which(ord.sum==max(ord.sum))]
                                 
-                                print(spl)
-                                ans4 <- menu(c(opts2,"CORRECT","TYPE MY OWN"),title="Select best option: ")
+                                cat(paste("\n\n",spl))
+                                ans4 <- menu(c(opts2,"CORRECT","TYPE MY OWN","BAD RESPONSE"),title="\n\nSelect best option: ")
                                 
                                 if(ans4<=(length(opts2)))
                                 {resp[i] <- opts2[ans4]
                                 }else if(ans4==(length(opts2)+1))
                                 {resp[i] <- resp[i]
                                 }else if(ans4==(length(opts2)+2))
-                                {resp[i] <- readline("Type response: ")}
+                                {resp[i] <- readline("Type response: ")
+                                }else if(ans4==(length(opts2)+3))
+                                {resp[i] <- "REMOVE"}
                                 
                         }else{resp[i] <- comb[which(!is.na(match(comb,base)))]}
                     }
@@ -169,15 +178,17 @@ spell.check.database <- function (data, database)
                     {
                             opts <- comb[which(!is.na(match(comb,base)))]
                             
-                            print(respspl[j])
-                            ans3 <- menu(c(opts,"CORRECT","TYPE MY OWN"),title="Select best option: ")
+                            cat(paste("\n\n",respspl[j]))
+                            ans3 <- menu(c(opts,"CORRECT","TYPE MY OWN","BAD RESPONSE"),title="\n\nSelect best option: ")
                             
                             if(ans3<=(length(opts)))
                             {respspl[j] <- opts[ans3]
                             }else if(ans3==(length(opts)+1))
                             {respspl[j] <- respspl[j]
                             }else if(ans3==(length(opts)+2))
-                            {respspl[j] <- readline("Type response: ")}
+                            {respspl[j] <- readline("Type response: ")
+                            }else if(ans3==(length(opts)+3))
+                            {respspl[j] <- "REMOVE"}
                     }else{
                         sing <- singularize(respspl[j])
                         comb <- spell.opt(respspl[j])
@@ -232,18 +243,18 @@ spell.check.database <- function (data, database)
             newpot <- setdiff(pot,best)
             
             #ask for response
-            print(spl)
+            cat(paste("\n\n",spl))
             if(length(best)!=0)
             {
-                ans <- menu(c(best,"Other options"),title="Best guess(es): ")
+                ans <- menu(c(best,"OTHER OPTIONS"),title="\n\nBest guess(es): ")
                 if(any(ans==(1:length(best)))){res <- best[ans]}
             }else{ans <- 1}
                 
             if(ans==length(best)+1)
             {
                 if(length(best)!=0)
-                {print(spl)}
-                ans2 <- menu(c(newpot,"TYPE MY OWN","SKIP","BAD RESPONSE"),title="Potential responses:")
+                {cat(paste("\n\n",spl))}
+                ans2 <- menu(c(newpot,"TYPE MY OWN","SKIP","BAD RESPONSE"),title="\n\nPotential responses:")
                 
                 if(ans2<=length(newpot))
                 {res <- newpot[ans2]
@@ -279,15 +290,18 @@ spell.check.database <- function (data, database)
                         {
                             opts <- comb[which(!is.na(match(comb,base)))]
                             
-                            print(respspl[j])
-                            ans3 <- menu(c(opts,"CORRECT","TYPE MY OWN"),title="Select best option: ")
+                            cat(paste("\n\n",respspl[j]))
+                            ans3 <- menu(c(opts,"CORRECT","TYPE MY OWN","BAD RESPONSE"),title="\n\nSelect best option: ")
                             
                             if(ans3<=(length(opts)))
                             {respspl[j] <- opts[ans3]
                             }else if(ans3==(length(opts)+1))
                             {respspl[j] <- respspl[j]
                             }else if(ans3==(length(opts)+2))
-                            {respspl[j] <- readline("Type response: ")}
+                            {respspl[j] <- readline("Type response: ")
+                            }else if(ans3==(length(opts)+2))
+                            {respspl[j] <- "REMOVE"}
+                            
                         }else{respspl[j] <- comb[which(!is.na(match(comb,base)))]}
                     }else{
                         sing <- singularize(respspl[j])
@@ -310,18 +324,18 @@ spell.check.database <- function (data, database)
                             newpot <- setdiff(pot,best)
                             
                             #ask for response
-                            print(respspl[j])
+                            cat(paste("\n\n",respspl[j]))
                             if(length(best)!=0)
                             {
-                                ans <- menu(c(best,"Other options"),title="Best guess(es): ")
+                                ans <- menu(c(best,"OTHER OPTIONS"),title="\n\nBest guess(es): ")
                                 if(any(ans==(1:length(best)))){respspl[j] <- best[ans]}
                             }else{ans <- 1}
                             
                             if(ans==length(best)+1)
                             {
                                 if(length(best)!=0)
-                                {print(respspl[j])}
-                                ans2 <- menu(c(newpot,"TYPE MY OWN","SKIP","BAD RESPONSE"),title="Potential responses:")
+                                {cat(paste("\n\n",respspl[j]))}
+                                ans2 <- menu(c(newpot,"TYPE MY OWN","SKIP","BAD RESPONSE"),title="\n\nPotential responses:")
                                 
                                 if(ans2<=length(newpot))
                                 {respspl[j] <- newpot[ans2]
@@ -368,20 +382,23 @@ spell.check.database <- function (data, database)
     #change "REMOVE" to NA
     for(i in 1:length(resp))
     {
-        split <- strsplit(resp[i]," ")[[1]]
-        
-        if(length(split)>1)
+        if(!is.na(resp[i]))
         {
-            if(any(split=="REMOVE"))
+            split <- strsplit(resp[i]," ")[[1]]
+            
+            if(length(split)>1)
             {
-                rem <- which(split=="REMOVE")
-                
-                repl <- paste(split[-rem],collapse=" ")
-                
-                resp[i] <- repl
-            }
-        }else if(split=="REMOVE"||length(split)==0)
-        {resp[i] <- NA}
+                if(any(split=="REMOVE"))
+                {
+                    rem <- which(split=="REMOVE")
+                    
+                    repl <- paste(split[-rem],collapse=" ")
+                    
+                    resp[i] <- repl
+                }
+            }else if(split=="REMOVE"||length(split)==0)
+            {resp[i] <- NA}
+        }
     }
     
     #remove lingering "SKIP"
