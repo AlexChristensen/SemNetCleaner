@@ -1,3 +1,17 @@
+Changes in version 1.0.0
+
+o Algorithm for 'best.guess' was changed to Damerau-Levenshtein distance
+
+o 'corr.chn' function code was cleaned up and streamlined
+
+o 'animals.database' has been moved to the 'SemNetDictionaries' package. It was renamed as 'animals.dictionary'
+
+o 'animals.misnomer' was removed
+
+o 'textcleaner' function code was cleaned up and streamlined. Integrated functionality with the 'SemNetDicationaries' package
+
+o 'autoConverge' function code was cleaned up and streamlined
+
 Changes in version 0.9.9
 
 o animals.database: a database for animals was added
