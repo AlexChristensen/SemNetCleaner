@@ -7,7 +7,6 @@
 #' @return Returns a vector with each letter swapped for another
 #' 
 #' @examples 
-#' 
 #' chn.let("bombae")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>

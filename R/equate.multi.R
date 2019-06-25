@@ -1,11 +1,32 @@
 #' Equate Multiple Groups
-#' @description An automated cleaning function for matching groups' responses.
-#' Handles multiple datasets
+#' @description A function to apply \code{\link[SemNetCleaner]{equate}}
+#' to multiple response matrices
 #' 
-#' @param ... Datasets to be equated
+#' @param ... A list.
+#' A list of response matrices to be equated
 #' 
-#' @return This function returns a list containing equated datasets
-#' in the order they were input. They are labeled dataset (1, ..., n)
+#' @return This function returns a list containing the
+#' equated binary response matrices in the order they were input.
+#' The response matrices are labeled (\code{1}, \code{2}, \code{...}, \code{n})
+#' in the order in which they are input.
+#' 
+#' @examples 
+#' #finalize rmatA
+#' finalCmat <- finalize(convmat)
+#' 
+#' #finalize rmatB
+#' finalRmat <- finalize(rmat)
+#' 
+#' #finalize rmatC
+#' finalYmat <- finalize(rmat)
+#'
+#' #equate rmatA and rmatB
+#' eq <- equate.multi(finalCmat,finalRmat,finalYmat)
+#' 
+#' #obtain respective equated response matrices
+#' eqCmat <- eq$dataset1
+#' eqRmat <- eq$dataset2
+#' eqYmat <- eq$dataset3
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

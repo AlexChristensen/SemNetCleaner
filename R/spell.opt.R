@@ -1,6 +1,11 @@
-#' Spelling Option
+#' All Possible Spelling Options
 #' @description A wrapper function for spell-checking
-#' (combines all spell-checking wrapper functions)
+#' (combines
+#' \link[SemNetCleaner]{singularize},
+#' \link[SemNetCleaner]{miss.let},
+#' \link[SemNetCleaner]{chn.let}, and
+#' \link[SemNetCleaner]{add.let} 
+#' spell-checking wrapper functions)
 #' 
 #' @param word Word to check spelling options
 #' 
@@ -8,8 +13,8 @@
 #' several spell-checking options
 #' 
 #' @examples
-#' 
-#' spell.opt("bombay")
+#' #bombay
+#' spell.opt("bomba")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

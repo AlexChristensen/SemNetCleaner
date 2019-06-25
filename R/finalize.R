@@ -1,15 +1,19 @@
 #' Finalize Response Matrix
-#' @description Finalizes the response matrix by keeping responses that are given by two or more people
+#' @description Finalizes the response matrix by keeping
+#' responses that are given by two or more people
 #' 
-#' @param rmat A \link[SemNetCleaner]{textcleaner} filtered response matrix
+#' @param rmat Binary matrix.
+#' A \link[SemNetCleaner]{textcleaner} filtered response matrix
 #' 
-#' @param minCase Minumum number of cases to produce a response
+#' @param minCase Numeric.
+#' Minumum number of cases to produce a response
 #' 
-#' @return A matrix with responses given by two or more people
+#' @return A binary response matrix with responses
+#' given by at least \code{minCase} people
 #' 
 #' @examples
+#' \dontrun{
 #' 
-#' \donttest{
 #' convmat <- autoConverge(rmat)
 #' }
 #' 
@@ -20,6 +24,9 @@
 #' @export
 #Finalize Function----
 finalize <- function (rmat, minCase = 2)
-{fmat <- rmat[which(colSums(rmat)>=minCase)]
-return(fmat)}
+{
+    fmat <- rmat[which(colSums(rmat)>=minCase)]
+    
+    return(fmat)
+}
 #----

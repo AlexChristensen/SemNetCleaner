@@ -1,21 +1,32 @@
-#' Autmated Converge Responses
-#' @description Automated \link[SemNetCleaner]{converge} function merging of columns of binarized response data with another
+#' Automated Converge Responses
+#' @description Automated \code{\link[SemNetCleaner]{converge}} function which merges
+#' of columns of binarized response data with another.
+#' This function streamlines the merging of like responses with other
+#' like responses (e.g., "roaches" with "cockroaches")
+#' into one singular function.
 #' 
-#' @param rmat A \link[SemNetCleaner]{textcleaner} filtered response matrix
-#' 
+#' @param rmat Binary matrix.
+#' A \code{\link[SemNetCleaner]{textcleaner}} filtered response matrix
+#'
 #' @return A list containing four objects:
 #' 
 #' \item{rmat}{A response matrix that has had responses converged}
 #' 
-#' \item{converged}{A matrix of responses showing the original response (from) and
-#' the response that replaced it (to). If response was not converged, then it stays the same}
-#' \item{changed}{A matrix of responses that were changed. The original response (from)
-#' and the response that replaced it (to). If responses were removed, then <NA> is displayed}
+#' \item{converged}{A matrix of responses showing the original response
+#' (\code{from}) and the response that replaced it (\code{to}). If response
+#' was not converged, then it stays the same}
+#' 
+#' \item{changed}{A matrix of responses that were changed. The original
+#' response (\code{from}) and the response that replaced it (\code{to}).
+#' If responses were removed, then \code{<NA>} is displayed}
 #' 
 #' \item{participant}{A list of each response with each participant affected}
 #' 
 #' @examples
-#' \donttest{
+#' rmat <- rmat
+#' 
+#' \dontrun{
+#' 
 #' #text cleaned
 #' clean <- textcleaner(rmat)
 #' 
@@ -31,194 +42,282 @@
 #Automated Converge Function----
 autoConverge <- function (rmat)
 {
-    is.letter <- function(x) 
-    {grepl("[[:alpha:]]", x)}
-    
+    #number of responses
     n <- ncol(rmat)
     
+    #name of responses
     name <- colnames(rmat)
     
+    #ids of participants
     ids <- row.names(rmat)
     
+    #duplicate of original response matrix
     repmat <- rmat
     
+    #initialize output list to return
     output <- list()
+    
+    #matrix for how response were converged
     output$converged <- matrix(NA,nrow=n,ncol=2)
     colnames(output$converged) <- c("from","to")
+    
+    #participants that were affected by converged responses
     output$participant[["all ids"]] <- ids
     
+    #loop to go through all responses
     for(i in n:1)
     {
-        #check for converge
+        #response to check for converge
         check <- colnames(rmat)[i]
         
-        first <- substring(check,1,1)
+        first <- starting.letter(check)
         
-        if(!is.letter(first))
+        let.chn <- TRUE
+        
+        while(let.chn)
         {
-            for(j in 2:nchar(check))
-            {
-                let <- is.letter(substring(check,j,j))
-                
-                if(let)
-                {break}
-            }
-            first <- substring(check,j,j)
-        }
-        
-        start <- as.character(paste("^",first,sep=""))
-        
-        print(check)
-        
-        ans <- menu(c("Yes","No","RENAME","REMOVE","TYPE MY OWN"),title="Converge response with another response?")
-        
-        while(ans==1)
-        {
+            #set up first letter for search
+            start <- as.character(paste("^",first,sep=""))
+            
             #potential converges
             pot <- colnames(repmat[grep(start,colnames(repmat),ignore.case=TRUE)])
             
-            ans2 <- menu(c(pot,"STARTS WITH A DIFFERENT LETTER","TYPE MY OWN"),title="Potential responses:")
+            #remove check response from potential
+            pot <- pot[-which(pot==check)]
             
-            if(ans2==length(pot)+2)
+            #display response to check for converge
+            print(check)
+            
+            #propose responses
+            ans <- menu(c(pot,"NO","RENAME","REMOVE","ANOTHER LETTER","TYPE MY OWN"),title="Converge with another response?")
+            
+            ####potential responses####
+            if(ans <= length(pot))
             {
-                ans <- 5
-            }else if(ans2<(length(pot)+1))
-            {
-                output$converged[i,] <- cbind(as.character(check),as.character(pot[ans2]))
+                #changed response
+                chn <- pot[ans]
+                
+                #updated the duplicate response matrix
+                if(check!=chn)
+                {repmat <- converge(repmat,as.character(chn),as.character(check))}
+                
+                #input as unchanged
+                output$converged[i,] <- cbind(as.character(check),as.character(chn))
+                
+                #identify participants this affects
                 if(sum(rmat[,i]==1)!=0)
                 {output$participant[[check]] <- which(rmat[,i]==1)}
-                repmat <- converge(repmat,as.character(pot[ans2]),check)
-                break
             }
             
-            while(ans2==length(pot)+1)
+            ####NO####
+            if(ans == length(pot)+1)
             {
-                ans3 <- menu(letters,title="Which letter?")
+                #input as unchanged
+                output$converged[i,] <- cbind(as.character(check),as.character(check))
                 
-                if(!is.letter(ans3))
-                {start <- as.character(paste("^",letters[ans3],sep=""))
-                }else if(is.letter(ans3))
-                {start <- as.character(paste("^",ans3,sep=""))}
+                #identify participants with responses
+                if(sum(rmat[,i]==1)!=0)
+                {output$participant[[check]] <- which(rmat[,i]==1)}
+            }
+            
+            ####RENAME####
+            if(ans == length(pot)+2)
+            {
+                #ask for new name for response
+                newname <- readline("New name for response: ")
                 
-                #potential converges
-                pot <- colnames(repmat[grep(start,colnames(repmat),ignore.case=TRUE)])
-                
-                ans4 <- menu(c(pot,"STARTS WITH A DIFFERENT LETTER","REMOVE","TYPE MY OWN"),title="Potential responses:")
-                
-                if(ans4==length(pot)+3)
+                #check if response matches a response already given
+                if(any(newname==colnames(repmat)))
                 {
-                    ans <- 5
-                }else if(ans4==(length(pot)+2))
-                {
-                    ans <- 4
-                }else if(ans4<(length(pot)+1))
-                {
-                    output$converged[i,] <- cbind(as.character(check),as.character(pot[ans4]))
+                    #identify where the response is
+                    conv <- colnames(repmat)[which(newname==colnames(repmat))]
+                    
+                    #let them know response already exists
+                    message(paste("Response already exists. Converged with response:",conv))
+                    
+                    #input as changed to response
+                    output$converged[i,] <- cbind(as.character(check),as.character(conv))
+                    
+                    #identify participants that this affects
                     if(sum(rmat[,i]==1)!=0)
                     {output$participant[[check]] <- which(rmat[,i]==1)}
-                    repmat <- converge(repmat,as.character(pot[ans4]),check)
-                }else if(ans4==length(pot)+1)
-                {
-                    ans2 <- length(pot)
+                    
+                    #updated the duplicate response matrix
+                    if(check!=conv)
+                    {repmat <- converge(repmat,as.character(conv),as.character(check))}
+                    
+                }else{
+                    #if name suggested does not exist, then change it
+                    #in the duplicate response matrix
+                    colnames(repmat)[i] <- newname
+                    
+                    #let them know that it was changed
+                    message(paste(check)," changed to ",newname)
+                    
+                    #input as changed to response
+                    output$converged[i,] <- cbind(colnames(repmat)[i],newname)
+                    
+                    #identify participants that this affects
+                    if(sum(rmat[,i]==1)!=0)
+                    {output$participant[[check]] <- which(rmat[,i]==1)}
                 }
             }
-            if(ans4<(length(pot)+1)){break}
-        }
-        
-        if(ans==2)
-        {
-            output$converged[i,] <- cbind(as.character(check),as.character(check))
-            if(sum(rmat[,i]==1)!=0)
-            {output$participant[[check]] <- which(rmat[,i]==1)}
-        }
-        
-        if(ans==3)
-        {
-            newname <- readline("New name for response: ")
             
-            if(any(newname==colnames(repmat)))
+            ####REMOVE####
+            if(ans == length(pot)+3)
             {
-                conv <- colnames(repmat)[which(newname==colnames(repmat))]
-                message(paste("Response already exists. Converged with response:",conv))
-                output$converged[i,] <- cbind(as.character(check),as.character(conv))
+                #let them know that it was removed
+                message(paste("Reponse removed:",check))
+                
+                #input as changed to response
+                output$converged[i,] <- cbind(as.character(check),NA)
+                
+                #identify participants that this affects
                 if(sum(rmat[,i]==1)!=0)
                 {output$participant[[check]] <- which(rmat[,i]==1)}
-                repmat <- converge(repmat,as.character(conv),as.character(check))
-             }else{
-                colnames(repmat)[i] <- newname
-                message(paste(check)," changed to ",newname)
-                output$converged[i,] <- cbind(colnames(repmat)[i],newname)
-                if(sum(rmat[,i]==1)!=0)
-                {output$participant[[check]] <- which(rmat[,i]==1)}
+                
+                #remove response from duplicate response matrix
+                repmat <- repmat[,-i]
+            }
+            
+            ####ANOTHER LETTER####
+            if(ans == length(pot)+4)
+            {
+                #ask for letter
+                let <- readline("Type letter: ")
+                
+                #check if letter
+                let.chk <- is.letter(let)
+                
+                #ask for letter
+                while(!let.chk||nchar(let)>1)
+                {
+                    
+                    let <- readline("Not a letter, please type a letter: ")
+                    
+                    #check if letter
+                    let.chk <- is.letter(let)
                 }
-        }else if(ans==4)
-        {
-            message(paste("Reponse removed:",check))
-            output$converged[i,] <- cbind(as.character(check),NA)
-            if(sum(rmat[,i]==1)!=0)
-            {output$participant[[check]] <- which(rmat[,i]==1)}
-            repmat <- repmat[,-i]
-        }else if(ans==5)
-        {
-            chn <- 0
+                
+                #begin process with new letter
+                first <- let
+            }else{let.chn <- FALSE}
             
-            resp <- readline("Type response: ")
-            
-            noresp <- !any(colnames(repmat)==resp)
-            
-            while(noresp)
+            ####TYPE MY OWN####
+            if(ans == length(pot)+5)
             {
-                orresp <- resp
+                #ask for response to be typed
+                resp <- readline("Type response: ")
                 
-                message("No response with that name")
-                resp <- readline("Type a new response or press 1 to view options: ")
-                
+                #check if response already exists
                 noresp <- !any(colnames(repmat)==resp)
                 
-                if(resp==1)
+                #while this response does not exist
+                while(noresp)
                 {
-                    first <- substring(orresp,1,1)
-                    start <- as.character(paste("^",first,sep=""))
-                    pot <- colnames(repmat[grep(start,colnames(repmat),ignore.case=TRUE)])
-                    print(pot)
-                    resp <- readline("Type response: ")
-                }
-                
-                if(noresp)
-                {
-                    repla <- menu(c("Yes","No"),title="Replace response's name with typed response?")
+                    #duplicate response
+                    orresp <- resp
                     
-                    if(repla==1)
+                    #let them know that there is not response with that name
+                    #ask for new response, rename, or remove
+                    ans2 <- menu(c("TYPE ANOTHER RESPONSE","RENAME","REMOVE"),title="No response with that name: ")
+                    
+                    #TYPE ANOTHER RESPONSE
+                    if(ans2 == 1)
                     {
-                        conv <- colnames(repmat)[which(resp==colnames(repmat))]
-                        if(length(conv)!=0)
+                        #ask for response to be typed
+                        resp <- readline("Type another response: ")
+                        
+                        #check if response already exists
+                        noresp <- !any(colnames(repmat)==resp)
+                    }
+                    
+                    #RENAME
+                    if(ans2 == 2)
+                    {
+                        #check if response matches a response already given
+                        if(any(orresp==colnames(repmat)))
                         {
-                            resp <- conv
-                            message(paste("Response already exists. Converged with response:",resp))
-                            noresp <- FALSE
-                        }else{
-                            chn <- menu(c("Yes","No"),title="Response not in response list. Change name?")
+                            #identify where the response is
+                            conv <- colnames(repmat)[which(orresp==colnames(repmat))]
                             
-                            if(chn==1)
-                            {
-                                output$converged[i,] <- cbind(as.character(check),as.character(resp))
-                                if(sum(rmat[,i]==1)!=0)
-                                {output$participant[[check]] <- which(rmat[,i]==1)}
-                                colnames(repmat)[i] <- resp
-                                message(paste(check)," changed to ",resp)
-                                noresp <- FALSE
-                            }else{noresp <- TRUE}
+                            #let them know response already exists
+                            message(paste("Response already exists. Converged with response:",conv))
+                            
+                            #input as changed to response
+                            output$converged[i,] <- cbind(as.character(check),as.character(conv))
+                            
+                            #identify participants that this affects
+                            if(sum(rmat[,i]==1)!=0)
+                            {output$participant[[check]] <- which(rmat[,i]==1)}
+                            
+                            #updated the duplicate response matrix
+                            if(check!=conv)
+                            {repmat <- converge(repmat,as.character(conv),as.character(check))}
+                            
+                        }else{
+                            #if name suggested does not exist, then change it
+                            #in the duplicate response matrix
+                            colnames(repmat)[i] <- orresp
+                            
+                            #let them know that it was changed
+                            message(paste(check)," changed to ",orresp)
+                            
+                            #input as changed to response
+                            output$converged[i,] <- cbind(colnames(repmat)[i],orresp)
+                            
+                            #identify participants that this affects
+                            if(sum(rmat[,i]==1)!=0)
+                            {output$participant[[check]] <- which(rmat[,i]==1)}
                         }
+                        
+                        #break out of no response
+                        noresp <- FALSE
+                        
+                        #skip out of resp
+                        resp <- NA
+                    }
+                    
+                    #REMOVE
+                    if(ans2 == 3)
+                    {
+                        #let them know that it was removed
+                        message(paste("Reponse removed:",check))
+                        
+                        #input as changed to response
+                        output$converged[i,] <- cbind(as.character(check),NA)
+                        
+                        #identify participants that this affects
+                        if(sum(rmat[,i]==1)!=0)
+                        {output$participant[[check]] <- which(rmat[,i]==1)}
+                        
+                        #remove response from duplicate response matrix
+                        repmat <- repmat[,-i]
+                        
+                        #break out of no response
+                        noresp <- FALSE
+                        
+                        #skip out of resp
+                        resp <- NA
                     }
                 }
-            }
-            
-            if(chn!=1)
-            {
-                output$converged[i,] <- cbind(as.character(check),as.character(resp))
-                if(sum(rmat[,i]==1)!=0)
-                {output$participant[[check]] <- which(rmat[,i]==1)}
-                repmat <- converge(repmat,as.character(resp),check)
+                
+                if(!is.na(resp))
+                {
+                    #let them know that it was changed
+                    output$converged[i,] <- cbind(as.character(check),as.character(resp))
+                    
+                    #identify participants that this affects
+                    if(sum(rmat[,i]==1)!=0)
+                    {output$participant[[check]] <- which(rmat[,i]==1)}
+                    
+                    #let them know that it was changed
+                    message(paste(check)," changed to ",resp)
+                    
+                    #updated the duplicate response matrix
+                    if(check!=resp)
+                    {repmat <- converge(repmat,as.character(resp),as.character(check))}
+                }
             }
         }
     }

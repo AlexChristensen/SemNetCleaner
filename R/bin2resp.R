@@ -1,11 +1,13 @@
 #' Binary Responses to Character Responses
 #' @description Converts the binary response matrix into characters for each participant
 #' 
-#' @param rmat A binarized response matrix of verbal fluency or linguistic data
+#' @param rmat Binary matrix.
+#' A binarized response matrix of verbal fluency or linguistic data
 #' 
-#' @param to.data.frame Should ouput be a data frame where participants are columns?
-#' Defaults to FALSE.
-#' Set to TRUE to convert output to data frame
+#' @param to.data.frame Boolean.
+#' Should output be a data frame where participants are columns?
+#' Defaults to \code{FALSE}.
+#' Set to \code{TRUE} to convert output to data frame
 #' 
 #' @return A list containing objects for each participant and their responses
 #' 

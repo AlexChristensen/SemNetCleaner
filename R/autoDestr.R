@@ -1,10 +1,17 @@
 #' Automated De-string of Responses
-#' @description Automated de-string responses after performing textcleaner
+#' @description Automated de-string responses after performing
+#' \code{\link[SemNetCleaner]{textcleaner}}.
+#' This function is to streamlines the de-stringing of
+#' like responses with other like responses (e.g., "roaches" with "cockroaches")
+#' into one singular function.
 #' 
-#' @param rmat A \link[SemNetCleaner]{textcleaner} filtered response matrix
+#' @param rmat Binary matrix.
+#' A \code{\link[SemNetCleaner]{textcleaner}} filtered response matrix
 #' 
-#' @param char Minimum number of characters in a string to be checked for \link[SemNetCleaner]{destr}.
-#' Defaults to 10
+#' @param char A numeric value.
+#' Minimum number of characters in a string to be
+#' checked for by \code{\link[SemNetCleaner]{destr}}.
+#' Defaults to \code{10}
 #' 
 #' @return A list containing two objects:
 #' 
@@ -17,10 +24,12 @@
 #' @examples
 #' #create example stringed responses
 #' stringed <- cbind(rowSums(cbind(rmat[,c(1,2)])),convmat)
+#' 
 #' #change name to stringed name
 #' colnames(stringed)[1] <- "alligator.ant"
 #' 
-#' \donttest{
+#' \dontrun{
+#' 
 #' #text cleaned
 #' clean <- textcleaner(rmat)
 #' 

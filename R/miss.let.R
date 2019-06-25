@@ -2,12 +2,12 @@
 #' @description A wrapper function for spell-checking
 #' (removes each letter from the word)
 #' 
-#' @param word Word to remove letters
+#' @param word Character.
+#' Word to remove letters
 #' 
 #' @return Returns a vector with each letter from the word missing
 #' 
-#' @examples 
-#' 
+#' @examples
 #' miss.let("bombay")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>

@@ -7,7 +7,6 @@
 #' @return Returns a vector with all possible added letter combinations
 #' 
 #' @examples 
-#' 
 #' add.let("bombay")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>

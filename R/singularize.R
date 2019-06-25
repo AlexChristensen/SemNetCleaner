@@ -1,12 +1,13 @@
-#' Singularize Function
-#' @description A function to de-pluralize '-s' and '-es' words
+#' Converts Words to their Singular Form
+#' @description A function to de-pluralize '-s' and '-es' words. This
+#' function is very basic and does not have many rules. The function
+#' simply removes '-s' or '-es' from words. 
 #' 
 #' @param word A word
 #' 
 #' @return Returns the word in singular form
 #' 
 #' @examples
-#' 
 #' singularize(trial[1,10])
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
