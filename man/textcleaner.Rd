@@ -4,66 +4,114 @@
 \alias{textcleaner}
 \title{Text Cleaner}
 \usage{
-textcleaner(data, miss = 99, partBY = c("row", "col"), ID = NULL,
-  database = NULL)
+textcleaner(data, miss = 99, partBY = c("row", "col"),
+  dictionary = NULL, tolerance = 1)
 }
 \arguments{
-\item{data}{A dataset of linguistic data}
+\item{data}{Matrix or data frame.
+A dataset of text data.
+Participant IDs should be made to be row or
+column names to specify whether participants
+are by row or column (see argument \code{partBY}).
+If no IDs are provided, then their order in the corresponding
+row (or column is used).
+A message will notify the user how IDs were assigned}
 
-\item{miss}{Value for missing data.
-Defaults to 99}
+\item{miss}{Numeric or character.
+Value for missing data.
+Defaults to \code{99}}
 
-\item{partBY}{Are participants by row or column?
-Set to "row" for by row.
-Set to "col" for by column}
+\item{partBY}{Character.
+Are participants by row or column?
+Set to \code{"row"} for by row.
+Set to \code{"col"} for by column}
 
-\item{ID}{If subject IDs are included in the data file,
-then the row or column must be specified
-(e.g., if partBY = "row" and IDs are in the first column, then 1 should be entered)}
-
-\item{database}{Database for more efficient text cleaning.
-Defaults to NULL.
+\item{dictionary}{Character vector.
 Can be a vector of a corpus or any text for comparison.
-Currently, the only option is for "animals"}
+Dictionary to be used for more efficient text cleaning.
+Defaults to \code{NULL}, which will use \code{\link[qdapDictionaries]{qdapDictionaries}}.
+
+Use \code{dictionaries()} and \code{extra.dictionaries()} for more options
+(See \code{\link{SemNetDictionaries}} for more details)}
+
+\item{tolerance}{Numeric.
+The distance tolerance set for automatic spell-correction purposes.
+This function uses the function \code{\link[stringdist]{stringdist}}
+to compute the \href{https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance}{Damerau-Levenshtein}
+(DL) distance, which is used to determine potential best guesses.
+
+Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
+automatically output as best guess responses, which are then passed through
+\code{\link[SemNetCleaner]{word.check.wrapper}}. If there is more than one word
+that is within or below the distance tolerance, then these will be provided as potential
+options.
+
+The recommended and default distance tolerace is \code{tolerance = 1},
+which only spell corrects a word if there is only one word with a DL distance of 1.}
 }
 \value{
 This function returns a list containing the following objects:
 
 \item{binary}{A matrix of responses where each row represents a participant
-and each column represents a unique response. A response that a participant has provided is a '1'
-and a response that a participant has not provided is a '0'}
+and each column represents a unique response. A response that a participant has provided is a '\code{1}'
+and a response that a participant has not provided is a '\code{0}'}
 
-\item{resposnes}{A response matrix that has been spell checked and de-pluralized with duplicates removed}
+\item{resposnes}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
+This can be used as a final dataset for analyses (e.g., fluency of responses)}
 
-\item{spellcheck}{A list containing two objects: full and unique. \strong{full} contains
-all responses regardless of spellcheck changes and \strong{unique} contains only responses that were
-changed during the spell check}
+\item{spellcheck}{A list containing two objects: \code{full} and \code{unique}. \code{full} contains
+all responses regardless of spellcheck changes and \code{unique} contains only responses that were
+changed during the spell-check}
 
-\item{removed}{A list containing two objects: rows and ids.
-\strong{rows} identifies removed participants by their row location in the original data file
-and \strong{ids} identifies removed participants by their ID}
+\item{removed}{A list containing two objects: \code{rows} and \code{ids}.
+\code{rows} identifies removed participants by their row (or column) location in the original data file
+and \code{ids} identifies removed participants by their ID (see argument \code{data})}
 
-\item{partChanges}{A list where each participant is an object with their
-responses that have been changed. Participants are identified by their ID.
+\item{partChanges}{A list where each participant is a list index with each
+response that was been changed. Participants are identified by their ID (see argument \code{data}).
 This can be used to replicate the cleaning process and to keep track of changes more generaly.
-Participants with \strong{NA} did not have any changes from the original data
-and participants with NULL were removed due to missing data (see \emph{removed$ids})}
+Participants with \code{NA} did not have any changes from their original data
+and participants with missing data are removed (see \code{removed$ids})}
 }
 \description{
 An automated cleaning function for spell-checking, de-pluralizing,
 removing duplicates, and binarizing text data
 }
-\examples{
+\details{
+When working through the menu options in \code{\link[SemNetCleaner]{textcleaner}},
+there may be mistakes. For instance, selecting to \code{REMOVE} a response when really
+all you wanted to do was \code{RENAME} a response. There are a couple of options:
 
-\donttest{
-rmat <- textcleaner(trial, partBY = "col")
+RECOMMENDED
+
+1. You can make a note in your \code{R} script for the change you wanted
+to make (you can keep moving through the cleaning process).
+After the cleaning process is through, you can check the \code{spellcheck$unique}
+output of \code{\link[SemNetCleaner]{textcleaner}} to see what changes
+you made. To correct any changes you made in the cleaning process,
+you can use the \code{\link[SemNetCleaner]{corr.chn}} function
+
+NOT RECOMMENDED
+
+2. You can use \code{esc} to exit out of a menu selection process.
+This is NOT recommended because you will lose all changes that
+you've made up to that point
+}
+\examples{
+#load trial data
+data <- trial
+
+\dontrun{
+
+rmat <- textcleaner(data, partBY = "col")
 }
 
 }
 \references{
 Hornik, K., & Murdoch, D. (2010).
 Watch Your Spelling!.
-\emph{The R Journal}, 3(2), 22-28.
+\emph{The R Journal}, \emph{3}, 22-28.
+doi:\href{https://doi.org/10.32614/RJ-2011-014}{10.32614/RJ-2011-014}
 }
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>

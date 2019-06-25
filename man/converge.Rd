@@ -7,14 +7,21 @@
 converge(rmat, word, replace)
 }
 \arguments{
-\item{rmat}{A \link[SemNetCleaner]{textcleaner} filtered response matrix}
+\item{rmat}{Binary matrix.
+A \link[SemNetCleaner]{textcleaner} filtered response matrix}
 
-\item{word}{The column name that will incoporate the \strong{replace} column's binarized responses (must be characters)}
+\item{word}{Must be column name (characters).
+The column name (or number) that be merged \emph{into}.
+This column will \emph{remain} in the matrix}
 
-\item{replace}{The column name that should be merged with the \strong{word} column (must be characters)}
+\item{replace}{Must be column name (characters).
+The column name (or number) that should be merged
+with the \code{word} column.
+This column will be \emph{removed} from the matrix}
 }
 \value{
-The response matrix with the \strong{word} column merged and the \strong{replace} column removed
+The response matrix with the \code{word} column merged
+and the \code{replace} column removed
 }
 \description{
 Merge a column of binarized response data with another
@@ -22,6 +29,9 @@ Merge a column of binarized response data with another
 \examples{
 #converge "kitten" into response of "cat"
 rmat <- converge(rmat,"cat","kitten")
+
+#"cat" remains will "kitten" responses are merged into
+#"cat" and "kitten" is removed
 
 }
 \author{

@@ -7,7 +7,8 @@
 miss.let(word)
 }
 \arguments{
-\item{word}{Word to remove letters}
+\item{word}{Character.
+Word to remove letters}
 }
 \value{
 Returns a vector with each letter from the word missing
@@ -17,7 +18,6 @@ A wrapper function for spell-checking
 (removes each letter from the word)
 }
 \examples{
-
 miss.let("bombay")
 
 }

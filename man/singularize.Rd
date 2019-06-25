@@ -2,7 +2,7 @@
 % Please edit documentation in R/singularize.R
 \name{singularize}
 \alias{singularize}
-\title{Singularize Function}
+\title{Converts Words to their Singular Form}
 \usage{
 singularize(word)
 }
@@ -13,10 +13,11 @@ singularize(word)
 Returns the word in singular form
 }
 \description{
-A function to de-pluralize '-s' and '-es' words
+A function to de-pluralize '-s' and '-es' words. This
+function is very basic and does not have many rules. The function
+simply removes '-s' or '-es' from words.
 }
 \examples{
-
 singularize(trial[1,10])
 
 }

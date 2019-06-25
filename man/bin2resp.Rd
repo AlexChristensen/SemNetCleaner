@@ -7,11 +7,13 @@
 bin2resp(rmat, to.data.frame = FALSE)
 }
 \arguments{
-\item{rmat}{A binarized response matrix of verbal fluency or linguistic data}
+\item{rmat}{Binary matrix.
+A binarized response matrix of verbal fluency or linguistic data}
 
-\item{to.data.frame}{Should ouput be a data frame where participants are columns?
-Defaults to FALSE.
-Set to TRUE to convert output to data frame}
+\item{to.data.frame}{Boolean.
+Should output be a data frame where participants are columns?
+Defaults to \code{FALSE}.
+Set to \code{TRUE} to convert output to data frame}
 }
 \value{
 A list containing objects for each participant and their responses

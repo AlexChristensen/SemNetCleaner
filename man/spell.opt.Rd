@@ -2,7 +2,7 @@
 % Please edit documentation in R/spell.opt.R
 \name{spell.opt}
 \alias{spell.opt}
-\title{Spelling Option}
+\title{All Possible Spelling Options}
 \usage{
 spell.opt(word)
 }
@@ -15,11 +15,16 @@ several spell-checking options
 }
 \description{
 A wrapper function for spell-checking
-(combines all spell-checking wrapper functions)
+(combines
+\link[SemNetCleaner]{singularize},
+\link[SemNetCleaner]{miss.let},
+\link[SemNetCleaner]{chn.let}, and
+\link[SemNetCleaner]{add.let} 
+spell-checking wrapper functions)
 }
 \examples{
-
-spell.opt("bombay")
+#bombay
+spell.opt("bomba")
 
 }
 \author{

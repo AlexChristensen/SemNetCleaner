@@ -7,15 +7,27 @@
 equate(rmatA, rmatB)
 }
 \arguments{
-\item{rmatA}{A \link[SemNetCleaner]{textcleaner} filtered response matrix for group 1}
+\item{rmatA}{Binary matrix.
+A \link[SemNetCleaner]{textcleaner} filtered response matrix
+for binary matrix A}
 
-\item{rmatB}{A \link[SemNetCleaner]{textcleaner} filtered response matrix for group 2}
+\item{rmatB}{Binary matrix. 
+A \link[SemNetCleaner]{textcleaner} filtered response matrix
+for binary matrix B}
 }
 \value{
-A list of responses matched for group 1 (rmatA) and group 2 (rmatB)
+A list containing binary matrices that have matching column
+names (matching response):
+
+\item{rmatA}{Binary matrix with matched responses for \code{rmatA}}
+
+\item{rmatB}{Binary matrix with matched responses for \code{rmatB}}
 }
 \description{
-An automated cleaning function for matching groups' responses
+In general, this function serves as a wrapper for
+\code{\link[SemNetCleaner]{equate.multi}}. This function equates the
+responses between two binary response matrices (e.g., two groups)
+by only keeping the column names that match between both matrices.
 }
 \examples{
 #finalize rmatA

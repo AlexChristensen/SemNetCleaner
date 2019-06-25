@@ -17,7 +17,6 @@ A wrapper function for spell-checking
 (adds additional nearby letters at each letter of the word)
 }
 \examples{
-
 add.let("bombay")
 
 }

@@ -4,60 +4,90 @@
 \alias{corr.chn}
 \title{Correct Changes from \code{\link[SemNetCleaner]{textcleaner}}}
 \usage{
-corr.chn(txt.cln.obj, resp, corr)
+corr.chn(txt.cln.obj, old)
 }
 \arguments{
 \item{txt.cln.obj}{A \code{\link[SemNetCleaner]{textcleaner}} object}
 
-\item{resp}{A vector of response(s) to change.
+\item{old}{Character vector.
+A vector of old response(s) to change.
 See the object \code{spellcheck$unique} in
 \code{\link[SemNetCleaner]{textcleaner}} output}
-
-\item{corr}{How should the response(s) be corrected?
-\code{1} = KEEP the original response.
-\code{0} = REMOVE the response entirely.
-These must correspond to the input for the \code{resp}
-argument}
 }
 \value{
 This function returns a list containing the
 following \code{\link[SemNetCleaner]{textcleaner}} objects, which
-have been changed with the provided changes:
+have been corrected with the user-provided changes:
 
 \item{binary}{A matrix of responses where each row represents a participant
-and each column represents a unique response. A response that a participant has provided is a '1'
-and a response that a participant has not provided is a '0'}
+and each column represents a unique response. A response that a participant has provided is a '\code{1}'
+and a response that a participant has not provided is a '\code{0}'}
 
-\item{resposnes}{A response matrix that has been spell checked and de-pluralized with duplicates removed}
+\item{resposnes}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
+This can be used as a final dataset for analyses (e.g., fluency of responses)}
 
-\item{spellcheck}{A list containing two objects: full and unique. \strong{full} contains
-all responses regardless of spellcheck changes and \strong{unique} contains only responses that were
-changed during the spell check}
+\item{spellcheck}{A list containing two objects: \code{full} and \code{unique}. \code{full} contains
+all responses regardless of spellcheck changes and \code{unique} contains only responses that were
+changed during the spell-check}
 
-\item{removed}{A list containing two objects: rows and ids.
-\strong{rows} identifies removed participants by their row location in the original data file
-and \strong{ids} identifies removed participants by their ID}
+\item{removed}{A list containing two objects: \code{rows} and \code{ids}.
+\code{rows} identifies removed participants by their row (or column) location in the original data file
+and \code{ids} identifies removed participants by their ID (see argument \code{data}
+in \code{\link[SemNetCleaner]{textcleaner}})}
 
 \item{partChanges}{A list where each participant is an object with their
-responses that have been changed. Participants are identified by their ID.
+responses that have been changed. Participants are identified by their ID
+(see argument \code{data} in \code{\link[SemNetCleaner]{textcleaner}}).
 This can be used to replicate the cleaning process and to keep track of changes more generaly.
-Participants with \strong{NA} did not have any changes from the original data
-and participants with NULL were removed due to missing data (see \emph{removed$ids})}
+Participants with \code{NA} did not have any changes from the original data
+and participants with \code{NULL} were removed due to missing data (see \code{removed$ids})}
 }
 \description{
-Allows from correction of changes made by \code{\link[SemNetCleaner]{textcleaner}}.
+Allows corrections to changes made by \code{\link[SemNetCleaner]{textcleaner}}.
 Some changes may have been made by accident, some changes may have been made
-by the automated cleaning, while others may simply just need to be removed.
+by the automated cleaning, while others may just need to be removed.
 This function will correct any changes made in a cleaned \code{\link[SemNetCleaner]{textcleaner}}
 object.
 }
-\examples{
+\details{
+This function is used to correct mistakes that occur
+in the cleaning process during \code{\link[SemNetCleaner]{textcleaner}}.
+There are times when you are too deep into the text cleaning process
+that accidentally hitting a '\code{1}' instead of a '\code{2}' does
+not make sense to stop and start the text cleaning process over. Rather
+when mistakes are made, a record can be kept and this function will
+allow those mistakes to be amended.
 
-\donttest{
-tc.obj <- textcleaner(trial, partBY = "col")
+Old responses should be used as input. A menu will prompt the user
+for their decision on how to manage the incorrectly cleaned response.
+There are three potential options:
 
-rmat <- corr.chn (tc.obj, "rat", 1)
+\itemize{
+
+\item{\code{1: TYPE MY OWN}}
+{Allows user to type their own response. If multiple responses, then 
+commas should separate each response. Quotations are not necessary.}
+
+\item{\code{2: GOOGLE IT}}
+{"Googles" the response in question.
+A browser will open with the Google search terms: define "RESPONSE"}
+
+\item{\code{3: BAD RESPONSE}}
+{When selected, \code{NA} will be returned}
+
 }
+}
+\examples{
+#load data
+dat <- trial
+
+\dontrun{
+
+tc.obj <- textcleaner(dat, partBY = "col")
+
+rmat <- corr.chn (tc.obj, "rat")
+}
+
 }
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>

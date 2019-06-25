@@ -4,12 +4,24 @@
 \alias{splitstr.check}
 \title{Split String Check}
 \usage{
-splitstr.check(split, base)
+splitstr.check(string, split = " ", dictionary, remember = list())
 }
 \arguments{
-\item{split}{A split string to check}
+\item{string}{Character.
+A string of words (see examples)}
 
-\item{base}{Database to check}
+\item{split}{Character.
+A character that should be used to "split"
+the words input into the \code{string} argument.
+Defaults to a space (\code{" "})}
+
+\item{dictionary}{Dictionary to check.
+See \code{\link{SemNetDictionaries}}}
+
+\item{remember}{Character list.
+Checks if split string has already been
+checked (a wrapper argument for \code{\link[SemNetCleaner]{spell.check.dictionary}}).
+Defaults to an empty list}
 }
 \value{
 Returns the string as is or with the selected responses merged
@@ -20,13 +32,11 @@ A wrapper function for spell-checking
 }
 \examples{
 #create long word vector
-vec <- "bombay opossum guinea pig horse cow"
+words <- "bombay opossum guinea pig horse cow"
 
-#split vector
-split <- strsplit(vec, " ")[[1]]
+\dontrun{
 
-\donttest{
-splitstr.check(split, animals.database)
+splitstr.check(string = words, split = " ", dictionary = SemNetDictionaries::animals.dictionary)
 }
 
 }

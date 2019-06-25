@@ -17,7 +17,6 @@ A wrapper function for spell-checking
 (swaps each letter of the word with another nearby letter)
 }
 \examples{
-
 chn.let("bombae")
 
 }

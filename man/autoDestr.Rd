@@ -7,10 +7,13 @@
 autoDestr(rmat, char = 10)
 }
 \arguments{
-\item{rmat}{A \link[SemNetCleaner]{textcleaner} filtered response matrix}
+\item{rmat}{Binary matrix.
+A \code{\link[SemNetCleaner]{textcleaner}} filtered response matrix}
 
-\item{char}{Minimum number of characters in a string to be checked for \link[SemNetCleaner]{destr}.
-Defaults to 10}
+\item{char}{A numeric value.
+Minimum number of characters in a string to be
+checked for by \code{\link[SemNetCleaner]{destr}}.
+Defaults to \code{10}}
 }
 \value{
 A list containing two objects:
@@ -22,15 +25,21 @@ The row number is supplied for each case that was affected.
 This can be used to replicate the de-stringing process and to keep track of changes more generally}
 }
 \description{
-Automated de-string responses after performing textcleaner
+Automated de-string responses after performing
+\code{\link[SemNetCleaner]{textcleaner}}.
+This function is to streamlines the de-stringing of
+like responses with other like responses (e.g., "roaches" with "cockroaches")
+into one singular function.
 }
 \examples{
 #create example stringed responses
 stringed <- cbind(rowSums(cbind(rmat[,c(1,2)])),convmat)
+
 #change name to stringed name
 colnames(stringed)[1] <- "alligator.ant"
 
-\donttest{
+\dontrun{
+
 #text cleaned
 clean <- textcleaner(rmat)
 

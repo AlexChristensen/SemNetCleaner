@@ -2,25 +2,55 @@
 % Please edit documentation in R/best.guess.R
 \name{best.guess}
 \alias{best.guess}
-\title{Best guess function}
+\title{Makes Best Guess for Spelling Correction}
 \usage{
-best.guess(vec, database)
+best.guess(word, dictionary, tolerance = 1)
 }
 \arguments{
-\item{vec}{Vector of potential options}
+\item{word}{Character.
+A word to get best guess spelling options from dictionary}
 
-\item{database}{The database to search for best guesses in}
+\item{dictionary}{Character vector.
+The dictionary to search for best guesses in.
+See \code{\link{SemNetDictionaries}}}
+
+\item{tolerance}{Numeric.
+The distance tolerance set for automatic spell-correction purposes.
+This function uses the function \code{\link[stringdist]{stringdist}}
+to compute the Damerau-Levenshtein distance, which is used to determine potential best guesses
+
+Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
+automatically output as best guess responses, which are then passed through
+\code{\link[SemNetCleaner]{word.check.wrapper}}. This default is based on Damerau's (1964)
+proclamation that more than 80% of all human misspellings can be expressed by a single error
+(e.g., insertion, deletion, substitution, and transposition). If there is more than one word
+that is within or below the distance tolerance, then these will be provided as potential
+options.
+
+The recommended and default distance tolerace is \code{tolerance = 1},
+which only spell corrects a word if there is only one word with a DL distance of 1.}
 }
 \value{
 The best guess(es) of the word
 }
 \description{
-A wrapper function for best guess spelling
+A wrapper function for the best guess of a spelling mistake
+based on the letters, the ordering of those letters, and the potential
+for letters to be interchanged. The
+\href{https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance}{Damerau-Levenshtein distance}
+is used to guide inferences into what word the participant was trying to spell from a dictionary
+(see \code{\link{SemNetDictionaries}})
 }
 \examples{
+#misspelled "bombay"
+best.guess("bomba", SemNetDictionaries::animals.dictionary)
 
-best.guess("bomba", animals.database)
-
+}
+\references{
+Damerau, F. J. (1964).
+A technique for computer detection and correction of spelling errors.
+\emph{Communications of the ACM}, \emph{7}, 171-176.
+doi:\href{https://doi.org/10.1145/363958.363994}{10.1145/363958.363994}
 }
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>

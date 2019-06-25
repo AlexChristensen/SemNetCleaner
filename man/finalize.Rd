@@ -7,19 +7,23 @@
 finalize(rmat, minCase = 2)
 }
 \arguments{
-\item{rmat}{A \link[SemNetCleaner]{textcleaner} filtered response matrix}
+\item{rmat}{Binary matrix.
+A \link[SemNetCleaner]{textcleaner} filtered response matrix}
 
-\item{minCase}{Minumum number of cases to produce a response}
+\item{minCase}{Numeric.
+Minumum number of cases to produce a response}
 }
 \value{
-A matrix with responses given by two or more people
+A binary response matrix with responses
+given by at least \code{minCase} people
 }
 \description{
-Finalizes the response matrix by keeping responses that are given by two or more people
+Finalizes the response matrix by keeping
+responses that are given by two or more people
 }
 \examples{
+\dontrun{
 
-\donttest{
 convmat <- autoConverge(rmat)
 }
 

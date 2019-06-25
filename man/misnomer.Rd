@@ -9,7 +9,9 @@ misnomer(word, misnom)
 \arguments{
 \item{word}{Word to check for misnomer}
 
-\item{misnom}{Misnomer database}
+\item{misnom}{A list of misnomers.
+Only available for "animals" currently.
+(see \code{\link[SemNetDictionaries]{animals.misnomer}})}
 }
 \value{
 If \code{word} matches a misnomer, then the appropriate word is returned.
@@ -20,7 +22,7 @@ A wrapper function for spell-checking
 (idnetifies misnomers for a word)
 }
 \examples{
-misnomer("possum", animals.misnomer)
+misnomer("possum", SemNetDictionaries::animals.misnomer)
 
 }
 \author{
