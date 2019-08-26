@@ -11,7 +11,7 @@ finalize(rmat, minCase = 2)
 A \link[SemNetCleaner]{textcleaner} filtered response matrix}
 
 \item{minCase}{Numeric.
-Minumum number of cases to produce a response}
+Minimum number of cases to produce a response}
 }
 \value{
 A binary response matrix with responses
@@ -22,12 +22,17 @@ Finalizes the response matrix by keeping
 responses that are given by two or more people
 }
 \examples{
-\dontrun{
+# Toy example
+raw <- open.animals[c(1:10),-c(1:3)]
 
-convmat <- autoConverge(rmat)
-}
+# Clean and prepocess data
+clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 
-finalRmat <- finalize(convmat)
+# Obtain binary data
+bin <- clean$binary
+
+# Finalize mat1
+mat1 <- finalize(bin)
 
 }
 \author{

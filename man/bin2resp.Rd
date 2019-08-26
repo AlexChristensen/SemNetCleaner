@@ -22,7 +22,14 @@ A list containing objects for each participant and their responses
 Converts the binary response matrix into characters for each participant
 }
 \examples{
-charmat <- bin2resp(convmat)
+# Toy example
+raw <- open.animals[c(1:10),-c(1:3)]
+
+# Clean and prepocess data
+clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
+
+# Change binary response matrix to word response matrix
+charmat <- bin2resp(clean$binary)
 
 }
 \author{

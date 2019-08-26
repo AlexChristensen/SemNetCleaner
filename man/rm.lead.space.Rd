@@ -17,10 +17,10 @@ Word without leading spaces
 Removes leading spaces that are not caught by \code{\link{trimws}}
 }
 \examples{
-#'trimws' should remove lead space but doesn't
+# 'trimws' should remove lead space but doesn't
 trimws(lead.word)
 
-#'rm.lead.space' does
+# 'rm.lead.space' does
 rm.lead.space(lead.word)
 
 }

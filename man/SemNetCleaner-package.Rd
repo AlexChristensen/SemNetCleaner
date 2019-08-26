@@ -6,9 +6,10 @@
 \alias{SemNetCleaner-package}
 \title{SemNetCleaner--package}
 \description{
-Implements several functions that automatize the cleaning, removal of plurals and
-continuous strings, making the data binary. Also converges and finalizes linguistic
-data for semantic network analysis. Uses the \code{\link{SemNetDictionaries}} package to make
+Implements several functions that automates the cleaning and
+spell-checking of text data. Also converges, finalizes, removes plurals and
+continuous strings, and puts text data in binary format for semantic network analysis.
+Uses the \code{\link{SemNetDictionaries}} package to make
 the cleaning process more accurate, efficient, and reproducible.
 }
 \seealso{

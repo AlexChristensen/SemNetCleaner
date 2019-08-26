@@ -31,13 +31,11 @@ A wrapper function for spell-checking
 (ensures next word does not belong to the previous)
 }
 \examples{
-#create long word vector
+# Create long word vector
 words <- "bombay opossum guinea pig horse cow"
 
-\dontrun{
-
-splitstr.check(string = words, split = " ", dictionary = SemNetDictionaries::animals.dictionary)
-}
+if(interactive())
+{splitstr.check(string = words, split = " ", dictionary = SemNetDictionaries::animals.dictionary)}
 
 }
 \author{

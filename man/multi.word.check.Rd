@@ -25,23 +25,22 @@ automatically output as best guess responses, which are then passed through
 that is within or below the distance tolerance, then these will be provided as potential
 options.
 
-The recommended and default distance tolerace is \code{tolerance = 1},
+The recommended and default distance tolerance is \code{tolerance = 1},
 which only spell corrects a word if there is only one word with a DL distance of 1.}
 }
 \value{
-Either a spell-correctd response or the original response
+Either a spell-corrected response or the original response
 }
 \description{
 A wrapper function to spell-check responses
 that have more than one word in them
 }
 \examples{
-#returns "guinea pig"
-multi.word.check("guinea big", SemNetDictionaries::load.dictionaries("animals"), tolerance = 1)
+# Returns "guinea pig"
+multi.word.check("guinea big", SemNetDictionaries::animals.dictionary, tolerance = 1)
 
-#returns original response
-multi.word.check("cat dog bear fish bull",
-SemNetDictionaries::load.dictionaries("animals"), tolerance = 1)
+# Returns original response
+multi.word.check("cat dog bear fish bull", SemNetDictionaries::animals.dictionary, tolerance = 1)
 
 }
 \author{

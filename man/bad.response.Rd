@@ -22,16 +22,16 @@ A wrapper function to determine whether responses are good or bad.
 Bad responses are replaced with missing (\code{NA}). Good responses are returned.
 }
 \examples{
-#bad response
+# Bad response
 bad.response(word = " ")
 
-#good response
+# Good response
 bad.response(word = "hello")
 
-#make a good response bad
+# Make a good response bad
 bad.response(word = "hello","hello")
 
-#add additional bad responses
+# Add additional bad responses
 bad.response(word = "hello", c("hello","world"))
 
 }

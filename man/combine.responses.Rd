@@ -21,7 +21,7 @@ A wrapper function to combine words that are found in dictionary
 (e.g., "star" "fish" --> "starfish")
 }
 \examples{
-#convert "star fish" to "starfish"
+# Convert "star fish" to "starfish"
 combine.responses("star fish", SemNetDictionaries::animals.dictionary)
 
 }

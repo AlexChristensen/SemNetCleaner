@@ -2,7 +2,7 @@
 % Please edit documentation in R/full.match.R
 \name{full.match}
 \alias{full.match}
-\title{Wrapper Match Fucntion}
+\title{Wrapper Match Function}
 \usage{
 full.match(vec1, vec2)
 }
@@ -24,14 +24,14 @@ the same operations as match except accounts for
 \code{NA}
 }
 \examples{
-#vector 1
+# Vector 1
 vec1 <- c(NA,NA,"cat","dog",NA,0,"porcupine")
 
-#vector 2
+# Vector 2
 vec2 <- c(NA,"bob","alice","dog","prince",0,NA)
 
-#perform match
-full.match(vec1,vec2)
+# Perform match
+full.match(vec1, vec2)
 
 }
 \author{

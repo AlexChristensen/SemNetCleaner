@@ -27,7 +27,7 @@ proclamation that more than 80% of all human misspellings can be expressed by a 
 that is within or below the distance tolerance, then these will be provided as potential
 options.
 
-The recommended and default distance tolerace is \code{tolerance = 1},
+The recommended and default distance tolerance is \code{tolerance = 1},
 which only spell corrects a word if there is only one word with a DL distance of 1.}
 }
 \value{
@@ -42,7 +42,7 @@ is used to guide inferences into what word the participant was trying to spell f
 (see \code{\link{SemNetDictionaries}})
 }
 \examples{
-#misspelled "bombay"
+# Misspelled "bombay"
 best.guess("bomba", SemNetDictionaries::animals.dictionary)
 
 }
@@ -50,7 +50,6 @@ best.guess("bomba", SemNetDictionaries::animals.dictionary)
 Damerau, F. J. (1964).
 A technique for computer detection and correction of spelling errors.
 \emph{Communications of the ACM}, \emph{7}, 171-176.
-doi:\href{https://doi.org/10.1145/363958.363994}{10.1145/363958.363994}
 }
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>

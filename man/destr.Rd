@@ -7,7 +7,7 @@
 destr(rmat, column, sep)
 }
 \arguments{
-\item{rmat}{A semnetcleaner filtered response matrix}
+\item{rmat}{A \link[SemNetCleaner]{textcleaner} filtered response matrix}
 
 \item{column}{The column number or name of the stringed response}
 
@@ -30,14 +30,21 @@ This can be used to replicate the de-stringing process and to keep track of chan
 De-string responses after performing \link[SemNetCleaner]{textcleaner}
 }
 \examples{
-#create example stringed responses
-stringed <- cbind(rowSums(cbind(rmat[,c(1,2)])),convmat)
+# Toy example
+raw <- open.animals[c(1:10),-c(1:3)]
 
-#change name to stringed name
-colnames(stringed)[1] <- "alligator.ant"
+# Clean and prepocess data
+clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 
-#de-string
-convmat <- destr(stringed, 1, ".")
+# Obtain binary data
+bin <- clean$binary
+
+# Change column name as an example
+colnames(bin)[1] <- "alpaca.ant.antelope"
+
+# De-string
+if(interactive())
+{convmat <- destr(bin, "alpaca.ant.antelope", ".")}
 
 }
 \author{

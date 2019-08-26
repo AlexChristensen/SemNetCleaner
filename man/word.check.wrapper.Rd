@@ -4,7 +4,8 @@
 \alias{word.check.wrapper}
 \title{A Spell-checking wrapper}
 \usage{
-word.check.wrapper(word, dictionary, context = NULL, tolerance = 1)
+word.check.wrapper(word, dictionary, context = NULL, part.resp,
+  tolerance = 1, rem.resp)
 }
 \arguments{
 \item{word}{Character.
@@ -23,6 +24,9 @@ can be input to determine if "guinea pig" or "guinea fowl" is meant by the
 participant. The word that is being checked will appear with "<<" and ">>" around
 it in the context of other words (e.g., \code{bat dog fish <<guinea>> pig rat horse})}
 
+\item{part.resp}{Matrix or data frame.
+Uncleaned participant response matrix}
+
 \item{tolerance}{Numeric.
 The distance tolerance set for automatic spell-correction purposes.
 This function uses the function \code{\link[stringdist]{stringdist}}
@@ -35,11 +39,30 @@ automatically output as best guess responses, which are then passed through
 that is within or below the distance tolerance, then these will be provided as potential
 options.
 
-The recommended and default distance tolerace is \code{tolerance = 1},
+The recommended and default distance tolerance is \code{tolerance = 1},
 which only spell corrects a word if there is only one word with a DL distance of 1.}
+
+\item{rem.resp}{Matrix.
+Keeps track of decisions made in the cleaning process}
 }
 \value{
+A list containing:
+
+\item{word}{The spelling corrected word}
+
+\item{dictionary}{The updated dictionary}
+
+\item{check}{A check for whether a word has been added to the dictionary}
+
+\item{rem.resp}{A matrix to remember previous responses for spelling corrections}
+}
+\description{
+A wrapper function to spell-check with menu options
+}
+\details{
 A menu will appear with several options. Here is what is returned with each option:
+
+\itemize{
 
 \item{POTENTIAL RESPONSE}{If a potential response is selected,
 then the input word is replaced with the potential response}
@@ -54,33 +77,33 @@ they would like to add the word to their appendix dictionary
 (see \code{\link[SemNetDictionaries]{append.dictionary}}).
 In all cases, the typed word will be returned}
 
+\item{CONTEXT}{Provides the response in context of the participant's
+other responses. Prints the all participants responses that were given
+with the target response}
+
 \item{GOOGLE IT}{"Googles" the response in question.
 A browser will open with the Google search terms: define "RESPONSE"}
 
 \item{BAD RESPONSE}{When selected, \code{NA} will be returned}
 
-\item{BAD STRING}{When selected, a vector of \code{NA} the length of the
+\item{SKIP}{When selected, input word will be returned}
+
+\item{BAD STRING}{Unique to continuous strings.
+When selected, a vector of \code{NA} the length of the
 \code{context} vector will be returned}
 
-\item{SKIP}{When selected, input word will be returned}
+\item{CONTEXT}{Unique to single responses.
+Provides the response in context of the participant's
+other responses. Prints the all participants responses that were given
+with the target response}
+
 }
-\description{
-A wrapper function to spell-check with menu options
 }
 \examples{
-#word to check
-word <- "goat"
-
-\dontrun{
-
-#good response, should be SKIP or "goat"
-word.check.wrapper(word, SemNetDictionaries::animals.dictionary)
-
-#response needs to be checked
-word.check.wrapper("gost", SemNetDictionaries::animals.dictionary)
-
-#word in context
-word.check.wrapper("guinea",SemNetDictionaries::animals.dictionary, c("bat fish guinea pig rat")
+if(interactive())
+{
+    # Response needs to be checked
+    word.check.wrapper("gost", SemNetDictionaries::animals.dictionary)
 }
 
 }

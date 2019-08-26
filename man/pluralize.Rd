@@ -20,23 +20,14 @@ are based on the grammar rules found here:
 This function does not handle special cases, so particular care is necessary.
 }
 \examples{
-"dog"
-trial[1,1]
-
 "dogs"
-pluralize(trial[1,1])
-
-"fox"
-trial[15,1]
+pluralize("dog")
 
 "foxes"
-pluralize(trial[15,1])
-
-"wolf"
-trial[14,2]
+pluralize("fox")
 
 "wolves"
-pluralize(trial[14,2])
+pluralize("wolf")
 
 "octopi"
 pluralize("octopus")

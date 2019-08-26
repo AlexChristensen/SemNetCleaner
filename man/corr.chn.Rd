@@ -4,14 +4,19 @@
 \alias{corr.chn}
 \title{Correct Changes from \code{\link[SemNetCleaner]{textcleaner}}}
 \usage{
-corr.chn(txt.cln.obj, old)
+corr.chn(textcleaner.obj, dictionary = NULL, old)
 }
 \arguments{
-\item{txt.cln.obj}{A \code{\link[SemNetCleaner]{textcleaner}} object}
+\item{textcleaner.obj}{A \code{\link[SemNetCleaner]{textcleaner}} object}
+
+\item{dictionary}{Character vector.
+Can be a vector of a corpus or any text for comparison.
+Dictionary to be used for more efficient text cleaning.
+Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}}
 
 \item{old}{Character vector.
 A vector of old response(s) to change.
-See the object \code{spellcheck$unique} in
+See the object \code{spellcheck$auto} in
 \code{\link[SemNetCleaner]{textcleaner}} output}
 }
 \value{
@@ -26,21 +31,43 @@ and a response that a participant has not provided is a '\code{0}'}
 \item{resposnes}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 This can be used as a final dataset for analyses (e.g., fluency of responses)}
 
-\item{spellcheck}{A list containing two objects: \code{full} and \code{unique}. \code{full} contains
-all responses regardless of spellcheck changes and \code{unique} contains only responses that were
-changed during the spell-check}
+\item{spellcheck}{A list containing three objects:
 
-\item{removed}{A list containing two objects: \code{rows} and \code{ids}.
-\code{rows} identifies removed participants by their row (or column) location in the original data file
-and \code{ids} identifies removed participants by their ID (see argument \code{data}
-in \code{\link[SemNetCleaner]{textcleaner}})}
+\itemize{
 
-\item{partChanges}{A list where each participant is an object with their
-responses that have been changed. Participants are identified by their ID
-(see argument \code{data} in \code{\link[SemNetCleaner]{textcleaner}}).
-This can be used to replicate the cleaning process and to keep track of changes more generaly.
-Participants with \code{NA} did not have any changes from the original data
-and participants with \code{NULL} were removed due to missing data (see \code{removed$ids})}
+\item{\code{full}}
+{All responses regardless of spell-checking changes}
+
+\item{\code{unique}}
+{Only responses that were changed during spell-check (includes
+correct responses that were changed to singular form and lower case)}
+
+\item{\code{auto}}
+{Only the incorrect responses that were changed during spell-check}
+
+}
+
+}
+
+\item{removed}{A list containing two objects: 
+
+\itemize{
+
+\item{\code{rows}}
+{Identifies removed participants by their row (or column) location in the original data file}
+
+\item{\code{ids}}
+{Identifies removed participants by their ID (see argument \code{data}}
+
+}
+
+}
+
+\item{partChanges}{A list where each participant is a list index with each
+response that was been changed. Participants are identified by their ID (see argument \code{data}).
+This can be used to replicate the cleaning process and to keep track of changes more generally.
+Participants with \code{NA} did not have any changes from their original data
+and participants with missing data are removed (see \code{removed$ids})}
 }
 \description{
 Allows corrections to changes made by \code{\link[SemNetCleaner]{textcleaner}}.
@@ -78,15 +105,15 @@ A browser will open with the Google search terms: define "RESPONSE"}
 }
 }
 \examples{
-#load data
-dat <- trial
+# Toy example
+raw <- open.animals[c(1:10),-c(1:3)]
 
-\dontrun{
+# Clean and prepocess data
+clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 
-tc.obj <- textcleaner(dat, partBY = "col")
-
-rmat <- corr.chn (tc.obj, "rat")
-}
+# Correct changes
+if(interactive())
+{corr.clean <- corr.chn (clean, old = "rat", dictionary = "animals")}
 
 }
 \author{

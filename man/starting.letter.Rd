@@ -17,11 +17,14 @@ A wrapper function designed to produce the first
 letter that appears in a word, regardless of leading characters
 }
 \examples{
-#first letter is "w"
+# First letter is "w"
 starting.letter("..walrus")
 
-#first letter is "r"
+# First letter is "r"
 starting.letter("5rat")
+
+# First letter is "b"
+starting.letter("\%1.,bombay")
 
 }
 \author{

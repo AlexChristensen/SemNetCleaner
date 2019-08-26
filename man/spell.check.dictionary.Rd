@@ -4,7 +4,7 @@
 \alias{spell.check.dictionary}
 \title{Spelling-check using \link{SemNetDictionaries}}
 \usage{
-spell.check.dictionary(check, dictionary, tolerance = 1)
+spell.check.dictionary(check, dictionary, part.resp, tolerance = 1)
 }
 \arguments{
 \item{check}{Character vector.
@@ -12,6 +12,9 @@ A vector of unique responses from text data}
 
 \item{dictionary}{Character vector.
 See \code{\link{SemNetDictionaries}}}
+
+\item{part.resp}{Matrix or data frame.
+Uncleaned participant response matrix}
 
 \item{tolerance}{Numeric.
 The distance tolerance set for automatic spell-correction purposes.
@@ -25,29 +28,36 @@ automatically output as best guess responses, which are then passed through
 that is within or below the distance tolerance, then these will be provided as potential
 options.
 
-The recommended and default distance tolerace is \code{tolerance = 1},
+The recommended and default distance tolerance is \code{tolerance = 1},
 which only spell corrects a word if there is only one word with a DL distance of 1.}
 }
 \value{
 Returns a list containing:
 
-\item{resp}{A vector of cleaned responses}
+\item{from}{A list of all responses before they were cleaned}
+
+\item{to}{A list of all responses after they were cleaned}
 
 \item{dict}{The updated dictionary vector}
+
+\item{from.inc}{A list of only incorrect responses before they were cleaned}
+
+\item{to.inc}{A list of only incorrect responses after they were cleaned}
 }
 \description{
 A wrapper function for spell-checking text dictionaries in \code{\link{SemNetDictionaries}}
 (combines all spell-checking wrapper functions)
 }
 \examples{
-#load trial data
-dat <- unique(unlist(as.data.frame(trial)))
+# Toy example
+raw <- open.animals[c(1:10),-c(1:3)]
 
-\dontrun{
-
-scd <- spell.check.dictionary(dat, SemNetDictionaries::animals.dictionary)
+if(interactive())
+{
+    scd <- spell.check.dictionary(check = unique(unlist(raw)),
+    dictionary = SemNetDictionaries::animals.dictionary,
+    part.resp = raw) 
 }
-
 
 }
 \author{

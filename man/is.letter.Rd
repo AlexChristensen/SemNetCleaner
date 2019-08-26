@@ -18,13 +18,13 @@ A wrapper function designed to determine whether
 a single character is a letter
 }
 \examples{
-#TRUE
+# TRUE
 is.letter("r")
 
-#FALSE
+# FALSE
 is.letter("5")
 
-#FALSE
+# FALSE
 is.letter("~")
 
 }

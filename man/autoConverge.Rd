@@ -7,7 +7,7 @@
 autoConverge(rmat)
 }
 \arguments{
-\item{rmat}{Binary matrix.
+\item{rmat}{Binary response matrix.
 A \code{\link[SemNetCleaner]{textcleaner}} filtered response matrix}
 }
 \value{
@@ -33,16 +33,18 @@ like responses (e.g., "roaches" with "cockroaches")
 into one singular function.
 }
 \examples{
-rmat <- rmat
+# Toy example
+raw <- open.animals[c(1:10),-c(1:3)]
 
-\dontrun{
+# Clean and prepocess data
+clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 
-#text cleaned
-clean <- textcleaner(rmat)
+# Obtain binary data
+bin <- clean$binary
 
-#Automated converge
-convmat <- autoConverge(clean)
-}
+# Automated converge
+if(interactive())
+{convmat <- autoConverge(bin)}
 
 }
 \author{

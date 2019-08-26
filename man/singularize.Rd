@@ -18,7 +18,8 @@ function is very basic and does not have many rules. The function
 simply removes '-s' or '-es' from words.
 }
 \examples{
-singularize(trial[1,10])
+"fox"
+singularize("foxes")
 
 }
 \author{
