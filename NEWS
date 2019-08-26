@@ -1,6 +1,46 @@
+Changes in version 1.1.1
+
+o 'equate' now handles any number of groups ('equate.multi' is defunct and merged into 'equate')
+
+o added a group variable for the dataset 'open.animals'
+
+o removed option to save appendix dictionary to package (not allowed by CRAN policies)
+
+
+Changes in version 1.1.0
+
+o cleaned up examples and removed unnecessary datasets ('convmat', 'rmat', and 'trial')
+
+o updated 'spell.check.dictionary' to automate continuous string selection when continuous response length is greater than maximum continuous string length in dictionary
+
+o changed output to have quotes around words being asked to add into dictionary to decipher whether they are a string or separate words
+
+o updated 'splitstr.check' so responses are not repeated after they've been corrected. Also no longer asks to split responses that are in the dictionary (splits them automatically)
+
+o updated 'word.check.wrapper' so that 10 responses are always given if the original response is not auto-corrected
+
+o added additional nested list called 'auto' to spellcheck object in 'textcleaner' and 'corr.chn' functions, which includes only the incorrect responses changed during the spell-check
+
+o fixed save dictionary bug in 'spell.check.dictionary'
+
+o added a response option called, 'CONTEXT' to the 'word.check.wrapper' function to give greater context around a participant's response
+
+o added third auto-correct function using 'hunspell_suggest' function to the 'word.check.wrapper' function
+
+o updated functionality of code -- improved speed of several lines in 'textcleaner' and 'spell.check.dictionary'
+
+o fixed multi-word bug in 'spell.check.dictionary'
+
+
 Changes in version 1.0.0
 
-o Algorithm for 'best.guess' was changed to Damerau-Levenshtein distance
+o fixed bug in 'rm.lead.space' for Linux
+
+o updated 'textcleaner' to default to 'general.dictionary' when no dictionary is specified
+
+o updated citation
+
+o algorithm for 'best.guess' was changed to Damerau-Levenshtein distance
 
 o 'corr.chn' function code was cleaned up and streamlined
 
@@ -11,6 +51,7 @@ o 'animals.misnomer' was removed
 o 'textcleaner' function code was cleaned up and streamlined. Integrated functionality with the 'SemNetDicationaries' package
 
 o 'autoConverge' function code was cleaned up and streamlined
+
 
 Changes in version 0.9.9
 
