@@ -23,9 +23,9 @@
 #' @param dictionary Character vector.
 #' Can be a vector of a corpus or any text for comparison.
 #' Dictionary to be used for more efficient text cleaning.
-#' Defaults to \code{NULL}, which will use \code{\link[qdapDictionaries]{qdapDictionaries}}.
+#' Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}
 #' 
-#' Use \code{dictionaries()} and \code{extra.dictionaries()} for more options
+#' Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 #' (See \code{\link{SemNetDictionaries}} for more details)
 #' 
 #' @param tolerance Numeric.
@@ -40,7 +40,7 @@
 #' that is within or below the distance tolerance, then these will be provided as potential
 #' options.
 #' 
-#' The recommended and default distance tolerace is \code{tolerance = 1},
+#' The recommended and default distance tolerance is \code{tolerance = 1},
 #' which only spell corrects a word if there is only one word with a DL distance of 1. 
 #' 
 #' @details When working through the menu options in \code{\link[SemNetCleaner]{textcleaner}},
@@ -68,30 +68,68 @@
 #' and each column represents a unique response. A response that a participant has provided is a '\code{1}'
 #' and a response that a participant has not provided is a '\code{0}'}
 #'
-#' \item{resposnes}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
+#' \item{responses}{A list containing two objects:
+#' 
+#' \itemize{
+#' 
+#' \item{clean.resp}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 #' This can be used as a final dataset for analyses (e.g., fluency of responses)}
 #' 
-#' \item{spellcheck}{A list containing two objects: \code{full} and \code{unique}. \code{full} contains
-#' all responses regardless of spellcheck changes and \code{unique} contains only responses that were
-#' changed during the spell-check}
+#' \item{orig.resp}{The original response matrix that has had white spaces before and
+#' after words response. Also converts all upper-case letters to lower case}
 #' 
-#' \item{removed}{A list containing two objects: \code{rows} and \code{ids}.
-#' \code{rows} identifies removed participants by their row (or column) location in the original data file
-#' and \code{ids} identifies removed participants by their ID (see argument \code{data})}
+#' }
+#' 
+#' }
+#'
+#' \item{spellcheck}{A list containing three objects:
+#' 
+#' \itemize{
+#' 
+#' \item{\code{full}}
+#' {All responses regardless of spell-checking changes}
+#' 
+#' \item{\code{unique}}
+#' {Only responses that were changed during spell-check (includes
+#' correct responses that were changed to singular form and lower case)}
+#' 
+#' \item{\code{auto}}
+#' {Only the incorrect responses that were changed during spell-check}
+#' 
+#' }
+#' 
+#' }
+#' 
+#' \item{removed}{A list containing two objects: 
+#' 
+#' \itemize{
+#' 
+#' \item{\code{rows}}
+#' {Identifies removed participants by their row (or column) location in the original data file}
+#' 
+#' \item{\code{ids}}
+#' {Identifies removed participants by their ID (see argument \code{data}}
+#' 
+#' }
+#' 
+#' }
 #' 
 #' \item{partChanges}{A list where each participant is a list index with each
 #' response that was been changed. Participants are identified by their ID (see argument \code{data}).
-#' This can be used to replicate the cleaning process and to keep track of changes more generaly.
+#' This can be used to replicate the cleaning process and to keep track of changes more generally.
 #' Participants with \code{NA} did not have any changes from their original data
 #' and participants with missing data are removed (see \code{removed$ids})}
 #' 
 #' @examples
-#' #load trial data
-#' data <- trial
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' \dontrun{
-#' 
-#' rmat <- textcleaner(data, partBY = "col")
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
+#' if(interactive())
+#' {
+#'     #Full test
+#'     clean <- textcleaner(open.animals[,-c(1,2)], partBY = "row", dictionary = "animals")
 #' }
 #' 
 #' @references 
@@ -113,19 +151,10 @@ textcleaner <- function(data, miss = 99,
 {
     #grab column names
     col.names <- colnames(data)
-  
-    #make sure data is a data.frame
-    data <- as.data.frame(data, stringsAsFactors = FALSE)
     
     #remove white space
     data <- apply(data,2,trimws)
-    
-    #convert missing value to NA
-    for(i in 1:nrow(data))
-        for(j in 1:ncol(data))
-            if(is.na(data[i,j])){next
-                }else if(data[i,j]==miss){data[i,j]<-NA} 
-    
+  
     #make participants by row
     if(partBY=="col")
     {data <- t(data)}
@@ -143,6 +172,11 @@ textcleaner <- function(data, miss = 99,
         message(paste("IDs refer to variable:"," '",col.names[id.col],"'",sep=""))
         #remove unique identifier from data
         data <- data[,-id.col]
+      }else{
+        #make row ids
+        ids <- 1:nrow(data)
+        #let user know what IDs refer to
+        message("IDs refer to row number")
       }
     }else{
       #make row ids
@@ -151,32 +185,35 @@ textcleaner <- function(data, miss = 99,
       message("IDs refer to row number")
     }
     
-    #ensure data is a data frame for unlist
-    data <- data.frame(data,stringsAsFactors = FALSE)
+    #add row names to the data
+    row.names(data) <- ids
     
+    #convert missing value to NA
+    mat.dat <- as.matrix(data)
+    mat.dat <- ifelse(mat.dat==paste(miss),NA,mat.dat)
+  
     #remove miscellaneous string additions from data
-    for(i in 1:nrow(data))
-        for(j in 1:ncol(data))
-            {
-                #remove punctuations
-                data[i,j] <- gsub("[[:punct:]]", "", data[i,j])
-                
-                #remove numbers
-                data[i,j] <- gsub("[[:digit:]]+", "", data[i,j])
-            }
+    mat.dat <- apply(mat.dat, 1:2, function(y) gsub(pattern="[[:punct:]]",replacement="",x=y))
+    mat.dat <- apply(mat.dat, 1:2, function(y) gsub(pattern="[[:digit:]]",replacement="",x=y))
+
+    #remove bad responses
+    data <- apply(mat.dat,1:2,bad.response)
+    #make trim white space again
+    data <- apply(apply(data,2,trimws),1:2,rm.lead.space)
+    #and make all lower case
+    data <- apply(data,2,tolower)
     
-    #initialize duplicate data matrix (used later on in line 190)
+    #create duplicate for later
+    data <- as.data.frame(data, stringsAsFactors = FALSE)
     duplicate <- data
     
-    #make all lower case and initialize vector for spell-check
-    check <- tolower(unlist(data))
-    
-    #trim white space again
-    check <- trimws(check)
-    check <- unlist(lapply(check,rm.lead.space))
+    #change NAs in data to ""
+    data <- as.matrix(data)
+    data <- ifelse(is.na(data),"",data)
+    data <- as.data.frame(data, stringsAsFactors = FALSE)
     
     #unique responses for efficient spell-checking
-    check <- unique(check)
+    check <- unique(unlist(data))
     
     #############################
     #### MAIN FUNCTION BEGIN ####
@@ -185,47 +222,37 @@ textcleaner <- function(data, miss = 99,
     #perform spell-check
     if(is.null(dictionary))
     {
-        #if no dictionary, then default to qdap dictionaries
-        spell.check <- qdap::check_spelling_interactive(check)
-        
-        #initialize 'from' and 'to' list for changes
-        from <- list()
-        to <- list()
-        
-        for(i in 1:length(check))
-        {
-            #original response
-            from[[i]] <- check[i]
-            
-            #changed response
-            #breaks continuous strings into
-            #vector of word parts
-            #e.g., "fox dog cat bear"
-            # --> c("fox","dog","cat","bear")
-            to[[i]] <- spell.check[i]
-        }
-        
+      #if no dictionary specified, then use general dictionary
+      spell.check <- spell.check.dictionary(check, dictionary = "general",
+                                            part.resp = duplicate, tolerance = tolerance)
+      
     }else{
-        
-        #if dictionaries, then perform in-house spell-check
-        spell.check <- spell.check.dictionary(check,dictionary)
-        
-        #separate 'from' and 'to' change lists
-        from <- spell.check$from
-        to <- spell.check$to
+      #if dictionaries, then perform in-house spell-check
+      spell.check <- spell.check.dictionary(check, dictionary,
+                                            part.resp = duplicate, tolerance = tolerance)
     }
+    
+    #separate 'from' and 'to' change lists
+    from <- spell.check$from
+    to <- spell.check$to
+    from.inc <- spell.check$from.inc
+    to.inc <- spell.check$to.inc
     
     #############################
     ##### MAIN FUNCTION END #####
     #############################
     
+    #let user know that data is being preprocessed
+    message("Preprocessing your data...")
     
     #make into matrix
     #get maximum columns from 'to'
     max.to <-  max(unlist(lapply(to,length)))
+    max.to.inc <-  max(unlist(lapply(to.inc,length)))
     
-    #initialize combination matrix
+    #initialize combination matrices
     comb.mat <- matrix(NA,nrow=length(from),ncol=(1+max.to))
+    comb.mat.inc <- matrix(NA,nrow=length(from.inc),ncol=(1+max.to.inc))
     
     #populate comb.mat
     for(i in 1:length(from))
@@ -237,22 +264,38 @@ textcleaner <- function(data, miss = 99,
         comb.mat[i,2:(1+length(to[[i]]))] <- bad.response(to[[i]])
     }
     
+    #populate comb.mat
+    for(i in 1:length(from.inc))
+    {
+      #place original response in first column
+      comb.mat.inc[i,1] <- from.inc[[i]]
+      
+      #fill 
+      comb.mat.inc[i,2:(1+length(to.inc[[i]]))] <- bad.response(to.inc[[i]])
+    }
+    
     colnames(comb.mat) <- c("from",rep("to",max.to))
+    colnames(comb.mat.inc) <- c("from",rep("to",max.to.inc))
     
     #initialize spellcheck list
     spellcheck <- list()
     
     #initialize unique changes matrix
     uniqcomb <- ifelse(is.na(comb.mat),"",comb.mat)
+    uniqcomb.inc <- ifelse(is.na(comb.mat.inc),"",comb.mat.inc)
   
     #full list of changed and unchanged responses
     spellcheck$full <- as.data.frame(uniqcomb,stringsAsFactors = FALSE)
     
     #check for rows that need to be removed
     rm.rows <- full.match(uniqcomb[,1],uniqcomb[,2])
+    rm.rows.inc <- full.match(uniqcomb.inc[,1],uniqcomb.inc[,2])
     
     #unique list of changed and unchanged responses
     spellcheck$unique <- as.data.frame(uniqcomb[-which(rm.rows),],stringsAsFactors = FALSE)
+    
+    #unique list of spell-checked responses
+    spellcheck$auto <- as.data.frame(uniqcomb.inc[-which(rm.rows.inc),],stringsAsFactors = FALSE)
     
     #replace incorrectly spelled responses in duplicate matrix
     #change duplicate to matrix
@@ -351,70 +394,71 @@ textcleaner <- function(data, miss = 99,
       row.names(bin.mat) <- ids
       removed$rows <- NA
       removed$ids <- NA
-      }
+  }
   
-  #changed responses
-  chnByPart <- list()
-  for(i in 1:nrow(bin.mat))
+  #changes by participant
+  ##initialize participant lists
+  chnByPart <- vector("list", length = length(ids))
+  names(chnByPart) <- ids
+  
+  for(i in 1:length(ids))
   {
-      target <- which(row.names(bin.mat)[i]==ids)
-      u.vec <- unlist(data[target,])
-      c.vec <- colnames(bin.mat)[which(bin.mat[i,]==1)]
+    # Target diff
+    target.diff <- unlist(setdiff(data[i,],duplicate[i,]))
+    
+    if(length(target.diff)!=0)
+    {
+      # Change matrix
+      chn <- matrix(NA, nrow = length(target.diff), ncol = max.to + 1)
+      colnames(chn) <- c("from",rep("to", max.to))
       
-      if(!is.na(any(u.vec == "")))
-      {u.vec[which(u.vec == "")] <- NA}
+      # Insert old responses
+      chn[,"from"] <- target.diff
       
-      u.vec <- na.omit(u.vec)
-      
-      diff <- setdiff(u.vec,c.vec)
-      
-      if(length(diff)!=0)
+      # Insert corrections
+      for(k in 1:length(target.diff))
       {
-          chn <- matrix("",nrow=length(diff),ncol=max.to+1)
-          
-          for(j in 1:length(diff))
-          {
-              chn[j,1] <- na.omit(diff[j])
-              target <- na.omit(comb.mat[which(tolower(diff[j])==comb.mat[,1]),-1])
-              
-              if(length(target)==0)
-              {chn[j,2] <- NA
-              }else{chn[j,2:(length(target)+1)] <- target}
-          }
-          
-          colnames(chn) <- c("from",rep("to",max.to))
-          
-          #initialize remove column
-          rm.col <- vector(length=ncol(chn))
-          
-          for(k in 1:ncol(chn))
-          {rm.col[k] <- all(chn[,k]=="")}
-          
-          rm.col <- na.omit(rm.col)
-          
-          #remove "" in change columns
-          if(any(rm.col))
-          {chn <- chn[,-which(rm.col)]}
-          
-      }else{chn <- NA}
+        # Target old response in changes
+        old.target <- which(spellcheck$unique[,"from"]==target.diff[k])
+        
+        # New response
+        new.resp <- as.matrix(bad.response(spellcheck$unique[old.target,2:max.to]))
+        
+        # Insert into changes
+        chn[k,2:max.to] <- new.resp
+      }
       
-      val <- as.matrix(setdiff(ids,removed$ids)[i])
+      # Put into participant changes
+      chnByPart[[i]] <- chn
       
-      chnByPart[[val]] <- as.data.frame(chn,stringsAsFactors = FALSE)
+    }else{chnByPart[[i]] <- NA}
+    
   }
   
-  #change ids in chnByPart to names
-  if(is.numeric(ids))
+  #remove NAs in columns function
+  na.col <- function (df)
   {
-    names(chnByPart) <- seq_along(chnByPart)
-    chnByPart[sapply(chnByPart, is.null)] <- NULL
+    if(any(!is.na(df)))
+    {df <- df[,colSums(is.na(df))<nrow(df)]
+    }else{df <- NA}
+    
+    return(df)
   }
+  
+  # Remove NA columns
+  chnByPart <- lapply(chnByPart,na.col)
+  
+  
+  #responses list
+  responses <- list()
+  responses$clean <- duplicate #cleaned fluency matrix (with responses in the order given by the participant)
+  responses$orig <- data #original fluency matrix 
   
   #results
   results <- list(
       binary = bin.mat, #binary response matrix
-      responses = duplicate, #cleaned fluency matrix (with responses in the order given by the participant)
-      spellcheck = spellcheck, #the 'full' and 'unique' changes from the spell-check
+      responses = responses, #the cleaned and original responses
+      spellcheck = spellcheck, #the 'full', 'unique', and 'auto' changes from the spell-check
       removed = removed, #participants that were removed (because they had zero appropriate responses)
       partChanges = chnByPart #changes made to each participant
   )

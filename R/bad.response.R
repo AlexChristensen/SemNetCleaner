@@ -12,16 +12,16 @@
 #' If response is valid, then returns the response
 #' 
 #' @examples
-#' #bad response
+#' # Bad response
 #' bad.response(word = " ")
 #' 
-#' #good response
+#' # Good response
 #' bad.response(word = "hello")
 #' 
-#' #make a good response bad
+#' # Make a good response bad
 #' bad.response(word = "hello","hello")
 #' 
-#' #add additional bad responses
+#' # Add additional bad responses
 #' bad.response(word = "hello", c("hello","world"))
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>

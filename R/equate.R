@@ -1,54 +1,87 @@
-#' Equate Group Responses
-#' @description In general, this function serves as a wrapper for
-#' \code{\link[SemNetCleaner]{equate.multi}}. This function equates the
-#' responses between two binary response matrices (e.g., two groups)
-#' by only keeping the column names that match between both matrices.
+#' Equate Groups
+#' @description A function to "equate" to multiple response matrices.
+#' \emph{N} number of groups are matched based on their responses so
+#' that every group has the same responses in their data
 #' 
-#' @param rmatA Binary matrix.
-#' A \link[SemNetCleaner]{textcleaner} filtered response matrix
-#' for binary matrix A
+#' @param ... Matrices or data frames.
+#' Binary response matrices to be equated
 #' 
-#' @param rmatB Binary matrix. 
-#' A \link[SemNetCleaner]{textcleaner} filtered response matrix
-#' for binary matrix B
-#' 
-#' @return A list containing binary matrices that have matching column
-#' names (matching response):
-#' 
-#' \item{rmatA}{Binary matrix with matched responses for \code{rmatA}}
-#' 
-#' \item{rmatB}{Binary matrix with matched responses for \code{rmatB}}
+#' @return This function returns a list containing the
+#' equated binary response matrices in the order they were input.
+#' The response matrices are labeled as the object name they were
+#' entered with
 #' 
 #' @examples
-#' #finalize rmatA
-#' finalCmat <- finalize(convmat)
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' #finalize rmatB
-#' finalRmat <- finalize(rmat)
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
+#' 
+#' # Obtain binary data
+#' bin <- clean$binary
+#' 
+#' # Finalize mat1
+#' mat1 <- finalize(bin[c(1:5),])
+#' 
+#' # Finalize mat2
+#' mat2 <- finalize(bin[c(6:10),])
+#' 
 #'
-#' #equate rmatA and rmatB
-#' eq1 <- equate(finalCmat,finalRmat)
+#' # Equate mat1 and mat1
+#' eq <- equate(mat1, mat2)
 #' 
-#' #obtain respective equated response matrices
-#' eqCmat <- eq1$rmatA
-#' eqRmat <- eq1$rmatB
+#' # Obtain respective equated response matrices
+#' eq.mat1 <- eq$mat1
+#' eq.mat2 <- eq$mat2
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @export
-# Equate----
-equate <- function (rmatA, rmatB)
+equate <- function(...)
 {
-    while(length(colnames(rmatA))!=length(colnames(rmatB)))
+    # Equate function
+    equat <- function (rmatA, rmatB)
     {
-        if(length(colnames(rmatA))>=length(colnames(rmatB)))
-        {rmatA<-rmatA[,(!is.na(match(colnames(rmatA),colnames(rmatB))))]
-        }else if(length(colnames(rmatB))>=length(colnames(rmatA)))
-        {rmatB<-rmatB[,(!is.na(match(colnames(rmatB),colnames(rmatA))))]
-        }else if(all(match(colnames(rmatA),colnames(rmatB))))
-        {print("Responses match")}
+        while(length(colnames(rmatA))!=length(colnames(rmatB)))
+        {
+            if(length(colnames(rmatA))>=length(colnames(rmatB)))
+            {rmatA<-rmatA[,(!is.na(match(colnames(rmatA),colnames(rmatB))))]
+            }else if(length(colnames(rmatB))>=length(colnames(rmatA)))
+            {rmatB<-rmatB[,(!is.na(match(colnames(rmatB),colnames(rmatA))))]
+            }else if(all(match(colnames(rmatA),colnames(rmatB))))
+            {print("Responses match")}
+        }
+        
+        return(list(rmatA=rmatA,rmatB=rmatB))
     }
     
-    return(list(rmatA=rmatA,rmatB=rmatB))
+    name <- as.character(substitute(list(...)))
+    name <- name[-which(name=="list")]
+    
+    datalist <- list(...)
+    
+    len <- length(datalist)
+    
+    if(len>2)
+    {
+        first <- datalist[[1]]
+        eq <- equat(first,datalist[[2]])$rmatA
+        
+        for(i in 2:(len-1))
+        {eq <- equat(eq,datalist[[(i+1)]])$rmatA}
+        
+        finlist <- list()
+        
+        for(j in 1:len)
+        {finlist[[name[j]]] <- equat(eq,datalist[[j]])$rmatB}
+        
+    }else if(len==2)
+    {
+        finlist <- equat(datalist[[1]],datalist[[2]])
+        names(finlist) <- name
+    }else{stop("Must be at least two datasets as input")}
+    
+    return(finlist)
 }
 #----

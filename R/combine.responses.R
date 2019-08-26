@@ -11,7 +11,7 @@
 #' @return A vector with responses combined based on dictionary entries
 #' 
 #' @examples
-#' #convert "star fish" to "starfish"
+#' # Convert "star fish" to "starfish"
 #' combine.responses("star fish", SemNetDictionaries::animals.dictionary)
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>

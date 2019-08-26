@@ -7,11 +7,14 @@
 #' @return First letter in the string
 #' 
 #' @examples
-#' #first letter is "w"
+#' # First letter is "w"
 #' starting.letter("..walrus")
 #' 
-#' #first letter is "r"
+#' # First letter is "r"
 #' starting.letter("5rat")
+#' 
+#' # First letter is "b"
+#' starting.letter("%1.,bombay")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

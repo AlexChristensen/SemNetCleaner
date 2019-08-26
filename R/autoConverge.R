@@ -5,7 +5,7 @@
 #' like responses (e.g., "roaches" with "cockroaches")
 #' into one singular function.
 #' 
-#' @param rmat Binary matrix.
+#' @param rmat Binary response matrix.
 #' A \code{\link[SemNetCleaner]{textcleaner}} filtered response matrix
 #'
 #' @return A list containing four objects:
@@ -23,16 +23,18 @@
 #' \item{participant}{A list of each response with each participant affected}
 #' 
 #' @examples
-#' rmat <- rmat
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' \dontrun{
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 #' 
-#' #text cleaned
-#' clean <- textcleaner(rmat)
+#' # Obtain binary data
+#' bin <- clean$binary
 #' 
-#' #Automated converge
-#' convmat <- autoConverge(clean)
-#' }
+#' # Automated converge
+#' if(interactive())
+#' {convmat <- autoConverge(bin)}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

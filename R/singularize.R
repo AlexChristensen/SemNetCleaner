@@ -8,7 +8,8 @@
 #' @return Returns the word in singular form
 #' 
 #' @examples
-#' singularize(trial[1,10])
+#' "fox"
+#' singularize("foxes")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

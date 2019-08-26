@@ -6,18 +6,23 @@
 #' A \link[SemNetCleaner]{textcleaner} filtered response matrix
 #' 
 #' @param minCase Numeric.
-#' Minumum number of cases to produce a response
+#' Minimum number of cases to produce a response
 #' 
 #' @return A binary response matrix with responses
 #' given by at least \code{minCase} people
 #' 
 #' @examples
-#' \dontrun{
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' convmat <- autoConverge(rmat)
-#' }
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 #' 
-#' finalRmat <- finalize(convmat)
+#' # Obtain binary data
+#' bin <- clean$binary
+#' 
+#' # Finalize mat1
+#' mat1 <- finalize(bin)
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

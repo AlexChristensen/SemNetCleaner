@@ -8,13 +8,13 @@
 #' the character entered is a letter
 #' 
 #' @examples
-#' #TRUE
+#' # TRUE
 #' is.letter("r")
 #' 
-#' #FALSE
+#' # FALSE
 #' is.letter("5")
 #' 
-#' #FALSE
+#' # FALSE
 #' is.letter("~")
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>

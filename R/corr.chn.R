@@ -6,12 +6,17 @@
 #' This function will correct any changes made in a cleaned \code{\link[SemNetCleaner]{textcleaner}}
 #' object.
 #' 
-#' @param txt.cln.obj A \code{\link[SemNetCleaner]{textcleaner}} object
+#' @param textcleaner.obj A \code{\link[SemNetCleaner]{textcleaner}} object
 #' 
 #' @param old Character vector.
 #' A vector of old response(s) to change.
-#' See the object \code{spellcheck$unique} in
+#' See the object \code{spellcheck$auto} in
 #' \code{\link[SemNetCleaner]{textcleaner}} output
+#' 
+#' @param dictionary Character vector.
+#' Can be a vector of a corpus or any text for comparison.
+#' Dictionary to be used for more efficient text cleaning.
+#' Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}
 #' 
 #' @details This function is used to correct mistakes that occur
 #' in the cleaning process during \code{\link[SemNetCleaner]{textcleaner}}.
@@ -51,32 +56,54 @@
 #' \item{resposnes}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 #' This can be used as a final dataset for analyses (e.g., fluency of responses)}
 #' 
-#' \item{spellcheck}{A list containing two objects: \code{full} and \code{unique}. \code{full} contains
-#' all responses regardless of spellcheck changes and \code{unique} contains only responses that were
-#' changed during the spell-check}
+#' \item{spellcheck}{A list containing three objects:
 #' 
-#' \item{removed}{A list containing two objects: \code{rows} and \code{ids}.
-#' \code{rows} identifies removed participants by their row (or column) location in the original data file
-#' and \code{ids} identifies removed participants by their ID (see argument \code{data}
-#' in \code{\link[SemNetCleaner]{textcleaner}})}
+#' \itemize{
 #' 
-#' \item{partChanges}{A list where each participant is an object with their
-#' responses that have been changed. Participants are identified by their ID
-#' (see argument \code{data} in \code{\link[SemNetCleaner]{textcleaner}}).
-#' This can be used to replicate the cleaning process and to keep track of changes more generaly.
-#' Participants with \code{NA} did not have any changes from the original data
-#' and participants with \code{NULL} were removed due to missing data (see \code{removed$ids})}
+#' \item{\code{full}}
+#' {All responses regardless of spell-checking changes}
+#' 
+#' \item{\code{unique}}
+#' {Only responses that were changed during spell-check (includes
+#' correct responses that were changed to singular form and lower case)}
+#' 
+#' \item{\code{auto}}
+#' {Only the incorrect responses that were changed during spell-check}
+#' 
+#' }
+#' 
+#' }
+#' 
+#' \item{removed}{A list containing two objects: 
+#' 
+#' \itemize{
+#' 
+#' \item{\code{rows}}
+#' {Identifies removed participants by their row (or column) location in the original data file}
+#' 
+#' \item{\code{ids}}
+#' {Identifies removed participants by their ID (see argument \code{data}}
+#' 
+#' }
+#' 
+#' }
+#' 
+#' \item{partChanges}{A list where each participant is a list index with each
+#' response that was been changed. Participants are identified by their ID (see argument \code{data}).
+#' This can be used to replicate the cleaning process and to keep track of changes more generally.
+#' Participants with \code{NA} did not have any changes from their original data
+#' and participants with missing data are removed (see \code{removed$ids})}
 #' 
 #' @examples
-#' #load data
-#' dat <- trial
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' \dontrun{
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 #' 
-#' tc.obj <- textcleaner(dat, partBY = "col")
-#' 
-#' rmat <- corr.chn (tc.obj, "rat")
-#' }
+#' # Correct changes
+#' if(interactive())
+#' {corr.clean <- corr.chn (clean, old = "rat", dictionary = "animals")}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
@@ -84,16 +111,31 @@
 #' 
 #' @export
 #Correct Changes----
-corr.chn <- function(txt.cln.obj, old)
+corr.chn <- function(textcleaner.obj, dictionary = NULL, old)
 {
+    #Check for 'textcleaner' object
+    if(class(textcleaner.obj)!="textcleaner")
+    {stop("Must be a 'textcleaner' object")}
+    
+    #Grab dictionary
+    if(is.null(dictionary))
+    {full.dict <- SemNetDictionaries::load.dictionaries("general")
+    }else{full.dict <- SemNetDictionaries::load.dictionaries(dictionary)}
+    
     #Unique changes
-    uniq <- txt.cln.obj$spellcheck$unique
+    uniq <- textcleaner.obj$spellcheck$auto
     
     #Index old responses
     ind <- match(old,uniq$from)
     
+    check <- list()
+    
     for(i in 1:length(ind))
     {
+        #Potential responses
+        pot <- best.guess(old[i], full.dict)
+        
+        #Initialize answer
         ans <- 2
         
         while(ans == 2)
@@ -107,7 +149,7 @@ corr.chn <- function(txt.cln.obj, old)
             }else{cat("Old response: ",old[i],"\n","Changed response: ",chn,sep="")}
             
             #Ask for correction
-            ans <- menu(c("TYPE MY OWN","GOOGLE IT","BAD RESPONSE"), title = "\n\nPotential responses:")
+            ans <- menu(c("TYPE MY OWN","GOOGLE IT","BAD RESPONSE",pot), title = "\n\nPotential responses:")
             
             if(ans == 1) #TYPE MY OWN
             {
@@ -128,90 +170,167 @@ corr.chn <- function(txt.cln.obj, old)
         #Correct bad resposnes
         corr <- bad.response(corr)
         
-        #Change unique spelling changes
-        txt.cln.obj$spellcheck$unique[which(txt.cln.obj$spellcheck$unique[,"from"]==old[i]),2:(length(corr)+1)] <- corr
+        #Transfer 'spellcheck' list
+        spellcheck <- textcleaner.obj$spellcheck
+        
+        #Change auto spelling changes
+        spellcheck$auto[which(spellcheck$auto[,"from"]==old[i]),2:(length(corr)+1)] <- corr
         
         #Change NA to ""
-        if(any(is.na(txt.cln.obj$spellcheck$unique)))
-        {txt.cln.obj$spellcheck$unique[which(is.na(txt.cln.obj$spellcheck$unique),arr.ind=TRUE)] <- ""}
+        if(any(is.na(spellcheck$auto)))
+        {spellcheck$auto[which(is.na(spellcheck$auto),arr.ind=TRUE)] <- ""}
+        
+        #Change unique spelling changes
+        spellcheck$unique[which(spellcheck$unique[,"from"]==old[i]),2:(length(corr)+1)] <- corr
+        
+        #Change NA to ""
+        if(any(is.na(spellcheck$unique)))
+        {spellcheck$unique[which(is.na(spellcheck$unique),arr.ind=TRUE)] <- ""}
         
         #Change full spelling changes
-        txt.cln.obj$spellcheck$full[which(txt.cln.obj$spellcheck$full[,"from"]==old[i]),2:(length(corr)+1)] <- corr
+        spellcheck$full[which(spellcheck$full[,"from"]==old[i]),2:(length(corr)+1)] <- corr
         
         #Change NA to ""
-        if(any(is.na(txt.cln.obj$spellcheck$full)))
-        {txt.cln.obj$spellcheck$full[which(is.na(txt.cln.obj$spellcheck$full),arr.ind=TRUE)] <- ""}
+        if(any(is.na(spellcheck$full)))
+        {spellcheck$full[which(is.na(spellcheck$full),arr.ind=TRUE)] <- ""}
+        
+        #Remove extra corrections
+        if(length(corr)<old[i])
+        {
+            #Change old columns to NA
+            ##New length
+            new.len <- 2:(length(corr)+1)
+            
+            ##Replace old responses with NA
+            spellcheck$auto[which(spellcheck$auto[,"from"]==old[i]),-c(1,new.len)] <- ""
+            spellcheck$unique[which(spellcheck$unique[,"from"]==old[i]),-c(1,new.len)] <- ""
+            spellcheck$full[which(spellcheck$full[,"from"]==old[i]),-c(1,new.len)] <- ""
+        }
+        
+        #Put back into 'spellcheck'
+        textcleaner.obj$spellcheck <- spellcheck
+        
+        #Transfer 'partChanges' list
+        partChanges <- textcleaner.obj$partChanges
         
         #Change participant changes
-        for(j in names(txt.cln.obj$partChanges))
+        for(j in names(partChanges))
         {
-            #Search through participants to identify which
-            #participant needs the change
-            if(old[i] %in% txt.cln.obj$partChanges[[j]][,1])
+            if(!all(is.na(partChanges[[j]])))
             {
-                #Change participant changes
-                if("chn" %in% colnames(txt.cln.obj$partChanges[[j]]))
+                #Make each nested object homogeneous (as a matrix)
+                if(is.vector(partChanges[[j]]))
                 {
-                    #Transpose 
-                    txt.cln.obj$partChanges[[j]] <- t(txt.cln.obj$partChanges[[j]])
+                    partChanges[[j]] <- as.matrix(partChanges[[j]])
                     
-                    #Change column names
-                    colnames(txt.cln.obj$partChanges[[j]]) <- c("from",rep("to",ncol(txt.cln.obj$partChanges[[j]])-1))
+                    if("from" %in% row.names(partChanges[[j]]))
+                    {partChanges[[j]] <- t(partChanges[[j]])}
                 }
                 
-                #Identify old response
-                target <- which(txt.cln.obj$partChanges[[j]][,"from"]==old[i])
-                
-                #Change old binary responses to zero
-                old.target <- txt.cln.obj$partChanges[[j]][target,-1][!is.na(txt.cln.obj$partChanges[[j]][target,-1])]
-                
-                if(length(old.target)!=0)
-                {txt.cln.obj$binary[j,old.target] <- 0}
-                
-                #Replace old response
-                if(length(corr)>ncol(txt.cln.obj$partChanges[[j]]))
+                #Search through participants to identify which
+                #participant needs the change
+                if(old[i] %in% partChanges[[j]][,"from"])
                 {
-                    #New columns
-                    new.col <- length(corr)-ncol(txt.cln.obj$partChanges[[j]])+1
+                    check[[i]] <- c(i,j)
                     
-                    #New matrix
-                    new.mat <- as.matrix(cbind(txt.cln.obj$partChanges[[j]],matrix("",nrow=nrow(txt.cln.obj$partChanges[[j]]),ncol=new.col)))
+                    #Identify old response
+                    target <- which(partChanges[[j]][,"from"]==old[i])
                     
-                    #Add correction
-                    new.mat[target,2:(length(corr)+1)] <- corr
+                    #Old target
+                    old.target <- partChanges[[j]][target,-1]
                     
-                    #New column names
-                    colnames(new.mat)[((ncol(txt.cln.obj$partChanges[[j]]))+1):((ncol(txt.cln.obj$partChanges[[j]]))+new.col)] <- rep("to",new.col)
+                    #Idenfity whether duplicates are in the old responses
+                    #or if there is another corrected response
+                    rem <- dup.match(textcleaner.obj, j, target)
                     
-                    #Put back into participant changes
-                    txt.cln.obj$partChanges[[j]] <- as.data.frame(new.mat,stringsAsFactors = FALSE)
-                }else{txt.cln.obj$partChanges[[j]][target,2:(length(corr)+1)] <- corr}
-                
-                #Change new binary responses to one
-                new.target <- txt.cln.obj$partChanges[[j]][target,-1][!is.na(txt.cln.obj$partChanges[[j]][target,-1])]
-                
-                if(length(new.target)!=0)
-                {txt.cln.obj$binary[j,new.target] <- 1}
+                    #Change responses that are no not longer given by the
+                    #participant to 0
+                    if(any(rem))
+                    {textcleaner.obj$binary[j,old.target[rem]] <- 0}
+                    
+                    #Replace old response
+                    if(length(corr)>ncol(partChanges[[j]]))
+                    {
+                        #New columns
+                        new.col <- length(corr)-ncol(partChanges[[j]])+1
+                        
+                        #New matrix
+                        new.mat <- as.matrix(cbind(partChanges[[j]],matrix("",nrow=nrow(partChanges[[j]]),ncol=new.col)))
+                        
+                        #Add correction
+                        new.mat[target,2:(length(corr)+1)] <- corr
+                        
+                        #New column names
+                        colnames(new.mat)[((ncol(partChanges[[j]]))+1):((ncol(partChanges[[j]]))+new.col)] <- rep("to",new.col)
+                        
+                        #Put back into participant changes
+                        partChanges[[j]] <- as.data.frame(new.mat,stringsAsFactors = FALSE)
+                    }else if(length(corr)<ncol(as.matrix(partChanges[[j]][,-1])))
+                    {
+                        #Change old columns to NA
+                        ##New length
+                        new.len <- 2:(length(corr)+1)
+                        
+                        ##Replace old responses with NA
+                        partChanges[[j]][target,-c(1,new.len)] <- NA
+                        
+                        #Remove NAs in columns function
+                        na.col <- function (df)
+                        {
+                            if(any(!is.na(df)))
+                            {df <- df[,colSums(is.na(df))<nrow(df)]
+                            }else{df <- NA}
+                            
+                            return(df)
+                        }
+                        
+                        #Update 'partChanges'
+                        partChanges[[j]][target,2:(length(corr)+1)] <- corr
+                        partChanges[[j]] <- na.col(partChanges[[j]])
+                        
+                    }else{partChanges[[j]][target,2:(length(corr)+1)] <- corr}
+                    
+                    #Change new binary responses to one
+                    new.target <- partChanges[[j]][target,-1][!is.na(partChanges[[j]][target,-1])]
+                    
+                    ##Clean out open spaces (i.e., "")
+                    new.target <- na.omit(bad.response(new.target))
+                    
+                    if(length(new.target)!=0)
+                    {
+                        textcleaner.obj$binary[j,new.target] <- 1
+                        
+                        if(any(is.na(textcleaner.obj$binary[,new.target])))
+                        {
+                            #Change NAs to 0
+                            na.target <- which(is.na(textcleaner.obj$binary[,new.target]))
+                            textcleaner.obj$binary[na.target,new.target] <- 0
+                        }
+                    }
+                }
             }
         }
+        
+        #Put back into 'partChanges'
+        textcleaner.obj$partChanges <- partChanges
     }
     
-    if(any(colSums(txt.cln.obj$binary)==0))
+    if(any(colSums(textcleaner.obj$binary)==0))
     {
         #Target the zero responses
-        target.zero <- which(colSums(txt.cln.obj$binary)==0)
+        target.zero <- which(colSums(textcleaner.obj$binary)==0)
         
         #Target column names
-        rm.col <- colnames(txt.cln.obj$binary)[target.zero]
+        rm.col <- colnames(textcleaner.obj$binary)[target.zero]
         
         #Let user know column(s) will be removed
         message(paste("Response(s)",paste("'",rm.col,"'",sep="",collapse=", "),"were removed because of participants no longer giving the response"))
         
-        txt.cln.obj$binary <- txt.cln.obj$binary[,-target.zero]
+        textcleaner.obj$binary <- textcleaner.obj$binary[,-target.zero]
     }
     
-    txt.cln.obj$binary <- txt.cln.obj$binary[,order(colnames(txt.cln.obj$binary))]
+    textcleaner.obj$binary <- textcleaner.obj$binary[,order(colnames(textcleaner.obj$binary))]
     
-    return(txt.cln.obj)
+    return(textcleaner.obj)
 }
 #----

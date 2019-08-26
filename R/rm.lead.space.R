@@ -7,10 +7,10 @@
 #' @return Word without leading spaces
 #' 
 #' @examples
-#' #'trimws' should remove lead space but doesn't
+#' # 'trimws' should remove lead space but doesn't
 #' trimws(lead.word)
 #' 
-#' #'rm.lead.space' does
+#' # 'rm.lead.space' does
 #' rm.lead.space(lead.word)
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
@@ -22,10 +22,7 @@ rm.lead.space <- function(word)
     word <- bad.response(word)
     
     if(!is.na(word))
-    {
-        while(!any(substr(word,1,1)==letters))
-        {word <- gsub("^[[:space:]]+|[[:space:]]+$", "", word)}
-    }
+    {word <- gsub("^[[:space:]]+|[[:space:]]+$", "", word)}
     
     return(word)
 }

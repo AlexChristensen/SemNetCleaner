@@ -1,7 +1,7 @@
 #' QWERTY Distance for Same Length Words
 #' 
 #' @description Computes QWERTY Distance for words that have
-#' the same number of characters. Distnace is computed based on
+#' the same number of characters. Distance is computed based on
 #' the number of keys a character is away from another character
 #' on a QWERTY keyboard
 #' 
@@ -14,15 +14,15 @@
 #' @return Numeric value for distance between \code{wordA} and \code{wordB}
 #' 
 #' @examples
-#' #Identical values for Damerau-Levenshtein and QWERTY
-#' qwerty.dist("sog","dpg")
+#' #Identical values for Damerau-Levenshtein 
+#' stringdist::stringdist("big", "pig", method="dl")
 #' 
-#' stringdist::stringdist("sog","dpg",method="dl")
+#' stringdist::stringdist("big", "bug", method="dl")
 #' 
-#' #Greater distance for QWERTY than Damerau-Levenshtein
-#' qwerty.dist("sog","dmg")
+#' #Different distances for QWERTY
+#' qwerty.dist("big", "pig")
 #' 
-#' stringdist::stringdist("sog","dmg",method="dl")
+#' qwerty.dist("big", "bug") # Probably meant to type "bug"
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

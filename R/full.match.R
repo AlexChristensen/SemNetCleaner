@@ -1,4 +1,4 @@
-#' Wrapper Match Fucntion
+#' Wrapper Match Function
 #' @description A wrapper function that performs
 #' the same operations as match except accounts for
 #' \code{NA}
@@ -14,14 +14,14 @@
 #' \code{FALSE} for each element across the vectors
 #' 
 #' @examples
-#' #vector 1
+#' # Vector 1
 #' vec1 <- c(NA,NA,"cat","dog",NA,0,"porcupine")
 #' 
-#' #vector 2
+#' # Vector 2
 #' vec2 <- c(NA,"bob","alice","dog","prince",0,NA)
 #' 
-#' #perform match
-#' full.match(vec1,vec2)
+#' # Perform match
+#' full.match(vec1, vec2)
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

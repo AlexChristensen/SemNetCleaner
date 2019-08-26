@@ -21,13 +21,11 @@
 #' @return Returns the string as is or with the selected responses merged
 #' 
 #' @examples 
-#' #create long word vector
+#' # Create long word vector
 #' words <- "bombay opossum guinea pig horse cow"
 #' 
-#' \dontrun{
-#' 
-#' splitstr.check(string = words, split = " ", dictionary = SemNetDictionaries::animals.dictionary)
-#' }
+#' if(interactive())
+#' {splitstr.check(string = words, split = " ", dictionary = SemNetDictionaries::animals.dictionary)}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
@@ -42,16 +40,25 @@ splitstr.check <- function (string, split = " ", dictionary, remember = list())
         #identify indices
         rem <- remember[-which(sapply(remember, is.null))]
         
-        #identify target
-        for(i in 1:length(rem))
-        {
-            #grab first target that matches
-            if(all(rem[[i]]$before %in% string))
+        #identify if already changed
+        uniq.chn <- unique(unlist(remember)[which(gsub("[[:digit:]]+", "", names(unlist(remember)))=="after")])
+        
+        #if string is in already changed, then replace
+        #else search for pontential change option
+        if(paste(string,collapse=" ") %in% uniq.chn)
+        {vec <- paste(string,collapse=" ")
+        }else{
+            #identify target
+            for(i in 1:length(rem))
             {
-                #put remembered correction in vec
-                vec <- rem[[i]]$after
-                break
-            }else{vec <- vector()}
+                #grab first target that matches
+                if(all(rem[[i]]$before %in% string))
+                {
+                    #put remembered correction in vec
+                    vec <- rem[[i]]$after
+                    break
+                }else{vec <- vector()}
+            }
         }
     }else{vec <- vector()}
     
@@ -79,16 +86,22 @@ splitstr.check <- function (string, split = " ", dictionary, remember = list())
             #check if only two words
             if(len==2)
             {
-                repl <- comb
-                
-                print(split.vec)
-                
-                ans <- menu(c(paste("combined: ","'",repl,"'",sep=""),paste("separated: ","'",split.vec[i],"'","'",split.vec[i+1],"'",sep="")),title=paste('\nShould "',split.vec[i],'" and "',split.vec[i+1],'" be combined or separated?',sep = ""))
-                
-                if(ans==1)
+                if(all(unlist(strsplit(comb," ")) %in% dictionary) && !comb %in% dictionary)
                 {
-                    newstring[i] <- repl
-                    remove[i + 1] <- TRUE
+                    newstring <- unlist(strsplit(comb," "))
+                }else{
+                    
+                    repl <- comb
+                    
+                    print(split.vec)
+                    
+                    ans <- menu(c(paste("combined: ","'",repl,"'",sep=""),paste("separated: ","'",split.vec[i],"'","'",split.vec[i+1],"'",sep="")),title=paste('\nShould "',split.vec[i],'" and "',split.vec[i+1],'" be combined or separated?',sep = ""))
+                    
+                    if(ans==1)
+                    {
+                        newstring[i] <- repl
+                        remove[i + 1] <- TRUE
+                    }
                 }
                 
                 spl <- TRUE

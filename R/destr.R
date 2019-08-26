@@ -1,7 +1,7 @@
 #' De-string Responses
 #' @description De-string responses after performing \link[SemNetCleaner]{textcleaner}
 #' 
-#' @param rmat A semnetcleaner filtered response matrix
+#' @param rmat A \link[SemNetCleaner]{textcleaner} filtered response matrix
 #' 
 #' @param column The column number or name of the stringed response
 #' 
@@ -20,14 +20,21 @@
 #' \item{removed}{Stringed responses that were removed from the response matrix}
 #' 
 #' @examples
-#' #create example stringed responses
-#' stringed <- cbind(rowSums(cbind(rmat[,c(1,2)])),convmat)
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' #change name to stringed name
-#' colnames(stringed)[1] <- "alligator.ant"
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 #' 
-#' #de-string
-#' convmat <- destr(stringed, 1, ".")
+#' # Obtain binary data
+#' bin <- clean$binary
+#' 
+#' # Change column name as an example
+#' colnames(bin)[1] <- "alpaca.ant.antelope"
+#' 
+#' # De-string
+#' if(interactive())
+#' {convmat <- destr(bin, "alpaca.ant.antelope", ".")}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

@@ -5,10 +5,10 @@
 #' like responses with other like responses (e.g., "roaches" with "cockroaches")
 #' into one singular function.
 #' 
-#' @param rmat Binary matrix.
+#' @param rmat Binary response matrix.
 #' A \code{\link[SemNetCleaner]{textcleaner}} filtered response matrix
 #' 
-#' @param char A numeric value.
+#' @param char Numeric.
 #' Minimum number of characters in a string to be
 #' checked for by \code{\link[SemNetCleaner]{destr}}.
 #' Defaults to \code{10}
@@ -22,20 +22,21 @@
 #' This can be used to replicate the de-stringing process and to keep track of changes more generally}
 #' 
 #' @examples
-#' #create example stringed responses
-#' stringed <- cbind(rowSums(cbind(rmat[,c(1,2)])),convmat)
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' #change name to stringed name
-#' colnames(stringed)[1] <- "alligator.ant"
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 #' 
-#' \dontrun{
+#' # Obtain binary data
+#' bin <- clean$binary
 #' 
-#' #text cleaned
-#' clean <- textcleaner(rmat)
+#' # Change column name as an example
+#' colnames(bin)[1] <- "alpaca.ant.antelope"
 #' 
-#' #automated de-string
-#' convmat <- autoDestr(clean, 10)
-#' }
+#' # Automated de-string
+#' if(interactive())
+#' {convmat <- autoDestr(bin, 10)}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

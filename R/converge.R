@@ -1,14 +1,16 @@
 #' Converge Responses
 #' @description Merge a column of binarized response data with another
 #' 
-#' @param rmat Binary matrix.
+#' @param rmat Binary response matrix.
 #' A \link[SemNetCleaner]{textcleaner} filtered response matrix
 #' 
-#' @param word Must be column name (characters).
+#' @param word Character.
+#' Must be column name (characters).
 #' The column name (or number) that be merged \emph{into}.
 #' This column will \emph{remain} in the matrix
 #' 
-#' @param replace Must be column name (characters).
+#' @param replace Character.
+#' Must be column name (characters).
 #' The column name (or number) that should be merged
 #' with the \code{word} column.
 #' This column will be \emph{removed} from the matrix
@@ -17,11 +19,17 @@
 #' and the \code{replace} column removed
 #' 
 #' @examples
-#' #converge "kitten" into response of "cat"
-#' rmat <- converge(rmat,"cat","kitten")
+#' # Toy example
+#' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' #"cat" remains will "kitten" responses are merged into
-#' #"cat" and "kitten" is removed
+#' # Clean and prepocess data
+#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
+#' 
+#' # Converge "golden retriever" into response of "lab"
+#' rmat <- converge(clean$binary,"lab","golden retriever")
+#' 
+#' # "lab" remains will "golden retriever" responses are merged into
+#' # "lab" and "golden retriever" is removed
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

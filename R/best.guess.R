@@ -26,13 +26,13 @@
 #' that is within or below the distance tolerance, then these will be provided as potential
 #' options.
 #' 
-#' The recommended and default distance tolerace is \code{tolerance = 1},
+#' The recommended and default distance tolerance is \code{tolerance = 1},
 #' which only spell corrects a word if there is only one word with a DL distance of 1. 
 #' 
 #' @return The best guess(es) of the word
 #' 
 #' @examples
-#' #misspelled "bombay"
+#' # Misspelled "bombay"
 #' best.guess("bomba", SemNetDictionaries::animals.dictionary)
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
@@ -41,7 +41,6 @@
 #' Damerau, F. J. (1964).
 #' A technique for computer detection and correction of spelling errors.
 #' \emph{Communications of the ACM}, \emph{7}, 171-176.
-#' doi:\href{https://doi.org/10.1145/363958.363994}{10.1145/363958.363994}
 #' 
 #' @importFrom stats sd
 #' 
