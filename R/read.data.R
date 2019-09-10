@@ -113,7 +113,7 @@ read.data <- function (file = file.choose(), header = TRUE, sep = ",", ...)
                csv = read.csv(file, header = header, sep = sep, asis = TRUE, ...),
                xlsx = as.data.frame(readxl::read_xlsx(file, col_names = header, ...)),
                xls = as.data.frame(readxl::read_xls(file, col_names = header, ...)),
-               sav = foreign::read.spss(file, to.data.frame = TRUE, ...),
+               sav = foreign::read.spss(file, to.data.frame = TRUE, stringAsFactors = FALSE, ...),
                txt = read.table(file, header = header, sep = sep, ...),
                mat = as.data.frame(R.matlab::readMat(file, ...))
         )
