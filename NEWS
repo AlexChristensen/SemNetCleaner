@@ -6,6 +6,10 @@ o added a group variable for the dataset 'open.animals'
 
 o removed option to save appendix dictionary to package (not allowed by CRAN policies)
 
+o added a general function to read in common types of data file extensions: 'read.data'
+
+o updated 'textcleaner' to bypass double query for adding a dictionary
+
 
 Changes in version 1.1.0
 
