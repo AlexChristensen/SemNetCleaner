@@ -342,7 +342,8 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
             #create appendix dictionary
             SemNetDictionaries::append.dictionary(dict,
                                                   dictionary.name = ans2,
-                                                  save.location = "choose")
+                                                  save.location = "choose",
+                                                  textcleaner = TRUE)
         }else if(ans == 2)
         {
             #let user know that the dictionary data was not saved
