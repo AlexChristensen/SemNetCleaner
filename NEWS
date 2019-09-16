@@ -10,6 +10,8 @@ o added a general function to read in common types of data file extensions: 'rea
 
 o updated 'textcleaner' to bypass double query for adding a dictionary
 
+o bug fixes in 'textcleaner' and 'spell.check.dictionary'
+
 
 Changes in version 1.1.0
 

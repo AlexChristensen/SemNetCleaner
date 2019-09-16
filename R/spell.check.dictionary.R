@@ -250,10 +250,7 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
                                     if(ans4 == 1)
                                     {
                                         #add to dictionary
-                                        suppressWarnings(SemNetDictionaries::append.dictionary(multi.after,save.location="envir"))
-                                        
-                                        #load updated appendix dictionary
-                                        dict <- readRDS(paste(tempdir(),"appendix.dictionary.rds",sep="\\"))
+                                        dict <- suppressWarnings(SemNetDictionaries::append.dictionary(multi.after,save.location="envir"))
                                         
                                         #combined with input dictionary
                                         full.dict <- sort(unique(c(full.dict,dict)))

@@ -122,6 +122,10 @@ corr.chn <- function(textcleaner.obj, dictionary = NULL, old)
     {full.dict <- SemNetDictionaries::load.dictionaries("general")
     }else{full.dict <- SemNetDictionaries::load.dictionaries(dictionary)}
     
+    #Grab monikers
+    if(any(dictionary %in% SemNetDictionaries::dictionaries()))
+    {misnom <- SemNetDictionaries::load.monikers(dictionary)}
+    
     #Unique changes
     uniq <- textcleaner.obj$spellcheck$auto
     
@@ -164,7 +168,16 @@ corr.chn <- function(textcleaner.obj, dictionary = NULL, old)
                 searcher::search_site(paste("dictionary"," '",word,"'",sep="",collpase=""),
                                       site = "google", rlang = FALSE)
             }else if(ans == 3) #BAD RESPONSE
-            {corr <- NA}
+            {corr <- NA
+            }else if(ans > 3)
+            {
+                #insert response
+                corr <- pot[ans - 3]
+                
+                #check if moniker
+                if(length(misnom)!=0)
+                {corr <- SemNetCleaner::moniker(corr,misnom)}
+            }
         }
         
         #Correct bad resposnes
