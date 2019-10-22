@@ -1,5 +1,5 @@
 #' Detect Duplicate Matches
-#' @description A wrapper function for \code{\link[SemNetCleaner]{corr.chn}}.
+#' @description A wrapper function for \code{\link[SemNetCleaner]{correct.changes}}.
 #' It returns the opposite values of what the name of the function suggests --
 #' that is, \code{FALSE} for duplicates and \code{TRUE} for non-duplicates
 #' 
@@ -8,7 +8,7 @@
 #' @param part Participant ID
 #' 
 #' @param target Target response for correcting the change
-#' (see \code{old} argument in \code{\link[SemNetCleaner]{corr.chn}})
+#' (see \code{old} argument in \code{\link[SemNetCleaner]{correct.changes}})
 #' 
 #' @return Returns \code{FALSE} for responses that have been identified
 #' twice in either the participant's original responses

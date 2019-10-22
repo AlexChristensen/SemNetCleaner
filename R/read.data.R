@@ -1,5 +1,8 @@
-#' Read in Common Data File Extentions
-#' @description A single function to read in common data file extensions
+#' Read in Common Data File Extensions
+#' 
+#' @description A single function to read in common data file extensions.
+#' Note that this function is specialized for reading in text data in the
+#' format necessary for functions in SemNetCleaner
 #' 
 #' File extensions supported:
 #' \itemize{
@@ -22,7 +25,7 @@
 #' The field separator character.
 #' Values on each line of the file are separated by this character.
 #' If sep = "" (the default for \code{\link{read.table}}) the separator
-#' is ‘white space’, that is one or more spaces, tabs, newlines or
+#' is a 'white space', that is one or more spaces, tabs, newlines or
 #' carriage returns
 #' 
 #' @param ... Additional arguments.
@@ -73,16 +76,19 @@
 #' 
 #' @references 
 #' # R Core Team
+#' 
 #' R Core Team (2019). R: A language and environment for
 #' statistical computing. R Foundation for Statistical Computing,
 #' Vienna, Austria. URL https://www.R-project.org/.
 #' 
 #' # readxl
+#' 
 #' Hadley Wickham and Jennifer Bryan (2019). readxl: Read Excel
 #' Files. R package version 1.3.1.
 #' https://CRAN.R-project.org/package=readxl
 #' 
 #' # R.matlab
+#' 
 #' Henrik Bengtsson (2018). R.matlab: Read and Write MAT Files
 #' and Call MATLAB from Within R. R package version 3.6.2.
 #' https://CRAN.R-project.org/package=R.matlab

@@ -23,7 +23,7 @@ to compute the \href{https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance}
 (DL) distance, which is used to determine potential best guesses.
 
 Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
-automatically output as best guess responses, which are then passed through
+automatically output as \code{\link[SemNetCleaner]{best.guess}} responses, which are then passed through
 \code{\link[SemNetCleaner]{word.check.wrapper}}. If there is more than one word
 that is within or below the distance tolerance, then these will be provided as potential
 options.

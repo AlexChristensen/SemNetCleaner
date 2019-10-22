@@ -34,7 +34,7 @@ to compute the \href{https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance}
 (DL) distance, which is used to determine potential best guesses.
 
 Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
-automatically output as best guess responses, which are then passed through
+automatically output as \code{\link[SemNetCleaner]{best.guess}} responses, which are then passed through
 \code{\link[SemNetCleaner]{word.check.wrapper}}. If there is more than one word
 that is within or below the distance tolerance, then these will be provided as potential
 options.
@@ -64,35 +64,44 @@ A menu will appear with several options. Here is what is returned with each opti
 
 \itemize{
 
-\item{POTENTIAL RESPONSE}{If a potential response is selected,
+\item{POTENTIAL RESPONSE}
+{If a potential response is selected,
 then the input word is replaced with the potential response}
 
-\item{ADD TO DICTIONARY}{When selected, the input word will be
+\item{ADD TO DICTIONARY}
+{When selected, the input word will be
 added to the appendix dictionary (see \code{\link[SemNetDictionaries]{append.dictionary}}).
 The input word will be returned}
 
-\item{TYPE MY OWN}{User will type their own response to replace the input
+\item{TYPE MY OWN}
+{User will type their own response to replace the input
 word. If word is not in dictionary, then user will be prompted for whether
 they would like to add the word to their appendix dictionary
 (see \code{\link[SemNetDictionaries]{append.dictionary}}).
 In all cases, the typed word will be returned}
 
-\item{CONTEXT}{Provides the response in context of the participant's
+\item{CONTEXT}
+{Provides the response in context of the participant's
 other responses. Prints the all participants responses that were given
 with the target response}
 
-\item{GOOGLE IT}{"Googles" the response in question.
+\item{GOOGLE IT}
+{"Googles" the response in question.
 A browser will open with the Google search terms: define "RESPONSE"}
 
-\item{BAD RESPONSE}{When selected, \code{NA} will be returned}
+\item{BAD RESPONSE}
+{When selected, \code{NA} will be returned}
 
-\item{SKIP}{When selected, input word will be returned}
+\item{SKIP}
+{When selected, input word will be returned}
 
-\item{BAD STRING}{Unique to continuous strings.
+\item{BAD STRING}
+{Unique to continuous strings.
 When selected, a vector of \code{NA} the length of the
 \code{context} vector will be returned}
 
-\item{CONTEXT}{Unique to single responses.
+\item{CONTEXT}
+{Unique to single responses.
 Provides the response in context of the participant's
 other responses. Prints the all participants responses that were given
 with the target response}

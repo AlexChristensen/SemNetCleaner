@@ -18,7 +18,7 @@
 #' (DL) distance, which is used to determine potential best guesses.
 #' 
 #' Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
-#' automatically output as best guess responses, which are then passed through
+#' automatically output as \code{\link[SemNetCleaner]{best.guess}} responses, which are then passed through
 #' \code{\link[SemNetCleaner]{word.check.wrapper}}. If there is more than one word
 #' that is within or below the distance tolerance, then these will be provided as potential
 #' options.
@@ -60,6 +60,7 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
 {
     #load dictionaries
     full.dict <- SemNetDictionaries::load.dictionaries(dictionary)
+    
     orig.dict <- full.dict
     
     #initialize 'from' and 'to' list for changes
@@ -70,7 +71,7 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
     to <- lapply(to, multi.word.check, dictionary = full.dict, tolerance = 1)
     
     #initial monikers if dictionary is in 'SemNetDictionaries' package
-    if(any(dictionary %in% SemNetDictionaries::dictionaries()))
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
     {
         #load moniker
         misnom <- SemNetDictionaries::load.monikers(dictionary)
@@ -81,7 +82,7 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
             to <- lapply(to,SemNetCleaner::moniker,misnom)
             
             #check for de-pluralized monikers
-            sing.mis <- lapply(unlist(to),singularize)
+            sing.mis <- suppressMessages(lapply(unlist(to),singularize))
             
             #check if singular moniker exists
             sing.mis <- unlist(lapply(sing.mis,SemNetCleaner::moniker,misnom))
@@ -99,7 +100,7 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
     ind1 <- match(unlist(to),full.dict)
     
     #check for plurals
-    sing <- unlist(lapply(unlist(to),singularize))
+    sing <- suppressMessages(unlist(lapply(unlist(to),singularize)))
     ind2 <- match(sing,full.dict)
     
     #correct plurals
@@ -311,7 +312,7 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
         ####progress bar####
         count <- count + 1
         percent <- floor((count/length(incorrect))*100)
-        info <- sprintf("%.0f%% done", percent)
+        info <- sprintf(paste(count, "of", length(incorrect), "words done"), percent)
         tcltk::setTkProgressBar(pb, count, sprintf("Spell-check Progress (%s)", info), info)
         ####progress bar####
     }

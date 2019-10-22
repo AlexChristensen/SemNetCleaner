@@ -19,7 +19,7 @@ given by at least \code{minCase} people
 }
 \description{
 Finalizes the response matrix by keeping
-responses that are given by two or more people
+responses that are given by a certain number of people
 }
 \examples{
 # Toy example

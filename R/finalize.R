@@ -1,6 +1,6 @@
 #' Finalize Response Matrix
 #' @description Finalizes the response matrix by keeping
-#' responses that are given by two or more people
+#' responses that are given by a certain number of people
 #' 
 #' @param rmat Binary matrix.
 #' A \link[SemNetCleaner]{textcleaner} filtered response matrix

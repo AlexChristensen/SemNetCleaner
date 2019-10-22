@@ -1,5 +1,5 @@
 #' Equate Groups
-#' @description A function to "equate" to multiple response matrices.
+#' @description A function to "equate" multiple response matrices to one another.
 #' \emph{N} number of groups are matched based on their responses so
 #' that every group has the same responses in their data
 #' 
@@ -32,8 +32,8 @@
 #' eq <- equate(mat1, mat2)
 #' 
 #' # Obtain respective equated response matrices
-#' eq.mat1 <- eq$mat1
-#' eq.mat2 <- eq$mat2
+#' eq.mat1 <- eq$mat1 # list objects are named with the names
+#' eq.mat2 <- eq$mat2 # they were entered with
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 

@@ -22,7 +22,7 @@ to compute the Damerau-Levenshtein distance, which is used to determine potentia
 Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
 automatically output as best guess responses, which are then passed through
 \code{\link[SemNetCleaner]{word.check.wrapper}}. This default is based on Damerau's (1964)
-proclamation that more than 80% of all human misspellings can be expressed by a single error
+proclamation that more than 80\% of all human misspellings can be expressed by a single error
 (e.g., insertion, deletion, substitution, and transposition). If there is more than one word
 that is within or below the distance tolerance, then these will be provided as potential
 options.

@@ -4,9 +4,8 @@
 #' 
 #' @param data Matrix or data frame.
 #' A dataset of text data.
-#' Participant IDs should be made to be row or
-#' column names to specify whether participants
-#' are by row or column (see argument \code{partBY}).
+#' Participant IDs will be automatically identified
+#' if they are included.
 #' If no IDs are provided, then their order in the corresponding
 #' row (or column is used).
 #' A message will notify the user how IDs were assigned
@@ -35,7 +34,7 @@
 #' (DL) distance, which is used to determine potential best guesses.
 #' 
 #' Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
-#' automatically output as best guess responses, which are then passed through
+#' automatically output as \code{\link[SemNetCleaner]{best.guess}} responses, which are then passed through
 #' \code{\link[SemNetCleaner]{word.check.wrapper}}. If there is more than one word
 #' that is within or below the distance tolerance, then these will be provided as potential
 #' options.
@@ -54,7 +53,7 @@
 #' After the cleaning process is through, you can check the \code{spellcheck$unique}
 #' output of \code{\link[SemNetCleaner]{textcleaner}} to see what changes
 #' you made. To correct any changes you made in the cleaning process,
-#' you can use the \code{\link[SemNetCleaner]{corr.chn}} function
+#' you can use the \code{\link[SemNetCleaner]{correct.changes}} function
 #' 
 #' NOT RECOMMENDED
 #' 
@@ -72,10 +71,12 @@
 #' 
 #' \itemize{
 #' 
-#' \item{clean.resp}{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
+#' \item{clean.resp}
+#' {A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 #' This can be used as a final dataset for analyses (e.g., fluency of responses)}
 #' 
-#' \item{orig.resp}{The original response matrix that has had white spaces before and
+#' \item{orig.resp}
+#' {The original response matrix that has had white spaces before and
 #' after words response. Also converts all upper-case letters to lower case}
 #' 
 #' }
@@ -88,10 +89,6 @@
 #' 
 #' \item{\code{full}}
 #' {All responses regardless of spell-checking changes}
-#' 
-#' \item{\code{unique}}
-#' {Only responses that were changed during spell-check (includes
-#' correct responses that were changed to singular form and lower case)}
 #' 
 #' \item{\code{auto}}
 #' {Only the incorrect responses that were changed during spell-check}
@@ -108,7 +105,7 @@
 #' {Identifies removed participants by their row (or column) location in the original data file}
 #' 
 #' \item{\code{ids}}
-#' {Identifies removed participants by their ID (see argument \code{data}}
+#' {Identifies removed participants by their ID (see argument \code{data})}
 #' 
 #' }
 #' 
@@ -242,8 +239,8 @@ textcleaner <- function(data, miss = 99,
     ##### MAIN FUNCTION END #####
     #############################
     
-    #let user know that data is being preprocessed
-    message("Preprocessing your data...")
+    #let user know that data is being prepared
+    message("Preparing your data...")
     
     #make into matrix
     #get maximum columns from 'to'
@@ -288,11 +285,11 @@ textcleaner <- function(data, miss = 99,
     spellcheck$full <- as.data.frame(uniqcomb,stringsAsFactors = FALSE)
     
     #check for rows that need to be removed
-    rm.rows <- full.match(uniqcomb[,1],uniqcomb[,2])
+    #rm.rows <- full.match(uniqcomb[,1],uniqcomb[,2])
     rm.rows.inc <- full.match(uniqcomb.inc[,1],uniqcomb.inc[,2])
     
     #unique list of changed and unchanged responses
-    spellcheck$unique <- as.data.frame(uniqcomb[-which(rm.rows),],stringsAsFactors = FALSE)
+    #spellcheck$unique <- as.data.frame(uniqcomb[-which(rm.rows),],stringsAsFactors = FALSE)
     
     #unique list of spell-checked responses
     spellcheck$auto <- as.data.frame(uniqcomb.inc[-which(rm.rows.inc),],stringsAsFactors = FALSE)

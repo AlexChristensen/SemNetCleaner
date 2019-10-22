@@ -12,7 +12,7 @@ dup.match(tc.obj, part, target)
 \item{part}{Participant ID}
 
 \item{target}{Target response for correcting the change
-(see \code{old} argument in \code{\link[SemNetCleaner]{corr.chn}})}
+(see \code{old} argument in \code{\link[SemNetCleaner]{correct.changes}})}
 }
 \value{
 Returns \code{FALSE} for responses that have been identified
@@ -21,7 +21,7 @@ twice in either the participant's original responses
 (i.e., \code{tc.obj$partChanges}). Returns \code{TRUE} if response is not given
 }
 \description{
-A wrapper function for \code{\link[SemNetCleaner]{corr.chn}}.
+A wrapper function for \code{\link[SemNetCleaner]{correct.changes}}.
 It returns the opposite values of what the name of the function suggests --
 that is, \code{FALSE} for duplicates and \code{TRUE} for non-duplicates
 }
