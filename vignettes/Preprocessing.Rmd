@@ -1,0 +1,239 @@
+---
+title: "Preprocessing Verbal Fluency Data"
+author: "Alexander Christensen"
+date: "10/28/2019"
+output: html_document
+bibliography: Christensen_General_Library.bib
+csl: apa.csl
+vignette: >
+  %\VignetteIndexEntry{Preprocessing_Semantic_Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Vignette taken directly from @christensen2019semna
+
+The *SemNetCleaner* package houses several functions for the cleaning and preprocessing of semantic data. The purpose of this package is to facilitate efficient and reproducible preprocessing of semantic data. Notably, other R packages perform similar functions (e.g., spell-checking, text mining) such as *hunspell* [@ooms2018hunspell], *qdap* [@rinker2019qdap], and *tm* [@feinerer2008tm]. However, the *SemNetCleaner* package sets itself apart from these other packages by focusing specifically on commonly used tasks for SemNA (e.g., verbal fluency), which allows for greater automation of data cleaning and preprocessing.
+
+The *SemNetCleaner* package applies several steps to preprocess raw verbal fluency data so that it is ready to be used for estimating semantic networks. These steps include spell-checking, verifying the accuracy of the spell-check, and obtaining a binary response matrix for network estimation. To initialize this process, the following code must be run:
+
+```{r Begin textcleaner, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Run 'textcleaner'
+clean <- textcleaner(data = open.animals[,-c(1:2)], miss = 99,
+                     partBY = "row", dictionary = "animals")
+```
+
+`textcleaner` is the main function that handles the data cleaning and preprocessing in *SemNetCleaner* (for argument descriptions, see Table 2). For input into `data`, it's strongly recommended that the user input the full verbal fluency dataset and not data already separated into groups. If verbal fluency responses are already separated, then they will need to be inputted and preprocessed separately. Therefore, it's preferable to separate the preprocessed data into groups at a later stage of the SemNA pipeline.
+
+```{r tab2, echo = FALSE, eval = TRUE, comment = NA, warning = FALSE}
+output <- matrix(c("`data`", "A matrix or data frame object that contains the participants' IDs and semantic data",
+                   "`miss`", "A number or character that corresponds to the symbol used for missing data. The default is set to `99`",
+                   "`partBY`", 'Specifies whether participants are across the rows (`"row"`) or down the columns (`"col"`)',
+                   "`dictionary`", 'Specifies which dictionaries from SemNetDictionaries should be used (more than one is possible). If no dictionary is chosen, then the `"general"` dictionary is used',
+                   "`tolerance`", "Enables automated spell-checking using the Damerau-Levenshtein distance (defaults to `1`)"),
+                 ncol = 2, byrow = TRUE)
+
+
+htmlTable::htmlTable(output,
+          header = c("Argument", "Description"),
+          caption = "Table 2. textcleaner Arguments")
+```
+
+When running the above code, `textcleaner` will start preprocessing the data immediately. The reader may notice that a progress bar appears, which lets the user know *about* how many more words need to be processed (i.e., number of words processed out of how many words in total need to be processed). The progress bar should read "10 of 269 words done", meaning that `textcleaner` has already automatically processed several words. Before continuing with the tutorial, we describe how the automatic spell-check operations of `textcleaner` work and then continue the tutorial with the manual spell-check operation.
+
+### 1.2.1. Spell-check
+The first step of `textcleaner` is to spell-check all responses. The spell-checking algorithm of `textcleaner` uses automatic and manual spell-checking processes in parallel. First, missing values (e.g., `NA`), punctuations, digits, and extra white spaces are removed from each response in the raw verbal fluency data. From these responses, only the unique responses across participants are obtained, which are used as input into the spell-checking algorithm. Although these unique responses include responses that are misspelled, they drastically reduce the number of responses that `textcleaner` needs to spell-check.
+
+Next, these unique responses are checked against a dictionary and its associated monikers (only if it's a dictionary from *SemNetDictionaries*) and replaced with a homogenized name (e.g., *grizzly* $\rightarrow$ *grizzly bear*). In this process, responses are checked against their plural and singular forms to further expedite the identification of correctly spelled responses. Responses that are matched with their plural form are converted to their singular form.
+
+The unique responses that have not been matched in this process are then forwarded, one-by-one, to the spell-check algorithm. The algorithm will first attempt to auto-correct the response. If it cannot be auto-corrected, then the response is passed onto the manual portion of the algorithm. This process is repeated for each unique response entered into the spell-check algorithm. We first describe how a response gets auto-corrected in the automated spell-check and then we describe the manual spell-check for a response that could not be auto-corrected.
+
+There are two auto-correct operations in the automated portion of the algorithm. The first auto-correct operation computes the Damerau-Levenshtein (DL) distance [@damerau1964technique; @levenshtein1966binary], a method to compute the *edit distance* (i.e., the (dis)similarity of two words), to determine how similar a given response is to every response in the dictionary. This computation is done by counting the number of errors---insertion (i.e., adding a letter), deletion (i.e., removing a letter), substitution (i.e., exchanging one letter for an incorrect letter), and transposition (i.e., changing the position of two adjacent letters)---that are made between the target word and potential response from the dictionary.
+
+Notably, Damerau [-@damerau1964technique] states that the majority of spelling errors (more than 80%) are made with only one of these errors. Based on this finding, the auto-correct operation in `textcleaner` can be set (using the `tolerance` argument, see Table 2) to automatically correct an incorrect (or inappropriate) response when the DL distance is less than or equal to the given `tolerance` value (e.g., one). The `tolerance` value is used as a criterion for how close a response in the dictionary must be to the original response before it is auto-corrected. These values are integers that range anywhere from 1 to infinity. The default value is 1, following Damerau's [-@damerau1964technique] observation. Values greater than 1 provide a less strict criterion, however, this may increase the number of incorrect corrections made by the automated portion of the algorithm. If more than one response in the dictionary has a DL distance that is less than or equal to the `tolerance` value, then they are passed onto a second auto-correct operation.
+
+The second auto-correct operation checks for spelling errors that may have been due to erroneous keystrokes on a QWERTY keyboard---the so-called, *QWERTY distance*. This distance is computed by summing the physical distance (i.e., number of keys) between the letters in the response and the letters in the responses passed on from the first auto-correct operation. The letter "f", for example, has a distance of one from the letters "d", "e", "r", "t", "g", "v", and "c". This second auto-correct operation will automatically correct an incorrect (or inappropriate) response when the distance is less than or equal to the same `tolerance` value as the DL distance. If no response or more than one response is less than or equal to the `tolerance` value, then the response is passed onto the manual spell-check.
+
+Because the automated spell-check occurs prior to manual spell-check for each response, the user will only receive manual spell-check prompts for responses that could not be auto-corrected. The manual spell-checking operation allows the user to self-select the appropriate correction by choosing one of several response options from an interactive menu. Our tutorial will cover an example of each response option in the interactive menu. After running the above `textcleaner` code on the `open.animal` data, an interactive menu appears that allows the reader to correct an incorrectly spelled word (Figure 2; for figures, see @christensen2019semna).
+
+The first prompt contains a continuous string (i.e., multiple responses entered as a single response): `turtle <<catdog>> elephant fish bird squiral rabbit fox deer monkey giraff`. The target response that needs a decision is denoted between `<<` and `>>` (in this example: `catdog`). Under the continuous string, the reader will find response options (denoted by `Potential responses:`) to manually correct the response. The first 10 response options are the responses in the dictionary that had the lowest DL distance with the target response. The next six response options are additional options that provide the user with a greater flexibility of options for correcting responses. These six additional response options are defined in the Table 3.
+
+```{r tab3, echo = FALSE, eval = TRUE, comment = NA, warning = FALSE}
+output <- matrix(c("`11:ADD TO DICTIONARY`", "Allows user to add the response to a temporary appendix dictionary",
+                   "`12:TYPE MY OWN`", "Allows user to type their own response if it is not provided in the potential response options (if necessary, multiple responses can be typed using spaces)",
+                   "`13:GOOGLE IT`", "Opens the user's default internet browser to Google's webpage and searches for a definition of the original response using the terms: dictionary 'RESPONSE'",
+                   "`14:BAD RESPONSE`", "Marks the original response as bad and makes it so the response will be missing (i.e., `NA`) and not included in the final results",
+                   "`15:SKIP`", "Allows the original response to be included in the final results but does not add it to the temporary appendix dictionary",
+                   "`16:CONTEXT`", "(Single responses only) Provides the target response in context of the participant's other responses. Will print each participant's responses that provide the target response",
+                   "`16:BAD STRING`", "(Continuous strings only) Marks the entire continuous string of responses as bad and makes all responses missing (i.e., `NA`) and not included in the final results"),
+                 ncol = 2, byrow = TRUE)
+
+
+htmlTable::htmlTable(output,
+          header = c("Option", "Description"),
+          caption = "Table 3. Additional Response Options")
+```
+
+For the target response in this example (i.e., `catdog`), the participant likely intended to type *cat* and *dog* as separate responses. When examining the offered responses for correction (options `1-10`), the reader may notice that *cat* and *dog* are listed but none of the response options have the option to separate the response into *cat* and *dog*. To do this, we can use one of the additional response options: `12:TYPE MY OWN`. This response option acts as a catch-all option that enables the user to type the response that should replace the original response.
+
+To select this response option, the reader can type `12` and press `ENTER`. Next, the reader will be prompted with `Type response:`. Here, the reader can type their correction (without quotations) of what word(s) should replace the original response. The response `cat dog` should be typed and the reader can press `ENTER` (Figure 3).
+
+This completes the first prompt and moves the reader to the second prompt. The second prompt is another continuous string: `dog cat horse <<guinea>> pig rooster bird fish mouse rat owl` (Figure 4).
+
+For this continuous string, all words are actually spelled correctly; however, because `textcleaner` sifts through each response word-by-word, it's stopped at the word *guinea*, which is not in the dictionary. Based on the participant's next word `pig`, they likely meant to type *guinea pig*. The reader should not correct the response; instead, `textcleaner` will handle this when parsing the continuous string. As a general rule of thumb, the reader should *always* focus on the target word when making a correction. Because *guinea* is spelled correctly [^1], the reader can use the `15:SKIP` option, which will keep the word "as is", by pressing `15` and then `ENTER`. `textcleaner` will remember this choice the next time it encounters the word *guinea* and will no longer prompt the user for a correction.
+
+[^1]: Although *guinea* is spelled correctly, it should *not* be added to the dictionary---there is no animal with only the name *guinea*. If added, then the auto-correct functions will begin treating *guinea* as an appropriate category exemplar, despite it not being an appropriate response by itself.
+
+Next, the reader will be prompted when `textcleaner` attempts to parse the response (Figure 4). Here, the reader should decide whether *guinea* and *pig* should be combined into a single response or remain separated as two responses. The response should be combined into a single response, *guinea pig*, so the response `1:combined:'guinea pig'` should be selected by pressing `1` and then `ENTER`. The next prompt is another "combine or separate" response option for `"bat cat dog sheep"`. With this prompt, the reader can press `2` for `2:separated:'bat' cat' 'dog' 'sheep'` and `ENTER` to separate the string into individual responses.
+
+Most responses are fairly easy to determine the word the participant intended with the offered responses; however, there are instances where it's impossible to know exactly what the participant intended. An example of this is in the next prompt: `dog cat <<mose>> moose horse lion tiger bear dear doe pig cow` (Figure 5).
+
+Here, the first three response options: `1:mole`, `2:moose`, and `3:mouse` are equally plausible. On the one hand, it's unlikely the participant intended to type *mole* because the "s" and "l" keys are quite distant from one another (QWERTY distance = `r SemNetCleaner::qwerty.dist("mose","mole")`). On the other hand, it's hard to know whether the participant intended to type *moose* or *mouse*. The next response in the string is *moose*, which could mean that the participant attempted to correct their initial response; however, there is no way of knowing for certain. In these instances, our recommendation is to err on the conservative side---that is, to not include the response in the final results. To do so, the user can type `14` for `14:BAD RESPONSE` and press `ENTER`, which will remove the response from the final results.
+
+The reader can continue through the next ten prompts using the response options that have been covered. Below is a table with the response options we selected for these prompts:
+
+```{r tab4, echo = FALSE, eval = TRUE, comment = NA, warning = FALSE}
+output <- matrix(c("`creatures`", "`14:BAD RESPONSE`", "---",
+                   "`catefrog`", "`12:TYPE MY OWN`", "cat frog",
+                   "`criters`", "`14:BAD RESPONSE`", "---",
+                   "`mario`", "`14:BAD RESPONSE`", "---",
+                   "`garafi`", "`14:BAD RESPONSE`", "---",
+                   "`snack`", "`14:BAD RESPONSE`", "---",
+                   "`girrage`", "`14:BAD RESPONSE`", "---",
+                   "`<<gieuna>> pig`", "`12:TYPE MY OWN`", "guinea",
+                   "`jesus`", "`14:BAD RESPONSE`", "---",
+                   "`squrill`", "`5:squirrel`", "---"),
+                 ncol = 3, byrow = TRUE)
+
+
+htmlTable::htmlTable(output,
+          header = c("Prompt", "Selection", "Type My Own"),
+          caption = "Table 4. Responses for next ten prompts")
+```
+
+After going through these prompts, the reader will arrive at the prompt: `<<your>> mom`. Sometimes all responses in a prompt will be inappropriate for the category like *your*, *mom*, and the string of *your mom*. In these instances, the user can select `16` and press `ENTER` for the response option `16:BAD STRING`. This response option will remove all responses in the string from the final results (Table 3). The next two prompts---`<<geaniu>> pig` and `dinasor`---can be corrected using response options we've already covered: `12:TYPE MY OWN` (`guinea`) and `2:dinosaur`.
+
+After managing these two prompts, the reader comes to a prompt for `bluebird`. If the user is unsure whether a word is an actual category exemplar (or just sounds like one), then they can press `13` and `ENTER` for the response option `13:GOOGLE IT`. This will open the user’s default web browser and search *Google* using the terms: "dictionary 'bluebird'". When doing so, we can see that *bluebird* is indeed a category exemplar. Because *bluebird* is not in the dictionary, the reader should add it to their temporary appendix dictionary. The reader can do so by pressing `11` and `ENTER` for the response option `11:ADD TO DICTIONARY`. 
+
+The options `ADD TO DICTIONARY` and `TYPE MY OWN` allow the user to add the original or typed response, respectively, to a temporary appendix dictionary. For `TYPE MY OWN`, the user will only be prompted to add the response to the temporary appendix dictionary if the typed response is not already in the (temporary) dictionary. `textcleaner` will use these additional words to facilitate the automation of future instances of these words.
+
+These examples fill out what is necessary to fully apply `textcleaner` to the data. At the end of the `textcleaner` process, the reader will be prompted on whether they would like to save their appendix dictionary to their computer, which allows them to use the dictionary in the future. If the user chooses to save the dictionary to their computer, then they will be asked to provide a name for this dictionary---for the tutorial, we named it: `appendix`. The file will then be saved as `appendix.dictionary.rds` in the directory the user chooses. Note that the appendix dictionary does not actually update the original pre-defined dictionary, so it's necessary to input the name of the dictionary in the `dictionary` argument of `textcleaner` when using any appendix dictionary in the future (e.g., `dictionary = c("animals", "appendix")`).
+
+### 1.2.2. `textcleaner` Output
+There are several other output objects from the `textcleaner` function. These objects are stored in a list object, which we designated in our example as `clean`. These output objects are summarized in the table below.
+
+```{r tab5, echo = FALSE, eval = TRUE, comment = NA, warning = FALSE}
+output <- matrix(c("`binary`", "---", "Binary response matrix where rows are participants and columns are responses. 1's are responses given by a participant and 0's are responses not given by a participant",
+                   "`responses`", "", "",
+                   "", "`clean.resp`", "Spell-corrected response matrix where the ordering of the original responses are preserved. Inappropriate and duplicate responses have been removed",
+                   "", "`orig.resp`", "Original response matrix where uppercase letters were made to lowercase and white spaces before and after responses were removed",
+                   "`spellcheck`", "", "",
+                   "", "`full`", "List of all responses whether or not they have been spell-corrected",
+                   "", "`auto`", "List of only unique responses that were auto-corrected and corrected by the user",
+                   "`removed`", "", "",
+                   "", "`rows`", "Vector of rows for the participants with no appropriate responses",
+                   "", "`ids`", "Vector of the participants' IDs with no appropriate responses",
+                   "`partChanges`", "`ID`", "List of list objects labeled with each participant's ID variable. Each participant's list contains a data frame of the specific words that were changed for the participant"),
+                 ncol = 3, byrow = TRUE)
+
+
+htmlTable::htmlTable(output,
+          header = c("Object", "Nested Object", "Description"),
+          caption = "Table 5. `textcleaner` and `correct.changes` Output Objects")
+```
+
+These objects can be accessed using a dollar sign (e.g., `clean$responses`) and nested objects can be accessed within their parent object (e.g., `clean$responses$clean.resp`). Some of these output are useful for accessing the spell-check changes that occurred. For example, `clean$spellcheck` contains objects that refer to the full list of original responses regardless of whether there were spelling changes (`$full`) and a list of unique responses that were corrected during the spell-check algorithm (`$auto`). The `removed` object contains lists of participants who were removed because of a lack of appropriate responses, which can be identified by either the participant's row (or column; `$rows`) or ID variable (`$ids`) in the input dataset (these will be the same if no ID variable is provided). Finally, the `partChanges` object contains list objects, which correspond to each participant's unique ID and the specific correction changes that were made to their responses.
+
+### 1.2.3. Verification of spell-check
+Although `textcleaner` is highly efficient and automatizes most of the cleaning process, it's possible that some of the auto-correction changes are incorrect. Moreover, the user may have entered a wrong response option or misspelled a response in the `TYPE MY OWN` option during the process. Therefore, the user may still need to make corrections to the output provided by `textcleaner`. To view the changes made during the spell-checking step, the reader can enter the following code:
+
+```{r View unique changes, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# View unique spelling changes
+View(clean$spellcheck$auto)
+```
+
+The `View` function will open a tab in R allowing the user to examine a matrix containing all of the unique changes that were made during the `textcleaner` process (i.e., `clean$spellcheck$auto`). The first column of this matrix is named "from" and contains the unique *raw* responses given by the sample. The next several columns are all named "to" and contain the spell corrected responses made by `textcleaner`. The reader should see that the first row, for example, contains the response "life" in the "from" column and "louse" in the "to" column. At first, this may seem like an incorrect change; however, "life" was auto-corrected to "lice" during the spell-checking process, which was then changed to "louse" during the plural-to-singular form process.
+
+Another worthwhile example is in the sixth row where a continuous string (i.e., "horse cat dog pig goat fidh deer duck swan goose bird eagle giraffe lion hippo") was separated into individual responses. It's important that the reader checks to make sure that (1) each response was separated correctly and (2) each response is spelled correctly. Finally, in the twenty-fourth row, "creatures" appears in the "from" column and the "to" column is blank. A blank in the "to" column means that the response in the "from" column has been removed from the preprocessed data. 
+
+The reader should inspect each response in the "from" column and verify that the response(s) in the "to" column(s) are correct. If any responses in the "to" column(s) are *not* correct, then they need to be corrected. To do so, the function `correct.changes` can be used:
+
+```{r correct changes example, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Corrected 'clean' object from 'textcleaner'
+corr.clean <- correct.changes(textcleaner.obj = clean,
+                              dictionary = "animals",
+                              incorrect = c("house", "beasts", "god",
+                                            "gunny pig", "liam", "loin",
+                                            "farrot", "oh my", "lizers",
+                                            "teranchilla","manster", "lamp"))
+```
+
+`correct.changes` accepts `textcleaner` objects only. This means that the output we stored from our `textcleaner` run (i.e., `clean`) should be input into this function (i.e., `textcleaner.obj = clean`). Like `textcleaner`, the user can also specify one or more dictionaries from *SemNetDictionaries* to provide potential response options. Finally, the argument `incorrect` is used as the input for responses that were incorrectly changed. The responses entered here should be the original response in the "from" column. In the code above, we've identified several of these responses (i.e., `incorrect = c("house", "beasts", "god", "gunny pig", "liam", "loin", "farrot", "oh my", "lizers", "teranchilla","manster", "lamp"))`).
+
+Similar to `textcleaner`, `correct.changes` uses an interactive menu to correct responses. The first three response options---`1:TYPE MY OWN`, `2:GOOGLE IT`, and `3:BAD RESPONSE`---are the same as those in `textcleaner` (Table 3). Following these response options are the potential responses from the dictionary. If a response from the dictionary does not offer the appropriate correction, then `TYPE MY OWN` can be used. When using `TYPE MY OWN`, if the old response was intended to be multiple responses (e.g., *catdog*), then the user should type a comma to separate the responses (e.g., `cat, dog`). If no comma is added, then `correct.changes` will consider the `TYPE MY OWN` response as a continuous string. `BAD RESPONSE` is necessary if the changed response is not correct and the old response is an inappropriate category exemplar (this also works for continuous strings).
+
+The reader should run through `correct.changes` and make the appropriate changes. Below is a table of the changes we applied:
+
+```{r tab6, echo = FALSE, eval = TRUE, comment = NA, warning = FALSE}
+output <- matrix(c("`house`", "`mouse`", "`3:BAD RESPONSE`", "---",
+                   "`beasts`", "`yeast`", "`3:BAD RESPONSE`", "---",
+                   "`god`", "`cod`", "`3:BAD RESPONSE`", "---",
+                   "`gunny pig`", "`'bunny' 'pig'`", "`4:guinea pig`", "---",
+                   "`liam`", "`lion`", "`3:BAD RESPONSE`", "---",
+                   "`loin`", "`loon`", "`4:lion`", "---",
+                   "`farrot`", "`parrot`", "`1:TYPE MY OWN`", "ferret",
+                   "`oh my`", "`ox`", "`3:BAD RESPONSE`", "---",
+                   "`lizers`", "`liger`", "`5:lizard`", "---",
+                   "`teranchilla`", "`chinchilla`", "`5:tarantula`", "---",
+                   "`manster`", "`hamster`", "`3:BAD RESPONSE`", "---",
+                   "`lamp`", "`lamb`", "`3:BAD RESPONSE`", "---"),
+                 ncol = 4, byrow = TRUE)
+
+
+htmlTable::htmlTable(output,
+          header = c("From", "To", "Selection", "Type My Own"),
+          caption = "Table 6. Responses for `correct.changes`")
+```
+
+When finished, `correct.changes` will store its output in the object `corr.clean`. Once again, the user should verify that all changes are correct using `View(corr.clean$spellcheck$auto)`. This process should be repeated until all changes are correct. Once thoroughly checked for accuracy, a final .csv file can be saved to distribute these changes to others (e.g., colleagues, peer reviewers), enhancing the transparency of the preprocessing stage of SemNA. To do so, the reader can create a .csv file:
+
+```{r Export spell-check changes, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Save .csv of unique changes
+write.csv(corr.clean$spellcheck$auto,
+          "unique_changes.csv", row.names = FALSE)
+```
+
+### 1.2.4. `correct.changes` output
+The output of `correct.changes` is exactly the same as `textcleaner` (Table 5), except that it has been corrected for the incorrect changes in the `textcleaner` output. Note that this output was saved in a object with a different name: `corr.clean`. A couple of these objects are worth detailing further because they can be used for standard verbal fluency analyses. First, the nested object `clean.resp` contains the cleaned verbal fluency data for each participant in the order the participant gave the responses. These data are useful for performing standard analyses of clustering and switching [e.g., @troyer1997clustering], particularly with the advent of automated scoring procedures [e.g., @kim2019automatic]. This can be exported using the following code:
+
+```{r Export clean responses, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Save .csv of clean responses
+write.csv(corr.clean$responses$clean.resp, "cleaned_verbal_fluency.csv")
+```
+
+Second, the `binary` object contains the binary response matrix where each participant received a \`1\' for a response they provided and a \`0\' for a response they did not. This matrix can be used to total the number of appropriate responses each participant gave. This can be done using the following code:
+
+```{r Response totals, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Verbal fluency response totals
+totals <- rowSums(corr.clean$binary)
+```
+
+## 1.3. Summary
+In this section we described and demonstrated how the packages *SemNetDictionaries* and *SemNetCleaner* are used to facilitate efficient and reproducible preprocessing of verbal fluency data. In this process, the raw data have been spell-checked, duplicate and inappropriate responses have been removed, monikers have been converged into one response, and a binary response matrix has been generated. The binary response matrix (`corr.clean$binary`) is used in the next stage of the SemNA pipeline to estimate semantic networks.
+
+### For next steps, see Network_Estimation vignette in the *SemNetCleaner* package
+
+\newpage
+
+# References
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup

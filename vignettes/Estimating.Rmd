@@ -1,0 +1,136 @@
+---
+title: "Estimating Semantic Networks"
+author: "Alexander Christensen"
+date: "10/28/2019"
+output: html_document
+bibliography: Christensen_General_Library.bib
+csl: apa.csl
+vignette: >
+  %\VignetteIndexEntry{Network_Estimation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Vignette taken directly from @christensen2019semna
+
+With the binary response matrix, semantic networks can now be estimated. In the last few years, various computational approaches have been proposed to estimate semantic networks from verbal fluency data [@goni2011semantic; @kenett2013semantic; @lerner2009network; @zemla2018estimating]. Moreover, there are a number of packages in R that are capable of estimating semantic networks [e.g., *corpustools*; @welbers2018corpustools] and networks more generally [e.g., *igraph*; @csardi2006igraph and *qgraph*; @epskamp2012qgraph]. As described earlier, this tutorial follows the approach developed by Kenett and colleagues to estimate semantic networks based on correlations of the associations profiles of verbal fluency responses across the sample [@borodkin2016pumpkin; @kenett2013semantic; @kenett2016structure].
+
+The *SemNetCleaner*, *SemNeT*, and *NetworkToolbox* packages in R will be used to execute this stage of the pipeline. The *SemNetCleaner* package will be used to further process the binary response matrix into a finalized format for network estimation. The *SemNeT* package [@christensen2019semnet] contains several functions for the analysis of semantic networks, including a function to compute the association profiles of verbal fluency responses. The *NetworkToolbox* package [@christensen2019networktoolbox] contains functions for network analysis more generally, including functions to estimate and analyze networks. This package will be used to estimate the semantic networks from the association profile matrices.
+
+## 2.1. Process
+Kenett and colleagues' approach begins by splitting the binary response matrix into groups. Next, for each group, only responses that are provided by two or more participants are retained [e.g., @borodkin2016pumpkin]. This is done to minimize spurious associations driven by idiosyncratic responses in the sample. Finally, binary response matrices are "equated" or their responses are matched such that each group only retains responses if they are given by all other groups [@kenett2013semantic].
+
+This step is particularly important because some groups may have a different number of responses (i.e., nodes), which can introduce confounding factors [e.g., biased comparison of network parameters; @van2010comparing]. By equating the binary response matrices, the networks can be compared using the same nodes, ruling out alternative explanations of the results (e.g., difference in network structure) that could be due to differences in the number of nodes [@borodkin2016pumpkin]. Once this process is complete, the networks can be estimated using a network estimation method.
+
+We continue with the example of the dataset analyzed by @christensen2018remotely that estimated and compared semantic networks of two groups---low and high openness to experience groups. While we focus on estimating and comparing two groups, the functions in our R packages are capable of handling more than two groups.
+
+### 2.1.1. Preparation for network estimation
+The binary response matrix (i.e., `corr.clean$binary`) from the preprocessing step contains the responses for both the low and high openness to experience groups. To continue with our pipeline, we need to separate the binary response matrix into two groups. This can be done using the `Group` variable with the following code: 
+
+```{r Combine scores with binary matrix, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Attach 'Group' variable to the binary response matrix
+behav <- cbind(open.animals$Group, corr.clean$binary)
+# Create low and high openness to experience response matrices
+low <- behav[which(behav[,1]==1),-1]
+high <- behav[which(behav[,1]==2),-1]
+```
+
+The resulting matrices are the binary response matrices for the low and high openness to experience groups. For users who would like to use other network estimation methods that are not included in R, these binary response matrices can be exported using the following code:
+
+```{r Save binary, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Save binary response matrices
+write.csv(low, "low_BRM.csv", row.names = TRUE)
+write.csv(high, "high_BRM.csv", row.names = TRUE)
+```
+
+Continuing with our pipeline, we aim to minimize the number of spurious associations in the network. This can be executed with the following code:
+
+```{r Finalize groups, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Finalize matrices so that each response
+# has been given by at least two participants
+final.low <- finalize(low, minCase = 2)
+final.high <- finalize(high, minCase = 2)
+```
+
+The function `finalize` will remove responses (columns) that have responses that are not given by a certain number of people. The number of people that must give a response can be chosen using the `minCase` argument. This argument defaults to `2`, which is consistent with our approach; however, users may wish to define a higher number of minimum cases to avoid spurious associations. Next, the responses are equated to control for differences in the number of nodes. To do this, the following code can be used:
+
+```{r Equate groups, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Equate the responses across the networks
+eq <- equate(final.low, final.high)
+equate.low <- eq$final.low
+equate.high <- eq$final.high
+```
+
+The `equate` function will match the responses across any number of groups. If there are more than two groups, then they simply need to be entered (separated by commas) into the function. The output of `equate` are binary response matrices that have been matched across groups. Each group's matrix will be nested in the output and labeled with the name of the object used as input (e.g., input = `final.low` and output = `eq$final.low`).
+
+Now that the binary response matrix has been separated into two groups based on our behavioral measure and the responses have been equated between the two groups, the networks can be estimated.
+
+### 2.1.2. Network estimation
+The network estimation method that Kenett et al. apply to estimate semantic networks are called *correlation-based networks* [@zemla2018estimating]. They are called correlation-based networks because they estimate the network based on how often responses co-occur across the group [@borodkin2016pumpkin; @kenett2013semantic]. Common association measures that have been used with this approach are Pearson's pairwise correlation [e.g., @kenett2013semantic] and cosine similarity [e.g., @christensen2018remotely]. Thus, the nodes in this network represent verbal fluency responses and the edges represent their association.
+
+In our example of the work by @christensen2018remotely, the cosine similarity was used to compute the association profiles of the responses. We can apply this similarity measure with the following code:
+
+```{r Compute similarity, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Compute cosine similarity for the 'low' and
+# 'high' equated binary response matrices
+cosine.low <- similarity(equate.low, method = "cosine")
+cosine.high <- similarity(equate.high, method = "cosine")
+```
+
+The `similarity` function in the *SemNeT* package computes an association matrix from the equated response matrices. The `method` argument selects the association measure that is used. Here, we use the `"cosine"` similarity measure; however, there are a number of other similarity measures, such as Pearson's correlation (`method = "cor"`), that can be applied (see `?similarity` for more options). With these association matrices, a network estimation method can be applied.
+
+To further minimize spurious relations, we proceed to apply a filter over other association matrix. The purpose of applying a network filtering method is to minimize spurious associations and retain the most relevant information in the network [@tumminello2005tool]. Network estimation methods have certain criteria for retaining edges (e.g., statistical significance), which creates a more parsimonious model [@barfuss2016parsimonious]. For Kenett and colleagues approach, a family of network estimation methods known as *Information Filtering Networks* [@barfuss2016parsimonious; @christensen2018network] have been applied.
+
+The Information Filtering Networks methods apply various geometric constraints on the associations of the data to identify the most relevant information between nodes (e.g., edges) in a network [@christensen2018network]. Common Information Filtering Network approaches are the minimal spanning tree [@mantegna1999hierarchical], planar maximally filtered graph [@tumminello2005tool], triangulated maximally filtered graph [@massara2016network], and maximally filtered clique forest [@massara2019learning].
+
+In @christensen2018remotely, the triangulated maximally filtered graph (TMFG) method was applied. The TMFG algorithm identifies the most important edges in a network by first connecting the four nodes that have the highest sum of edge weights (i.e., association) across all nodes. Next, the algorithm identifies and adds an additional node, which maximizes its sum of edge weights to the other connected nodes. The algorithm continues until every node is connected in the network [@golino2018ega3; @massara2016network].
+
+The resulting network has $3n-6$ number of edges (where $n$ is the number of nodes) and is a planar network [i.e., it *could* be depicted on a theoretical plane without any edges crossing; @tumminello2005tool]. Because the number of edges is a function of the number of nodes, networks with the same number of nodes will have the same number of edges. This is advantageous for comparing network structures because it reduces the confound of differences between networks being due to differences in the number of edges [@christensen2018network; @van2010comparing]. The TMFG method can be implemented, using the *NetworkToolbox* package in R,[^2] with the following code:
+
+[^2]: Note that other filtering methods can also be applied using the *NetworkToolbox* including the minimal spanning tree, maximally filtered clique forest, and several thresholding methods.
+
+```{r Estimate networks, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Estimate 'low' and 'high' openness to experience networks
+net.low <- TMFG(cosine.low)$A
+net.high <- TMFG(cosine.high)$A
+```
+
+The output of these functions is a TMFG filtered semantic network for the low and high openness to experience groups. To save these networks outside of R so that other programs can be applied, the following code can be used:
+
+```{r Save the networks, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Save the networks
+write.csv(net.low, "network_low.csv", row.names = FALSE)
+write.csv(net.high, "network_high.csv", row.names = FALSE)
+```
+
+These networks are weighted, meaning that the edges correspond to the magnitude of association between nodes. It's common, however, for the edges to be converted to binary values [i.e., 1 = edge present and 0 = edge absent; @abbott2015random; @kenett2013semantic; @kenett2014investigating]. To convert a weighted network into one that is unweighted, the `binarize` function can be used:
+
+```{r Binarize networks, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
+# Binarize the networks (optional)
+net.low <- binarize(net.low)
+net.high <- binarize(net.high)
+```
+
+It's worth noting that, despite differences in edge weights, it has been shown that weighted and unweighted semantic networks typically correspond to one another [@abbott2015random]. When computing network measures in *SemNeT*, the edges will be binarized by default, meaning the statistics are computed for unweighted measures. There are options, however, to compute the weighted measures when the networks are left as weighted; therefore, it's often preferred to keep the networks as weighted.
+
+## 2.2. Summary
+In this section, we discussed and applied one approach for estimating group-based semantic networks using functions in *SemNetCleaner*, *SemNeT*, and *NetworkToolbox*. In this process, the binary response matrix was split into groups, idiosyncratic responses were removed, and group binary response matrices were equated (using *SemNetCleaner*). Then, a similarity measure was applied to these group matrices (using *SemNeT*) and a network estimation method was applied (using *NetworkToolbox*).
+
+Notably, there are other approaches for estimating semantic networks [e.g., @zemla2018estimating]. These other approaches fit seamlessly into our SemNA pipeline. For example, the binary response matrix from the preprocessing step can be used in another network estimation procedure. The output from the network estimation step are network(s) that are ready to be analyzed in the statistical analysis step of the pipeline. Effectively, this makes the network estimation step in the pipeline exchangeable with any other network estimation procedure.
+
+### For next steps, see Analyzing_Networks vignette in the *SemNeT* package
+
+\newpage
+
+# References
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup

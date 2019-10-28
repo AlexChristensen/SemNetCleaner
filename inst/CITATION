@@ -1,15 +1,17 @@
 citHeader("To cite SemNetCleaner in publications use:")
 
-citEntry(entry = "manual",
-  title        = "{SemNetCleaner}: An automated cleaning tool for semantic and linguistic data",
-  author       = "Alexander P Christensen",
+bibentry(
+  bibtype      = "article",
+  key          = "christensen2019semna",
+  title        = "Semantic network analysis {(SemNA)}: A tutorial on preprocessing, estimating, and analyzing semantic networks",
+  author       = c(person("Christensen,", "P", "Alexander"),
+		   person("Kenett,", "N", "Yoed")),
+  journal      = "PsyArXiv",
   year         = "2019",
-  note	       = "R package version 1.1.1",
-  url          = "https://cran.r-project.org/package=SemNetCleaner",
+  doi          = "10.31234/osf.io/eht87",
 
   textVersion  =
-  paste("Christensen, A. P. (2019).",
-        "SemNetCleaner: An automated cleaning tool for semantic and linguistic data.",
-        "R package version 1.1.1.",
-        "Retrieved from https://cran.r-project.org/package=SemNetCleaner")
+  paste0("Christensen, A. P., & Kenett, Y. N. (2019). ",
+        "Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks. ",
+        "PsyArXiv. https//doi.org/10.31234/osf.io/eht87")
 )

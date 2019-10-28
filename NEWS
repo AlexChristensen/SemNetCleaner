@@ -6,6 +6,10 @@ o fixed obnoxious message bug in `textcleaner` function
 
 o changed progress bar in `spell.check.dictionary` to display words done out of words in total (rather than percentage)
 
+o updated citation (PsyArXiv)
+
+o added vignettes for preprocessing and estimating semantic networks
+
 
 Changes in version 1.1.1
 
