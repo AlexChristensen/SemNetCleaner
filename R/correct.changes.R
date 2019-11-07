@@ -203,11 +203,11 @@ correct.changes <- function(textcleaner.obj, dictionary = NULL, incorrect)
         {spellcheck$auto[which(is.na(spellcheck$auto),arr.ind=TRUE)] <- ""}
         
         #Change unique spelling changes
-        #spellcheck$unique[which(spellcheck$unique[,"from"]==incorrect[i]),2:(length(corr)+1)] <- corr
+        spellcheck$unique[which(spellcheck$unique[,"from"]==incorrect[i]),2:(length(corr)+1)] <- corr
         
         #Change NA to ""
-        #if(any(is.na(spellcheck$unique)))
-        #{spellcheck$unique[which(is.na(spellcheck$unique),arr.ind=TRUE)] <- ""}
+        if(any(is.na(spellcheck$unique)))
+        {spellcheck$unique[which(is.na(spellcheck$unique),arr.ind=TRUE)] <- ""}
         
         #Change full spelling changes
         spellcheck$full[which(spellcheck$full[,"from"]==incorrect[i]),2:(length(corr)+1)] <- corr
@@ -225,7 +225,7 @@ correct.changes <- function(textcleaner.obj, dictionary = NULL, incorrect)
             
             ##Replace incorrect responses with NA
             spellcheck$auto[which(spellcheck$auto[,"from"]==incorrect[i]),-c(1,new.len)] <- ""
-            #spellcheck$unique[which(spellcheck$unique[,"from"]==incorrect[i]),-c(1,new.len)] <- ""
+            spellcheck$unique[which(spellcheck$unique[,"from"]==incorrect[i]),-c(1,new.len)] <- ""
             spellcheck$full[which(spellcheck$full[,"from"]==incorrect[i]),-c(1,new.len)] <- ""
         }
         

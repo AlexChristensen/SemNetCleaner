@@ -46,7 +46,7 @@ htmlTable::htmlTable(output,
 
 When running the above code, `textcleaner` will start preprocessing the data immediately. The reader may notice that a progress bar appears, which lets the user know *about* how many more words need to be processed (i.e., number of words processed out of how many words in total need to be processed). The progress bar should read "10 of 269 words done", meaning that `textcleaner` has already automatically processed several words. Before continuing with the tutorial, we describe how the automatic spell-check operations of `textcleaner` work and then continue the tutorial with the manual spell-check operation.
 
-### 1.2.1. Spell-check
+### Spell-check
 The first step of `textcleaner` is to spell-check all responses. The spell-checking algorithm of `textcleaner` uses automatic and manual spell-checking processes in parallel. First, missing values (e.g., `NA`), punctuations, digits, and extra white spaces are removed from each response in the raw verbal fluency data. From these responses, only the unique responses across participants are obtained, which are used as input into the spell-checking algorithm. Although these unique responses include responses that are misspelled, they drastically reduce the number of responses that `textcleaner` needs to spell-check.
 
 Next, these unique responses are checked against a dictionary and its associated monikers (only if it's a dictionary from *SemNetDictionaries*) and replaced with a homogenized name (e.g., *grizzly* $\rightarrow$ *grizzly bear*). In this process, responses are checked against their plural and singular forms to further expedite the identification of correctly spelled responses. Responses that are matched with their plural form are converted to their singular form.
@@ -124,7 +124,7 @@ The options `ADD TO DICTIONARY` and `TYPE MY OWN` allow the user to add the orig
 
 These examples fill out what is necessary to fully apply `textcleaner` to the data. At the end of the `textcleaner` process, the reader will be prompted on whether they would like to save their appendix dictionary to their computer, which allows them to use the dictionary in the future. If the user chooses to save the dictionary to their computer, then they will be asked to provide a name for this dictionary---for the tutorial, we named it: `appendix`. The file will then be saved as `appendix.dictionary.rds` in the directory the user chooses. Note that the appendix dictionary does not actually update the original pre-defined dictionary, so it's necessary to input the name of the dictionary in the `dictionary` argument of `textcleaner` when using any appendix dictionary in the future (e.g., `dictionary = c("animals", "appendix")`).
 
-### 1.2.2. `textcleaner` Output
+### `textcleaner` Output
 There are several other output objects from the `textcleaner` function. These objects are stored in a list object, which we designated in our example as `clean`. These output objects are summarized in the table below.
 
 ```{r tab5, echo = FALSE, eval = TRUE, comment = NA, warning = FALSE}
@@ -149,7 +149,7 @@ htmlTable::htmlTable(output,
 
 These objects can be accessed using a dollar sign (e.g., `clean$responses`) and nested objects can be accessed within their parent object (e.g., `clean$responses$clean.resp`). Some of these output are useful for accessing the spell-check changes that occurred. For example, `clean$spellcheck` contains objects that refer to the full list of original responses regardless of whether there were spelling changes (`$full`) and a list of unique responses that were corrected during the spell-check algorithm (`$auto`). The `removed` object contains lists of participants who were removed because of a lack of appropriate responses, which can be identified by either the participant's row (or column; `$rows`) or ID variable (`$ids`) in the input dataset (these will be the same if no ID variable is provided). Finally, the `partChanges` object contains list objects, which correspond to each participant's unique ID and the specific correction changes that were made to their responses.
 
-### 1.2.3. Verification of spell-check
+### Verification of spell-check
 Although `textcleaner` is highly efficient and automatizes most of the cleaning process, it's possible that some of the auto-correction changes are incorrect. Moreover, the user may have entered a wrong response option or misspelled a response in the `TYPE MY OWN` option during the process. Therefore, the user may still need to make corrections to the output provided by `textcleaner`. To view the changes made during the spell-checking step, the reader can enter the following code:
 
 ```{r View unique changes, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
@@ -208,7 +208,7 @@ write.csv(corr.clean$spellcheck$auto,
           "unique_changes.csv", row.names = FALSE)
 ```
 
-### 1.2.4. `correct.changes` output
+### `correct.changes` output
 The output of `correct.changes` is exactly the same as `textcleaner` (Table 5), except that it has been corrected for the incorrect changes in the `textcleaner` output. Note that this output was saved in a object with a different name: `corr.clean`. A couple of these objects are worth detailing further because they can be used for standard verbal fluency analyses. First, the nested object `clean.resp` contains the cleaned verbal fluency data for each participant in the order the participant gave the responses. These data are useful for performing standard analyses of clustering and switching [e.g., @troyer1997clustering], particularly with the advent of automated scoring procedures [e.g., @kim2019automatic]. This can be exported using the following code:
 
 ```{r Export clean responses, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
@@ -223,7 +223,7 @@ Second, the `binary` object contains the binary response matrix where each parti
 totals <- rowSums(corr.clean$binary)
 ```
 
-## 1.3. Summary
+## Summary
 In this section we described and demonstrated how the packages *SemNetDictionaries* and *SemNetCleaner* are used to facilitate efficient and reproducible preprocessing of verbal fluency data. In this process, the raw data have been spell-checked, duplicate and inappropriate responses have been removed, monikers have been converged into one response, and a binary response matrix has been generated. The binary response matrix (`corr.clean$binary`) is used in the next stage of the SemNA pipeline to estimate semantic networks.
 
 ### For next steps, see Network_Estimation vignette in the *SemNetCleaner* package

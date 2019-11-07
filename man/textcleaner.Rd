@@ -118,7 +118,7 @@ RECOMMENDED
 
 1. You can make a note in your \code{R} script for the change you wanted
 to make (you can keep moving through the cleaning process).
-After the cleaning process is through, you can check the \code{spellcheck$unique}
+After the cleaning process is through, you can check the \code{spellcheck$auto}
 output of \code{\link[SemNetCleaner]{textcleaner}} to see what changes
 you made. To correct any changes you made in the cleaning process,
 you can use the \code{\link[SemNetCleaner]{correct.changes}} function

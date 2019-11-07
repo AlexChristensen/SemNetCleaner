@@ -50,7 +50,7 @@
 #' 
 #' 1. You can make a note in your \code{R} script for the change you wanted
 #' to make (you can keep moving through the cleaning process).
-#' After the cleaning process is through, you can check the \code{spellcheck$unique}
+#' After the cleaning process is through, you can check the \code{spellcheck$auto}
 #' output of \code{\link[SemNetCleaner]{textcleaner}} to see what changes
 #' you made. To correct any changes you made in the cleaning process,
 #' you can use the \code{\link[SemNetCleaner]{correct.changes}} function
@@ -285,11 +285,11 @@ textcleaner <- function(data, miss = 99,
     spellcheck$full <- as.data.frame(uniqcomb,stringsAsFactors = FALSE)
     
     #check for rows that need to be removed
-    #rm.rows <- full.match(uniqcomb[,1],uniqcomb[,2])
+    rm.rows <- full.match(uniqcomb[,1],uniqcomb[,2])
     rm.rows.inc <- full.match(uniqcomb.inc[,1],uniqcomb.inc[,2])
     
     #unique list of changed and unchanged responses
-    #spellcheck$unique <- as.data.frame(uniqcomb[-which(rm.rows),],stringsAsFactors = FALSE)
+    spellcheck$unique <- as.data.frame(uniqcomb[-which(rm.rows),],stringsAsFactors = FALSE)
     
     #unique list of spell-checked responses
     spellcheck$auto <- as.data.frame(uniqcomb.inc[-which(rm.rows.inc),],stringsAsFactors = FALSE)

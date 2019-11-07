@@ -12,7 +12,7 @@
 
 <meta name="author" content="Alexander Christensen" />
 
-<meta name="date" content="2019-10-27" />
+<meta name="date" content="2019-10-28" />
 
 <title>Preprocessing Verbal Fluency Data</title>
 
@@ -365,7 +365,7 @@ summary {
 
 <h1 class="title toc-ignore">Preprocessing Verbal Fluency Data</h1>
 <h4 class="author">Alexander Christensen</h4>
-<h4 class="date">10/27/2019</h4>
+<h4 class="date">10/28/2019</h4>
 
 </div>
 
@@ -440,7 +440,7 @@ Enables automated spell-checking using the Damerau-Levenshtein distance (default
 <p>When running the above code, <code>textcleaner</code> will start preprocessing the data immediately. The reader may notice that a progress bar appears, which lets the user know <em>about</em> how many more words need to be processed (i.e., number of words processed out of how many words in total need to be processed). The progress bar should read “10 of 269 words done”, meaning that <code>textcleaner</code> has already automatically processed several words. Before continuing with the tutorial, we describe how the automatic spell-check operations of <code>textcleaner</code> work and then continue the tutorial with the manual spell-check operation.</p>
 </div>
 <div id="spell-check" class="section level3">
-<h3>1.2.1. Spell-check</h3>
+<h3>Spell-check</h3>
 <p>The first step of <code>textcleaner</code> is to spell-check all responses. The spell-checking algorithm of <code>textcleaner</code> uses automatic and manual spell-checking processes in parallel. First, missing values (e.g., <code>NA</code>), punctuations, digits, and extra white spaces are removed from each response in the raw verbal fluency data. From these responses, only the unique responses across participants are obtained, which are used as input into the spell-checking algorithm. Although these unique responses include responses that are misspelled, they drastically reduce the number of responses that <code>textcleaner</code> needs to spell-check.</p>
 <p>Next, these unique responses are checked against a dictionary and its associated monikers (only if it’s a dictionary from <em>SemNetDictionaries</em>) and replaced with a homogenized name (e.g., <em>grizzly</em> <span class="math inline">\(\rightarrow\)</span> <em>grizzly bear</em>). In this process, responses are checked against their plural and singular forms to further expedite the identification of correctly spelled responses. Responses that are matched with their plural form are converted to their singular form.</p>
 <p>The unique responses that have not been matched in this process are then forwarded, one-by-one, to the spell-check algorithm. The algorithm will first attempt to auto-correct the response. If it cannot be auto-corrected, then the response is passed onto the manual portion of the algorithm. This process is repeated for each unique response entered into the spell-check algorithm. We first describe how a response gets auto-corrected in the automated spell-check and then we describe the manual spell-check for a response that could not be auto-corrected.</p>
@@ -670,7 +670,7 @@ guinea
 <p>These examples fill out what is necessary to fully apply <code>textcleaner</code> to the data. At the end of the <code>textcleaner</code> process, the reader will be prompted on whether they would like to save their appendix dictionary to their computer, which allows them to use the dictionary in the future. If the user chooses to save the dictionary to their computer, then they will be asked to provide a name for this dictionary—for the tutorial, we named it: <code>appendix</code>. The file will then be saved as <code>appendix.dictionary.rds</code> in the directory the user chooses. Note that the appendix dictionary does not actually update the original pre-defined dictionary, so it’s necessary to input the name of the dictionary in the <code>dictionary</code> argument of <code>textcleaner</code> when using any appendix dictionary in the future (e.g., <code>dictionary = c(&quot;animals&quot;, &quot;appendix&quot;)</code>).</p>
 </div>
 <div id="textcleaner-output" class="section level3">
-<h3>1.2.2. <code>textcleaner</code> Output</h3>
+<h3><code>textcleaner</code> Output</h3>
 <p>There are several other output objects from the <code>textcleaner</code> function. These objects are stored in a list object, which we designated in our example as <code>clean</code>. These output objects are summarized in the table below.</p>
 <table class="gmisc_table" style="border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;">
 <thead>
@@ -806,7 +806,7 @@ List of list objects labeled with each participant’s ID variable. Each partici
 <p>These objects can be accessed using a dollar sign (e.g., <code>clean$responses</code>) and nested objects can be accessed within their parent object (e.g., <code>clean$responses$clean.resp</code>). Some of these output are useful for accessing the spell-check changes that occurred. For example, <code>clean$spellcheck</code> contains objects that refer to the full list of original responses regardless of whether there were spelling changes (<code>$full</code>) and a list of unique responses that were corrected during the spell-check algorithm (<code>$auto</code>). The <code>removed</code> object contains lists of participants who were removed because of a lack of appropriate responses, which can be identified by either the participant’s row (or column; <code>$rows</code>) or ID variable (<code>$ids</code>) in the input dataset (these will be the same if no ID variable is provided). Finally, the <code>partChanges</code> object contains list objects, which correspond to each participant’s unique ID and the specific correction changes that were made to their responses.</p>
 </div>
 <div id="verification-of-spell-check" class="section level3">
-<h3>1.2.3. Verification of spell-check</h3>
+<h3>Verification of spell-check</h3>
 <p>Although <code>textcleaner</code> is highly efficient and automatizes most of the cleaning process, it’s possible that some of the auto-correction changes are incorrect. Moreover, the user may have entered a wrong response option or misspelled a response in the <code>TYPE MY OWN</code> option during the process. Therefore, the user may still need to make corrections to the output provided by <code>textcleaner</code>. To view the changes made during the spell-checking step, the reader can enter the following code:</p>
 <pre class="r"><code># View unique spelling changes
 View(clean$spellcheck$auto)</code></pre>
@@ -1022,7 +1022,7 @@ write.csv(corr.clean$spellcheck$auto,
           &quot;unique_changes.csv&quot;, row.names = FALSE)</code></pre>
 </div>
 <div id="correct.changes-output" class="section level3">
-<h3>1.2.4. <code>correct.changes</code> output</h3>
+<h3><code>correct.changes</code> output</h3>
 <p>The output of <code>correct.changes</code> is exactly the same as <code>textcleaner</code> (Table 5), except that it has been corrected for the incorrect changes in the <code>textcleaner</code> output. Note that this output was saved in a object with a different name: <code>corr.clean</code>. A couple of these objects are worth detailing further because they can be used for standard verbal fluency analyses. First, the nested object <code>clean.resp</code> contains the cleaned verbal fluency data for each participant in the order the participant gave the responses. These data are useful for performing standard analyses of clustering and switching <span class="citation">(e.g., Troyer, Moscovitch, &amp; Winocur, 1997)</span>, particularly with the advent of automated scoring procedures <span class="citation">(e.g., Kim, Kim, Wolters, MacPherson, &amp; Park, 2019)</span>. This can be exported using the following code:</p>
 <pre class="r"><code># Save .csv of clean responses
 write.csv(corr.clean$responses$clean.resp, &quot;cleaned_verbal_fluency.csv&quot;)</code></pre>
@@ -1031,10 +1031,10 @@ write.csv(corr.clean$responses$clean.resp, &quot;cleaned_verbal_fluency.csv&quot
 totals &lt;- rowSums(corr.clean$binary)</code></pre>
 </div>
 <div id="summary" class="section level2">
-<h2>1.3. Summary</h2>
+<h2>Summary</h2>
 <p>In this section we described and demonstrated how the packages <em>SemNetDictionaries</em> and <em>SemNetCleaner</em> are used to facilitate efficient and reproducible preprocessing of verbal fluency data. In this process, the raw data have been spell-checked, duplicate and inappropriate responses have been removed, monikers have been converged into one response, and a binary response matrix has been generated. The binary response matrix (<code>corr.clean$binary</code>) is used in the next stage of the SemNA pipeline to estimate semantic networks.</p>
-<div id="for-next-steps-see-network-estimation-vignette-in-semnetcleaner" class="section level3">
-<h3>For next steps, see Network Estimation vignette in <em>SemNetCleaner</em></h3>
+<div id="for-next-steps-see-network_estimation-vignette-in-the-semnetcleaner-package" class="section level3">
+<h3>For next steps, see Network_Estimation vignette in the <em>SemNetCleaner</em> package</h3>
 <div style="page-break-after: always;"></div>
 </div>
 </div>

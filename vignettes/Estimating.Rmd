@@ -22,14 +22,14 @@ With the binary response matrix, semantic networks can now be estimated. In the 
 
 The *SemNetCleaner*, *SemNeT*, and *NetworkToolbox* packages in R will be used to execute this stage of the pipeline. The *SemNetCleaner* package will be used to further process the binary response matrix into a finalized format for network estimation. The *SemNeT* package [@christensen2019semnet] contains several functions for the analysis of semantic networks, including a function to compute the association profiles of verbal fluency responses. The *NetworkToolbox* package [@christensen2019networktoolbox] contains functions for network analysis more generally, including functions to estimate and analyze networks. This package will be used to estimate the semantic networks from the association profile matrices.
 
-## 2.1. Process
+## Process
 Kenett and colleagues' approach begins by splitting the binary response matrix into groups. Next, for each group, only responses that are provided by two or more participants are retained [e.g., @borodkin2016pumpkin]. This is done to minimize spurious associations driven by idiosyncratic responses in the sample. Finally, binary response matrices are "equated" or their responses are matched such that each group only retains responses if they are given by all other groups [@kenett2013semantic].
 
 This step is particularly important because some groups may have a different number of responses (i.e., nodes), which can introduce confounding factors [e.g., biased comparison of network parameters; @van2010comparing]. By equating the binary response matrices, the networks can be compared using the same nodes, ruling out alternative explanations of the results (e.g., difference in network structure) that could be due to differences in the number of nodes [@borodkin2016pumpkin]. Once this process is complete, the networks can be estimated using a network estimation method.
 
 We continue with the example of the dataset analyzed by @christensen2018remotely that estimated and compared semantic networks of two groups---low and high openness to experience groups. While we focus on estimating and comparing two groups, the functions in our R packages are capable of handling more than two groups.
 
-### 2.1.1. Preparation for network estimation
+### Preparation for network estimation
 The binary response matrix (i.e., `corr.clean$binary`) from the preprocessing step contains the responses for both the low and high openness to experience groups. To continue with our pipeline, we need to separate the binary response matrix into two groups. This can be done using the `Group` variable with the following code: 
 
 ```{r Combine scores with binary matrix, echo = TRUE, eval = FALSE, comment = NA, warning = FALSE}
@@ -70,7 +70,7 @@ The `equate` function will match the responses across any number of groups. If t
 
 Now that the binary response matrix has been separated into two groups based on our behavioral measure and the responses have been equated between the two groups, the networks can be estimated.
 
-### 2.1.2. Network estimation
+### Network estimation
 The network estimation method that Kenett et al. apply to estimate semantic networks are called *correlation-based networks* [@zemla2018estimating]. They are called correlation-based networks because they estimate the network based on how often responses co-occur across the group [@borodkin2016pumpkin; @kenett2013semantic]. Common association measures that have been used with this approach are Pearson's pairwise correlation [e.g., @kenett2013semantic] and cosine similarity [e.g., @christensen2018remotely]. Thus, the nodes in this network represent verbal fluency responses and the edges represent their association.
 
 In our example of the work by @christensen2018remotely, the cosine similarity was used to compute the association profiles of the responses. We can apply this similarity measure with the following code:
@@ -118,7 +118,7 @@ net.high <- binarize(net.high)
 
 It's worth noting that, despite differences in edge weights, it has been shown that weighted and unweighted semantic networks typically correspond to one another [@abbott2015random]. When computing network measures in *SemNeT*, the edges will be binarized by default, meaning the statistics are computed for unweighted measures. There are options, however, to compute the weighted measures when the networks are left as weighted; therefore, it's often preferred to keep the networks as weighted.
 
-## 2.2. Summary
+## Summary
 In this section, we discussed and applied one approach for estimating group-based semantic networks using functions in *SemNetCleaner*, *SemNeT*, and *NetworkToolbox*. In this process, the binary response matrix was split into groups, idiosyncratic responses were removed, and group binary response matrices were equated (using *SemNetCleaner*). Then, a similarity measure was applied to these group matrices (using *SemNeT*) and a network estimation method was applied (using *NetworkToolbox*).
 
 Notably, there are other approaches for estimating semantic networks [e.g., @zemla2018estimating]. These other approaches fit seamlessly into our SemNA pipeline. For example, the binary response matrix from the preprocessing step can be used in another network estimation procedure. The output from the network estimation step are network(s) that are ready to be analyzed in the statistical analysis step of the pipeline. Effectively, this makes the network estimation step in the pipeline exchangeable with any other network estimation procedure.

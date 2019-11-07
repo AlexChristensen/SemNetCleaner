@@ -376,12 +376,12 @@ summary {
 <p>The <em>SemNetCleaner</em>, <em>SemNeT</em>, and <em>NetworkToolbox</em> packages in R will be used to execute this stage of the pipeline. The <em>SemNetCleaner</em> package will be used to further process the binary response matrix into a finalized format for network estimation. The <em>SemNeT</em> package <span class="citation">(Christensen &amp; Kenett, 2019)</span> contains several functions for the analysis of semantic networks, including a function to compute the association profiles of verbal fluency responses. The <em>NetworkToolbox</em> package <span class="citation">(Christensen, 2018)</span> contains functions for network analysis more generally, including functions to estimate and analyze networks. This package will be used to estimate the semantic networks from the association profile matrices.</p>
 </div>
 <div id="process" class="section level2">
-<h2>2.1. Process</h2>
+<h2>Process</h2>
 <p>Kenett and colleagues’ approach begins by splitting the binary response matrix into groups. Next, for each group, only responses that are provided by two or more participants are retained <span class="citation">(e.g., Borodkin et al., 2016)</span>. This is done to minimize spurious associations driven by idiosyncratic responses in the sample. Finally, binary response matrices are “equated” or their responses are matched such that each group only retains responses if they are given by all other groups <span class="citation">(Kenett et al., 2013)</span>.</p>
 <p>This step is particularly important because some groups may have a different number of responses (i.e., nodes), which can introduce confounding factors <span class="citation">(e.g., biased comparison of network parameters; van Wijk, Stam, &amp; Daffertshofer, 2010)</span>. By equating the binary response matrices, the networks can be compared using the same nodes, ruling out alternative explanations of the results (e.g., difference in network structure) that could be due to differences in the number of nodes <span class="citation">(Borodkin et al., 2016)</span>. Once this process is complete, the networks can be estimated using a network estimation method.</p>
 <p>We continue with the example of the dataset analyzed by <span class="citation">Christensen et al. (2018b)</span> that estimated and compared semantic networks of two groups—low and high openness to experience groups. While we focus on estimating and comparing two groups, the functions in our R packages are capable of handling more than two groups.</p>
 <div id="preparation-for-network-estimation" class="section level3">
-<h3>2.1.1. Preparation for network estimation</h3>
+<h3>Preparation for network estimation</h3>
 <p>The binary response matrix (i.e., <code>corr.clean$binary</code>) from the preprocessing step contains the responses for both the low and high openness to experience groups. To continue with our pipeline, we need to separate the binary response matrix into two groups. This can be done using the <code>Group</code> variable with the following code:</p>
 <pre class="r"><code># Attach &#39;Group&#39; variable to the binary response matrix
 behav &lt;- cbind(open.animals$Group, corr.clean$binary)
@@ -406,7 +406,7 @@ equate.high &lt;- eq$final.high</code></pre>
 <p>Now that the binary response matrix has been separated into two groups based on our behavioral measure and the responses have been equated between the two groups, the networks can be estimated.</p>
 </div>
 <div id="network-estimation" class="section level3">
-<h3>2.1.2. Network estimation</h3>
+<h3>Network estimation</h3>
 <p>The network estimation method that Kenett et al. apply to estimate semantic networks are called <em>correlation-based networks</em> <span class="citation">(Zemla &amp; Austerweil, 2018)</span>. They are called correlation-based networks because they estimate the network based on how often responses co-occur across the group <span class="citation">(Borodkin et al., 2016; Kenett et al., 2013)</span>. Common association measures that have been used with this approach are Pearson’s pairwise correlation <span class="citation">(e.g., Kenett et al., 2013)</span> and cosine similarity <span class="citation">(e.g., Christensen et al., 2018b)</span>. Thus, the nodes in this network represent verbal fluency responses and the edges represent their association.</p>
 <p>In our example of the work by <span class="citation">Christensen et al. (2018b)</span>, the cosine similarity was used to compute the association profiles of the responses. We can apply this similarity measure with the following code:</p>
 <pre class="r"><code># Compute cosine similarity for the &#39;low&#39; and
@@ -433,11 +433,11 @@ net.high &lt;- binarize(net.high)</code></pre>
 </div>
 </div>
 <div id="summary" class="section level2">
-<h2>2.2. Summary</h2>
+<h2>Summary</h2>
 <p>In this section, we discussed and applied one approach for estimating group-based semantic networks using functions in <em>SemNetCleaner</em>, <em>SemNeT</em>, and <em>NetworkToolbox</em>. In this process, the binary response matrix was split into groups, idiosyncratic responses were removed, and group binary response matrices were equated (using <em>SemNetCleaner</em>). Then, a similarity measure was applied to these group matrices (using <em>SemNeT</em>) and a network estimation method was applied (using <em>NetworkToolbox</em>).</p>
 <p>Notably, there are other approaches for estimating semantic networks <span class="citation">(e.g., Zemla &amp; Austerweil, 2018)</span>. These other approaches fit seamlessly into our SemNA pipeline. For example, the binary response matrix from the preprocessing step can be used in another network estimation procedure. The output from the network estimation step are network(s) that are ready to be analyzed in the statistical analysis step of the pipeline. Effectively, this makes the network estimation step in the pipeline exchangeable with any other network estimation procedure.</p>
-<div id="for-next-steps-see-analyzing_networks-vignette-in-semnet" class="section level3">
-<h3>For next steps, see Analyzing_Networks vignette in <em>SemNeT</em></h3>
+<div id="for-next-steps-see-analyzing_networks-vignette-in-the-semnet-package" class="section level3">
+<h3>For next steps, see Analyzing_Networks vignette in the <em>SemNeT</em> package</h3>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
