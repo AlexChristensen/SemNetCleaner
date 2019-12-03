@@ -4,8 +4,13 @@
 \alias{textcleaner}
 \title{Text Cleaner}
 \usage{
-textcleaner(data, miss = 99, partBY = c("row", "col"),
-  dictionary = NULL, tolerance = 1)
+textcleaner(
+  data,
+  miss = 99,
+  partBY = c("row", "col"),
+  dictionary = NULL,
+  tolerance = 1
+)
 }
 \arguments{
 \item{data}{Matrix or data frame.

@@ -4,8 +4,14 @@
 \alias{word.check.wrapper}
 \title{A Spell-checking wrapper}
 \usage{
-word.check.wrapper(word, dictionary, context = NULL, part.resp,
-  tolerance = 1, rem.resp)
+word.check.wrapper(
+  word,
+  dictionary,
+  context = NULL,
+  part.resp,
+  tolerance = 1,
+  rem.resp
+)
 }
 \arguments{
 \item{word}{Character.

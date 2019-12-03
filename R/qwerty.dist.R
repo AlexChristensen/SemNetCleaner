@@ -30,6 +30,10 @@
 #QWERTY Distance----
 qwerty.dist <- function(wordA, wordB)
 {
+    # Remove diacritic characters
+    wordA <- iconv(wordA, to='ASCII//TRANSLIT')
+    wordB <- iconv(wordB, to='ASCII//TRANSLIT')
+    
     if(nchar(wordA)==nchar(wordB))
     {
         #Keyboard structure

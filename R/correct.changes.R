@@ -249,6 +249,20 @@ correct.changes <- function(textcleaner.obj, dictionary = NULL, incorrect)
                     {partChanges[[j]] <- t(partChanges[[j]])}
                 }
                 
+                #Make sure its a matrix with column names
+                if(is.null(colnames(partChanges[[j]])))
+                {
+                    if(ncol(partChanges[[j]]) == 1)
+                    {
+                        # Fix issue
+                        fix <- cbind(partChanges[[j]], rep(NA, nrow(partChanges[[j]])))
+                        colnames(fix) <- c("from", "to")
+                        
+                        partChanges[[j]] <- fix
+                    }
+                }
+                    
+                
                 #Search through participants to identify which
                 #participant needs the change
                 if(incorrect[i] %in% partChanges[[j]][,"from"])
