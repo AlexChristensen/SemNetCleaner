@@ -4,6 +4,8 @@ o diacritic characters bug fux in `qwerty.dist`
 
 o temporary bug fix in `correct.changes` (see code)
 
+o removed progress bar for Macs and Linux -- will work on progress bar solution at a later time
+
 
 Changes in version 1.1.3
 

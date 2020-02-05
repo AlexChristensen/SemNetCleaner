@@ -117,10 +117,13 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
     #########################
     
     ####progress bar####
-    pb <- tcltk::tkProgressBar(title = "R progress bar", label = "Spell-check progress",
-                  min = 0, max = length(incorrect), initial = 0, width = 300)
-    invisible(tcltk::getTkProgressBar(pb))
-    count <- 0
+    if(Sys.info()["sysname"] == "Windows")
+    {
+        pb <- tcltk::tkProgressBar(title = "R progress bar", label = "Spell-check progress",
+                                   min = 0, max = length(incorrect), initial = 0, width = 300)
+        invisible(tcltk::getTkProgressBar(pb))
+        count <- 0
+    }
     ####progress bar####
     
     #initialize check for saving appendix dictionary
@@ -310,15 +313,19 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
         {rem.resp <- wcw$rem.resp}
         
         ####progress bar####
-        count <- count + 1
-        percent <- floor((count/length(incorrect))*100)
-        info <- sprintf(paste(count, "of", length(incorrect), "words done"), percent)
-        tcltk::setTkProgressBar(pb, count, sprintf("Spell-check Progress (%s)", info), info)
+        if(Sys.info()["sysname"] == "Windows")
+        {
+            count <- count + 1
+            percent <- floor((count/length(incorrect))*100)
+            info <- sprintf(paste(count, "of", length(incorrect), "words done"), percent)
+            tcltk::setTkProgressBar(pb, count, sprintf("Spell-check Progress (%s)", info), info)
+        }
         ####progress bar####
     }
     
     ####progress bar####
-    close(pb)
+    if(Sys.info()["sysname"] == "Windows")
+    {close(pb)}
     ####progress bar####
     
     #if any words were added to the appendix dictionary,
