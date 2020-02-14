@@ -31,7 +31,7 @@ stringdist::stringdist("big", "bug", method="dl")
 #Different distances for QWERTY
 qwerty.dist("big", "pig")
 
-qwerty.dist("big", "bug") # Probably meant to type "bug"
+qwerty.dist("big", "bug") # Probably meant to type "bug" 
 
 }
 \author{

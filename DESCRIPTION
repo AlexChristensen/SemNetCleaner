@@ -12,6 +12,6 @@ BugReports: https://github.com/AlexChristensen/SemNetCleaner/issues
 NeedsCompilation: no
 Encoding: UTF-8
 LazyData: true
-Imports: hunspell, searcher, stringdist, tcltk, foreign, readxl, R.matlab, knitr, rmarkdown, htmlTable
+Imports: hunspell, searcher, stringdist, tcltk, foreign, readxl, R.matlab, knitr, rmarkdown, htmlTable, stringi
 VignetteBuilder: knitr
 RoxygenNote: 7.0.2
