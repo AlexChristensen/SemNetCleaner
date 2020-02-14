@@ -357,12 +357,15 @@ spell.check.dictionary <- function (check, dictionary, part.resp, tolerance = 1)
     }
     
     #secondary monikers if animals dictionary
-    if(length(misnom)!=0)
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
     {
-        #check for monikers
-        for(i in 1:length(to))
-            for(j in 1:length(to[[i]]))
-        {to[[i]][j] <- SemNetCleaner::moniker(to[[i]][j],misnom)}
+        if(length(misnom)!=0)
+        {
+            #check for monikers
+            for(i in 1:length(to))
+                for(j in 1:length(to[[i]]))
+                {to[[i]][j] <- SemNetCleaner::moniker(to[[i]][j],misnom)}
+        }
     }
     
     #secondary search for words to combine
