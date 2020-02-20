@@ -91,7 +91,8 @@ singularize <- function(word)
                    edges = "edge",
                    fissures = "fissure",
                    sutures = "suture",
-                   occurrences = "occurrence")
+                   occurrences = "occurrence",
+                   bees = "bee")
     
     if(is.null(word))
     {word <- orig.word
