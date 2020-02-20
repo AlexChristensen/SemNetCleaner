@@ -77,7 +77,21 @@ singularize <- function(word)
                    feet = "foot",
                    mice = "mouse",
                    people = "person",
-                   lice = "louse")
+                   lice = "louse",
+                   valves = "valve",
+                   trees = "tree",
+                   scribbles = "scribble",
+                   peduncles = "peduncle",
+                   mallees = "mallee",
+                   panicles = "panicle",
+                   ridges = "ridge",
+                   petioles = "petiole",
+                   angles = "angle",
+                   bristles = "bristle",
+                   edges = "edge",
+                   fissures = "fissure",
+                   sutures = "suture",
+                   occurrences = "occurrence")
     
     if(is.null(word))
     {word <- orig.word
