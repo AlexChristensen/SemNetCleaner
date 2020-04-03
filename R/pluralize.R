@@ -174,7 +174,14 @@ pluralize <- function (word)
     }
     
     if(!word %in% checker)
-    {return(orig.word)
+    {
+        # Fail-safe
+        word <- paste(orig.word,"s",sep="",collapse="")
+        
+        if(word %in% checker)
+        {return(word)
+        }else{return(orig.word)}
+
     }else{return(word)}
 }
 #----

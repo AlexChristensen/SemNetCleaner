@@ -116,7 +116,7 @@ read.data <- function (file = file.choose(), header = TRUE, sep = ",", ...)
         switch(ext,
                rdata = load(file, envir = .GlobalEnv),
                rds = readRDS(file),
-               csv = read.csv(file, header = header, sep = sep, asis = TRUE, ...),
+               csv = read.csv(file, header = header, sep = sep, as.is = TRUE, ...),
                xlsx = as.data.frame(readxl::read_xlsx(file, col_names = header, ...)),
                xls = as.data.frame(readxl::read_xls(file, col_names = header, ...)),
                sav = foreign::read.spss(file, to.data.frame = TRUE, stringAsFactors = FALSE, ...),

@@ -4,7 +4,9 @@
 \name{open.animals}
 \alias{open.animals}
 \title{Openness and Verbal Fluency}
-\format{open.animals (matrix 516 x 38)}
+\format{
+open.animals (matrix 516 x 38)
+}
 \usage{
 data(open.animals)
 }

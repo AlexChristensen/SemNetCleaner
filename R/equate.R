@@ -38,6 +38,8 @@
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @export
+# Equate matrices function
+# Updated 03.04.2020
 equate <- function(...)
 {
     # Equate function

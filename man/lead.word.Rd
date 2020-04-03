@@ -4,7 +4,9 @@
 \name{lead.word}
 \alias{lead.word}
 \title{Lead Word Example}
-\format{lead.word (vector, length = 1)}
+\format{
+lead.word (vector, length = 1)
+}
 \usage{
 data(lead.word)
 }

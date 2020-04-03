@@ -77,6 +77,7 @@ bin2resp <- function (rmat, to.data.frame = FALSE)
         
         part <- as.data.frame(part.df)
         colnames(part) <- row.names(rmat)
+        part <- t(part)
     }
     
     return(part)

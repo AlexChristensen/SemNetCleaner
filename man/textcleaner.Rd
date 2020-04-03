@@ -64,11 +64,11 @@ and a response that a participant has not provided is a '\code{0}'}
 
 \itemize{
 
-\item{clean.resp}
+\item{clean}
 {A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 This can be used as a final dataset for analyses (e.g., fluency of responses)}
 
-\item{orig.resp}
+\item{original}
 {The original response matrix that has had white spaces before and
 after words response. Also converts all upper-case letters to lower case}
 

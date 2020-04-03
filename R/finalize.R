@@ -28,9 +28,10 @@
 #' 
 #' @export
 #Finalize Function----
+#Updated 31.03.2020
 finalize <- function (rmat, minCase = 2)
 {
-    fmat <- rmat[which(colSums(rmat)>=minCase)]
+    fmat <- rmat[,which(colSums(rmat)>=minCase)]
     
     return(fmat)
 }
