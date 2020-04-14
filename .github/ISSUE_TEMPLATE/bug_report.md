@@ -7,17 +7,16 @@ assignees: AlexChristensen
 
 ---
 
-**Describe the error (including a copy and pasted from R console)**
+<!--- Please replace information in the [square brackets] and delete the brackets -->
+
+**Describe the error (including a copy and paste of error from your R console)**
 A clear and concise description of what the bug is.
 
-`Insert error code here`
+[`Copy and paste error code here`]
 
 **To Reproduce (please attach any necessary data)**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+- Function error occurred in: [e.g. textcleaner]
+- Arguments used in function:  [e.g. `textcleaner(data = data, miss = 99, partBY = "row", dictionary = "animals")`]
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
@@ -25,9 +24,13 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
+**R, SemNetCleaner, and SemNetDictionaries versions:**
+- R [e.g. 3.6.3]
+- SemNetCleaner: [e.g. 1.2.0]
+- SemNetDictionaries: [e.g. 1.1.6]
+
 **Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
+ - OS: [e.g. Windows, Mac, Linux]
  - Version [e.g. 22]
 
 **Additional context**
