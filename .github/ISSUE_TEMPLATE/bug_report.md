@@ -14,9 +14,11 @@ A clear and concise description of what the bug is.
 
 [`Copy and paste error code here`]
 
-**To Reproduce (please attach any necessary data)**
+**To Reproduce**
 - Function error occurred in: [e.g. textcleaner]
 - Arguments used in function:  [e.g. `textcleaner(data = data, miss = 99, partBY = "row", dictionary = "animals")`]
+
+*Optional: Attach data to issue or send data to alexpaulchristensen@gmail.com to reproduce issue*
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
