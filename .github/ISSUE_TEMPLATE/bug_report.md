@@ -17,6 +17,8 @@ Copy and paste error code here
 **To Reproduce:**
 - Function error occurred in: [e.g. ,moniker function of textcleaner]
 
+*Optional (but extremely helpful): Attach data to issue or send data to alexpaulchristensen@gmail.com*
+
 **R, SemNetCleaner, and SemNetDictionaries versions:**
 - R [e.g. 3.6.3]
 - SemNetCleaner: [e.g. 1.2.0]
@@ -30,5 +32,3 @@ Copy and paste error code here
 - [e.g., function with arguments]
 - [e.g., worked before but doesn't now]
 - [e.g., expected behavior]
-
-*Optional: Attach data to issue or send data to alexpaulchristensen@gmail.com to reproduce issue*
