@@ -4,15 +4,18 @@
 \alias{best.guess}
 \title{Makes Best Guess for Spelling Correction}
 \usage{
-best.guess(word, dictionary, tolerance = 1)
+best.guess(word, full.dictionary, dictionary = NULL, tolerance = 1)
 }
 \arguments{
 \item{word}{Character.
 A word to get best guess spelling options from dictionary}
 
-\item{dictionary}{Character vector.
+\item{full.dictionary}{Character vector.
 The dictionary to search for best guesses in.
 See \code{\link{SemNetDictionaries}}}
+
+\item{dictionary}{Character.
+A dictionary from \code{\link{SemNetDictionaries}} for monikers (enhances guessing)}
 
 \item{tolerance}{Numeric.
 The distance tolerance set for automatic spell-correction purposes.
@@ -20,8 +23,7 @@ This function uses the function \code{\link[stringdist]{stringdist}}
 to compute the Damerau-Levenshtein distance, which is used to determine potential best guesses
 
 Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
-automatically output as best guess responses, which are then passed through
-\code{\link[SemNetCleaner]{word.check.wrapper}}. This default is based on Damerau's (1964)
+automatically output as best guess responses. This default is based on Damerau's (1964)
 proclamation that more than 80\% of all human misspellings can be expressed by a single error
 (e.g., insertion, deletion, substitution, and transposition). If there is more than one word
 that is within or below the distance tolerance, then these will be provided as potential
@@ -43,7 +45,7 @@ is used to guide inferences into what word the participant was trying to spell f
 }
 \examples{
 # Misspelled "bombay"
-best.guess("bomba", SemNetDictionaries::animals.dictionary)
+best.guess("bomba", full.dictionary = SemNetDictionaries::animals.dictionary)
 
 }
 \references{

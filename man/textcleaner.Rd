@@ -5,21 +5,19 @@
 \title{Text Cleaner}
 \usage{
 textcleaner(
-  data,
+  data = NULL,
   miss = 99,
   partBY = c("row", "col"),
   dictionary = NULL,
-  tolerance = 1
+  continue = NULL
 )
 }
 \arguments{
 \item{data}{Matrix or data frame.
 A dataset of text data.
-Participant IDs will be automatically identified
-if they are included.
+Participant IDs will be automatically identified if they are included.
 If no IDs are provided, then their order in the corresponding
-row (or column is used).
-A message will notify the user how IDs were assigned}
+row (or column is used). A message will notify the user how IDs were assigned}
 
 \item{miss}{Numeric or character.
 Value for missing data.
@@ -38,20 +36,11 @@ Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.
 Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 (See \code{\link{SemNetDictionaries}} for more details)}
 
-\item{tolerance}{Numeric.
-The distance tolerance set for automatic spell-correction purposes.
-This function uses the function \code{\link[stringdist]{stringdist}}
-to compute the \href{https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance}{Damerau-Levenshtein}
-(DL) distance, which is used to determine potential best guesses.
-
-Unique words (i.e., \emph{n} = 1) that are within the (distance) tolerance are
-automatically output as \code{\link[SemNetCleaner]{best.guess}} responses, which are then passed through
-\code{\link[SemNetCleaner]{word.check.wrapper}}. If there is more than one word
-that is within or below the distance tolerance, then these will be provided as potential
-options.
-
-The recommended and default distance tolerance is \code{tolerance = 1},
-which only spell corrects a word if there is only one word with a DL distance of 1.}
+\item{continue}{List.
+A result previously unfinished that still needs to be completed.
+Allows you to continue to manually spell-check their data
+after you've closed or errored out.
+Defaults to \code{NULL}}
 }
 \value{
 This function returns a list containing the following objects:
@@ -114,32 +103,10 @@ and participants with missing data are removed (see \code{removed$ids})}
 An automated cleaning function for spell-checking, de-pluralizing,
 removing duplicates, and binarizing text data
 }
-\details{
-When working through the menu options in \code{\link[SemNetCleaner]{textcleaner}},
-there may be mistakes. For instance, selecting to \code{REMOVE} a response when really
-all you wanted to do was \code{RENAME} a response. There are a couple of options:
-
-RECOMMENDED
-
-1. You can make a note in your \code{R} script for the change you wanted
-to make (you can keep moving through the cleaning process).
-After the cleaning process is through, you can check the \code{spellcheck$auto}
-output of \code{\link[SemNetCleaner]{textcleaner}} to see what changes
-you made. To correct any changes you made in the cleaning process,
-you can use the \code{\link[SemNetCleaner]{correct.changes}} function
-
-NOT RECOMMENDED
-
-2. You can use \code{esc} to exit out of a menu selection process.
-This is NOT recommended because you will lose all changes that
-you've made up to that point
-}
 \examples{
 # Toy example
 raw <- open.animals[c(1:10),-c(1:3)]
 
-# Clean and prepocess data
-clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
 if(interactive())
 {
     #Full test

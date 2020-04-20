@@ -11,11 +11,14 @@
 #' # Toy example
 #' raw <- open.animals[c(1:10),-c(1:3)]
 #' 
-#' # Clean and prepocess data
-#' clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
+#' if(interactive())
+#' {
+#'   # Clean and prepocess data
+#'   clean <- textcleaner(open.animals[,-c(1:2)], partBY = "row", dictionary = "animals")
 #' 
-#' # Change response matrix to binary response matrix
-#' binmat <- resp2bin(clean$responses$clean)
+#'   # Change response matrix to binary response matrix
+#'   binmat <- resp2bin(clean$responses$corrected)
+#' }
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
@@ -28,7 +31,7 @@ resp2bin <- function (resp)
   mat <- as.matrix(resp)
   
   # Replace bad responses with NA
-  mat <- SemNetCleaner::bad.response(mat)
+  mat <- bad.response(mat)
   
   # Unique responses
   uniq.resp <- sort(na.omit(unique(as.vector(mat))))

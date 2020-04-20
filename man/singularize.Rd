@@ -7,7 +7,8 @@
 singularize(word)
 }
 \arguments{
-\item{word}{A word}
+\item{word}{Character.
+A word}
 }
 \value{
 Returns the word in singular form, unless a singular form
@@ -24,42 +25,42 @@ word is returned.
 }
 \examples{
 # Handles any prototypical cases
-"dog"
+# "dog"
 singularize("dogs")
 
-"fox"
+# "fox"
 singularize("foxes")
 
-"wolf"
+# "wolf"
 singularize("wolves")
 
-"octopus"
+# "octopus"
 singularize("octopi")
 
-"taxon"
+# "taxon"
 singularize("taxa")
 
 # And most special cases:
-"wife"
+# "wife"
 singularize("wives")
 
-"fez"
+# "fez"
 singularize("fezzes")
 
-"roof"
+# "roof"
 singularize("roofs")
 
-"photo"
+# "photo"
 singularize("photos")
 
 # And some irregular cases:
-"child"
+# "child"
 singularize("children")
 
-"tooth"
+# "tooth"
 singularize("teeth")
 
-"mouse"
+# "mouse"
 singularize("mice")
 
 }

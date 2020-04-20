@@ -1,17 +1,18 @@
 Package: SemNetCleaner
 Title: An Automated Cleaning Tool for Semantic and Linguistic Data
-Version: 1.1.5
-Date: 2020-03-30
+Version: 1.2.0
+Date: 2020-04-18
 Authors@R: c(person("Alexander P.", "Christensen", email = "alexpaulchristensen@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-9798-7037")))
 Maintainer: Alexander P. Christensen <alexpaulchristensen@gmail.com>
 Description: Implements several functions that automates the cleaning and spell-checking of text data. Also converges, finalizes, removes plurals and continuous strings, and puts text data in binary format for semantic network analysis. Uses the 'SemNetDictionaries' package to make the cleaning process more accurate, efficient, and reproducible.
-Depends: R (>= 3.5.0), SemNetDictionaries (>= 0.1.5)
 License: GPL (>= 3.0)
 URL: https://github.com/AlexChristensen/SemNetCleaner
 BugReports: https://github.com/AlexChristensen/SemNetCleaner/issues
 NeedsCompilation: no
 Encoding: UTF-8
 LazyData: true
-Imports: hunspell, searcher, stringdist, tcltk, foreign, readxl, R.matlab, knitr, rmarkdown, htmlTable, stringi
+Depends: R (>= 3.6.0), SemNetDictionaries (>= 0.1.5)
+Imports: stringdist, hunspell, searcher, tcltk, foreign, readxl, R.matlab, stringi, crayon
+Suggests: knitr, rmarkdown, htmlTable
 VignetteBuilder: knitr
 RoxygenNote: 7.1.0

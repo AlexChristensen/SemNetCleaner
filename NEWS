@@ -1,3 +1,18 @@
+Changes in version 1.2.0
+
+o **MAJOR UPDATE**: overhauled `textcleaner` system to be more functionally efficient, convenient, and aesthetically intuitive
+
+o UPDATE: error catching added to `textcleaner` and `correct.changes` so not all is lost (data up to error will be saved and returned)
+
+o MOVE: `equate` and `finalize` moved from SemNetCleaner to SemNeT
+
+o UPDATE: moved many miscellaneous functions to internals to clean up package presentation
+
+o UPDATE: cleaned up textcleaner code to be more streamlined and readable
+
+o REMOVE: lead.word data was removed because the `rm.lead.space` function was moved to internals
+
+
 Changes in version 1.1.5
 
 o FIX: `read.data` bug for .csv files

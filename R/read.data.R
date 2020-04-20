@@ -99,7 +99,8 @@
 #' @importFrom tools file_ext
 #' 
 #' @export
-#Automated De-string Function----
+# Read data----
+# Updated 15.04.2020
 read.data <- function (file = file.choose(), header = TRUE, sep = ",", ...)
 {
     # Grab extension

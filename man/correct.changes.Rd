@@ -4,25 +4,17 @@
 \alias{correct.changes}
 \title{Correct Changes from \code{\link[SemNetCleaner]{textcleaner}}}
 \usage{
-correct.changes(textcleaner.obj, dictionary = NULL, incorrect)
+correct.changes(textcleaner.obj, changes)
 }
 \arguments{
-\item{textcleaner.obj}{A \code{\link[SemNetCleaner]{textcleaner}} object}
+\item{textcleaner.obj}{Object from \code{\link[SemNetCleaner]{textcleaner}}}
 
-\item{dictionary}{Character vector.
-Can be a vector of a corpus or any text for comparison.
-Dictionary to be used for more efficient text cleaning.
-Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}}
-
-\item{incorrect}{Character vector.
-A vector of incorrect response(s) to change.
-See the object \code{spellcheck$auto} in
-\code{\link[SemNetCleaner]{textcleaner}} output}
+\item{changes}{Matrix.
+A matrix with changes made the \code{\link[SemNetCleaner]{textcleaner}}
+object \code{$spellcheck$automated}}
 }
 \value{
-This function returns a list containing the
-following \code{\link[SemNetCleaner]{textcleaner}} objects, which
-have been corrected with the user-provided changes:
+This function returns the corrected lists from \code{\link[SemNetCleaner]{textcleaner}}s:
 
 \item{binary}{A matrix of responses where each row represents a participant
 and each column represents a unique response. A response that a participant has provided is a '\code{1}'
@@ -32,11 +24,11 @@ and a response that a participant has not provided is a '\code{0}'}
 
 \itemize{
 
-\item{clean.resp}
+\item{clean}
 {A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 This can be used as a final dataset for analyses (e.g., fluency of responses)}
 
-\item{orig.resp}
+\item{original}
 {The original response matrix that has had white spaces before and
 after words response. Also converts all upper-case letters to lower case}
 
@@ -79,50 +71,18 @@ Participants with \code{NA} did not have any changes from their original data
 and participants with missing data are removed (see \code{removed$ids})}
 }
 \description{
-Allows corrections to changes made by \code{\link[SemNetCleaner]{textcleaner}}.
-Some changes may have been made by accident, some changes may have been made
-by the automated cleaning, while others may just need to be removed.
-This function will correct any changes made in a cleaned \code{\link[SemNetCleaner]{textcleaner}}
-object.
-}
-\details{
-This function is used to correct mistakes that occur
-in the cleaning process during \code{\link[SemNetCleaner]{textcleaner}}.
-There are times when you are too deep into the text cleaning process
-that accidentally hitting a '\code{1}' instead of a '\code{2}' does
-not make sense to stop and start the text cleaning process over. Rather
-when mistakes are made, a record can be kept and this function will
-allow those mistakes to be amended.
-
-Incorrect responses should be used as input. A menu will prompt the user
-for their decision on how to manage the incorrectly cleaned response.
-There are three potential options:
-
-\itemize{
-
-\item{\code{1: TYPE MY OWN}}
-{Allows user to type their own response. If multiple responses, then 
-commas should separate each response. Quotations are not necessary.}
-
-\item{\code{2: GOOGLE IT}}
-{"Googles" the response in question.
-A browser will open with the Google search terms: define "RESPONSE"}
-
-\item{\code{3: BAD RESPONSE}}
-{When selected, \code{NA} will be returned}
-
-}
+A function that corrects changes that were made
+automatically by \code{\link[SemNetCleaner]{textcleaner}}
 }
 \examples{
 # Toy example
 raw <- open.animals[c(1:10),-c(1:3)]
 
-# Clean and prepocess data
-clean <- textcleaner(raw, partBY = "row", dictionary = "animals")
-
-# Correct changes
 if(interactive())
-{corr.clean <- correct.changes(clean, incorrect = "rat", dictionary = "animals")}
+{
+    #Full test
+    clean <- textcleaner(open.animals[,-c(1,2)], partBY = "row", dictionary = "animals")
+}
 
 }
 \author{
