@@ -167,7 +167,7 @@ textcleaner <- function(data = NULL, miss = 99,
     ## Obtain unique responses for efficient spell-checking
     uniq.resp <- na.omit(unique(unlist(data)))
     
-    # Perform spell-check (error catch)
+    # Perform spell-check
     spell.check <- try(
       spellcheck.dictionary(uniq.resp = uniq.resp,
                             dictionary = ifelse(is.null(dictionary), "general", dictionary),
@@ -175,20 +175,9 @@ textcleaner <- function(data = NULL, miss = 99,
       silent <- TRUE
     )
     
-    if(any(class(spell.check) == "try-error"))
-    {return(error.fun(spell.check, "spellcheck.dictionary", "textcleaner"))}
-      
-  }else{
-    
-    # Continue spell-check (error catch)
-    spell.check <- try(
-      spellcheck.dictionary(continue = continue),
-      silent = TRUE
-    )
-      
-    if(any(class(spell.check) == "try-error"))
-    {return(error.fun(spell.check, "spellcheck.dictionary", "textcleaner"))}
-  }
+  }else if(length(continue) == 14) # Continue spell-check
+  {spell.check <- spellcheck.dictionary(continue = continue)
+  }else{spell.check <- continue}
   
   # Check if spell-check was stopped (either error or user stop)
   if(spell.check$stop)
@@ -222,7 +211,11 @@ textcleaner <- function(data = NULL, miss = 99,
   )
   
   if(any(class(corr.mat) == "try-error"))
-  {return(error.fun(corr.mat, "correspondence.matrix", "textcleaner"))}
+  {
+    error.fun(corr.mat, "correspondence.matrix", "textcleaner")
+    
+    return(spell.check)
+  }
     
   row.names(corr.mat) <- formatC(1:nrow(corr.mat), digits = 2, flag = 0)
   res$spellcheck$correspondence <- corr.mat
@@ -236,7 +229,11 @@ textcleaner <- function(data = NULL, miss = 99,
   )
   
   if(any(class(corrected) == "try-error"))
-  {return(error.fun(corrected, "correct.data", "textcleaner"))}
+  {
+    error.fun(corrected, "correct.data", "textcleaner")
+    
+    return(spell.check)
+  }
   
   ## Collect behavioral data
   behavioral <- corrected$behavioral
@@ -270,7 +267,11 @@ textcleaner <- function(data = NULL, miss = 99,
   )
   
   if(any(class(res$responses$binary) == "try-error"))
-  {return(error.fun(res$responses$binary, "resp2bin", "textcleaner"))}
+  {
+    error.fun(corrected, "resp2bin", "textcleaner")
+    
+    return(spell.check)
+  }
   
   behavioral <- cbind(behavioral, rowSums(res$responses$binary))
   colnames(behavioral)[3] <- "Appropriate"

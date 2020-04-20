@@ -1553,7 +1553,7 @@ error.fun <- function(result, SUB_FUN, FUN)
   cat(paste(result))
   
   # Tell them where to send it
-  message("\nPlease open a new issue (bug report): https://github.com/AlexChristensen/SemNetCleaner/issues/new/choose")
+  message("\nPlease open a new issue on GitHub (bug report): https://github.com/AlexChristensen/SemNetCleaner/issues/new/choose")
   
   # Give them information to fill out the issue
   OS <- as.character(Sys.info()["sysname"])
