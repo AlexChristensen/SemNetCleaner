@@ -316,7 +316,7 @@ multiple.words <- function (vec, full.dict, dictionary)
   spl <- unlist(strsplit(vec, " "))
   
   # Remove bad responses
-  spl <- na.omit(SemNetCleaner:::bad.response(spl))
+  spl <- na.omit(bad.response(spl))
   
   # Multiple word responses greater than in dictionary
   dict.lens <- unlist(lapply(full.dict, function(x){length(unlist(strsplit(x, " ")))}))
@@ -356,7 +356,7 @@ multiple.words <- function (vec, full.dict, dictionary)
         spacing <- c(paste(spl[i-1], spl[i]), paste(spl[i-1], spl[i], sep = ""))
         
         ### Convert monikers
-        spacing <- unique(unlist(lapply(spacing, SemNetCleaner:::moniker, dictionary)))
+        spacing <- unique(unlist(lapply(spacing, moniker, dictionary)))
         
         ### Check for only one solution
         if(sum(spacing %in% full.dict) == 1)
@@ -369,7 +369,7 @@ multiple.words <- function (vec, full.dict, dictionary)
         spacing <- c(paste(spl[i], spl[i+1]), paste(spl[i], spl[i+1], sep = ""))
         
         ### Convert monikers
-        spacing <- unique(unlist(lapply(spacing, SemNetCleaner:::moniker, dictionary)))
+        spacing <- unique(unlist(lapply(spacing, moniker, dictionary)))
         
         ### Check for only one solution
         if(sum(spacing %in% full.dict) == 1)
@@ -396,7 +396,7 @@ multiple.words <- function (vec, full.dict, dictionary)
     }
     
     # Check for common misspellings and monikers
-    vec <- unlist(lapply(spl, SemNetCleaner:::moniker, misnom = SemNetDictionaries::load.monikers(dictionary)))
+    vec <- unlist(lapply(spl, moniker, misnom = SemNetDictionaries::load.monikers(dictionary)))
   }else if(length(spl) > 1)
   {
     # Correct if only one best guess exists
@@ -561,7 +561,7 @@ auto.spellcheck <- function(check, full.dict, dictionary)
     if(length(monik)!=0) # Checks in case of only using general dictionary
     {
       ## Check for monikers
-      mons <- lapply(sing, SemNetCleaner:::moniker, monik)
+      mons <- lapply(sing, moniker, monik)
       
       ## Identify responses found in dictionary
       ind3 <- which(!is.na(match(unlist(mons),full.dict)))
@@ -576,7 +576,7 @@ auto.spellcheck <- function(check, full.dict, dictionary)
       mons <- orig[-as.numeric(names.ind)]
       
       ## Check for pluralized monikers
-      mons <- lapply(mons, function(x, monik){SemNetCleaner:::moniker(singularize(x), monik)}, monik)
+      mons <- lapply(mons, function(x, monik){moniker(singularize(x), monik)}, monik)
       
       ## Identify responses found in dictionary
       ind4 <- which(!is.na(match(unlist(mons),full.dict)))
@@ -607,7 +607,7 @@ auto.spellcheck <- function(check, full.dict, dictionary)
   message(paste("\nAttempting to auto-correct the remaining", length(mons),"responses individually..."), appendLF = FALSE)
   
   # Spell-check each individual word within the list (including multiple word responses)
-  ind.check <- lapply(mons, SemNetCleaner:::ind.word.check, full.dict = full.dict, dictionary = dictionary)
+  ind.check <- lapply(mons, ind.word.check, full.dict = full.dict, dictionary = dictionary)
   
   ## Identify responses found in dictionary
   ind5 <- which(!is.na(match(unlist(ind.check),full.dict)))
@@ -632,7 +632,7 @@ auto.spellcheck <- function(check, full.dict, dictionary)
   message("\nParsing multi-word responses...", appendLF = FALSE)
   
   # Search through responses with more than minimum words (varies based on dictionary)
-  multi.word <- lapply(ind.check, SemNetCleaner:::multiple.words, full.dict = full.dict, dictionary = dictionary)
+  multi.word <- lapply(ind.check, multiple.words, full.dict = full.dict, dictionary = dictionary)
   
   ## Identify responses found in dictionary
   ### Check responses that changed
@@ -664,7 +664,7 @@ auto.spellcheck <- function(check, full.dict, dictionary)
   multi.word <- orig[-as.numeric(names.ind)]
   
   # Search through responses with more than 1 but can be individually split into separate responses
-  multi.word <- lapply(multi.word, SemNetCleaner:::response.splitter, full.dict = full.dict)
+  multi.word <- lapply(multi.word, response.splitter, full.dict = full.dict)
   
   ## Identify responses found in dictionary
   ### Indices of correctly spelled responses
@@ -930,13 +930,32 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE)
         word <- paste0(word, c(rep.int("  ", min(nc, ncol) - 
                                        1L), "\n"), collapse = "")
         
+        # Check number of characters
+        nw <- nchar(word)
+        
+        if(substr(word, nw-1, nw) != "\n")
+        {word <- paste(substr(word, 1, nw-2), "\n")}
+        
         string <- fop[6:10]
         string <- paste0(string, c(rep.int("  ", min(nc, ncol) - 
                                          1L), "\n"), collapse = "")
+        
+        # Check number of characters
+        ns <- nchar(string)
+        
+        if(substr(string, ns-1, ns) != "\n")
+        {string <- paste(substr(string, 1, ns-2), "\n")}
+        
       }else{
         def <- fop[1:default]
         def <- paste0(def, c(rep.int("  ", min(nc, ncol) - 
                                        1L), "\n"), collapse = "")
+        
+        # Check number of characters
+        n <- nchar(def)
+        
+        if(substr(def, n-1, n) != "\n")
+        {def <- paste(substr(def, 1, n-2), "\n")}
       }
       
       # Set up responses
@@ -958,8 +977,8 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE)
       if(default == 10)
       {
         op <- paste0(crayon::underline("Word options\n"), word,
-                     crayon::underline("\n\nString options\n"), string,
-                     crayon::underline("\n\nResponse options"), resp,
+                     crayon::underline("\nString options\n"), string,
+                     crayon::underline("\nResponse options"), resp,
                      collapse = "")
       }else if(default == 5)
       {
@@ -1654,7 +1673,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = N
     
     # Perform initial spell-check
     initial <- try(
-      SemNetCleaner:::auto.spellcheck(check = from,
+      auto.spellcheck(check = from,
                       full.dict = full.dictionary,
                       dictionary = dictionary),
       silent = TRUE
@@ -1744,7 +1763,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = N
       {
         ## Run spell-check menu (with error capturing)
         result <- try(
-          SemNetCleaner:::spellcheck.menu(check = which(check.words[multi.count] == target), context = target,
+          spellcheck.menu(check = which(check.words[multi.count] == target), context = target,
                           possible = best.guess(target[which(check.words[multi.count] == target)],
                                                 full.dictionary = full.dictionary,
                                                 dictionary = dictionary),
@@ -1903,7 +1922,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = N
       # Single response
       ## Run spell-check menu (with error capturing)
       result <- try(
-        SemNetCleaner:::spellcheck.menu(check = target, context = NULL,
+        spellcheck.menu(check = target, context = NULL,
                         possible = best.guess(target, full.dictionary = full.dictionary, dictionary),
                         original = from[[i]], current.index = i,
                         changes = changes, full.dictionary = full.dictionary,

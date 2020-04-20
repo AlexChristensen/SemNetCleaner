@@ -132,7 +132,7 @@ textcleaner <- function(data = NULL, miss = 99,
     
     ## Change row names to IDs (error catch)
     id.res <- try(
-      SemNetCleaner:::obtain.id(data),
+      obtain.id(data),
       silent = TRUE
     )
     
@@ -145,7 +145,7 @@ textcleaner <- function(data = NULL, miss = 99,
     
     ## Convert missing data to "" (returns data as matrix; error catch)
     data <- try(
-      SemNetCleaner:::convert.miss(data, miss),
+      convert.miss(data, miss),
       silent = TRUE
     )
       
@@ -157,7 +157,7 @@ textcleaner <- function(data = NULL, miss = 99,
     ### Removes white spaces
     ### Makes all responses lower case
     data <- try(
-      SemNetCleaner:::prep.spellcheck.dictionary(data),
+      prep.spellcheck.dictionary(data),
       silent = TRUE
     )
     
@@ -169,7 +169,7 @@ textcleaner <- function(data = NULL, miss = 99,
     
     # Perform spell-check (error catch)
     spell.check <- try(
-      SemNetCleaner:::spellcheck.dictionary(uniq.resp = uniq.resp,
+      spellcheck.dictionary(uniq.resp = uniq.resp,
                             dictionary = ifelse(is.null(dictionary), "general", dictionary),
                             data = data),
       silent <- TRUE
