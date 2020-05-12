@@ -32,6 +32,12 @@
 #' after you've closed or errored out.
 #' Defaults to \code{NULL}
 #' 
+#' @param walkthrough Boolean.
+#' Whether a walkthrough should be provided (recommended for first time users).
+#' Defaults to \code{NULL}, which will ask whether you would like a walkthrough.
+#' Set to \code{TRUE} to do the walkthrough.
+#' Set to \code{FALSE} to skip the walkthrough
+#' 
 #' @return This function returns a list containing the following objects:
 #' 
 #' \item{binary}{A matrix of responses where each row represents a participant
@@ -115,7 +121,8 @@
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
                         dictionary = NULL,
-                        continue = NULL)
+                        continue = NULL,
+                        walkthrough = NULL)
 {
   # Check if user is continuing from a previous point
   if(is.null(continue))
@@ -171,7 +178,7 @@ textcleaner <- function(data = NULL, miss = 99,
     spell.check <- try(
       spellcheck.dictionary(uniq.resp = uniq.resp,
                             dictionary = ifelse(is.null(dictionary), "general", dictionary),
-                            data = data),
+                            data = data, walkthrough = walkthrough),
       silent <- TRUE
     )
     
@@ -240,7 +247,7 @@ textcleaner <- function(data = NULL, miss = 99,
   
   ## Make sure to replace faux "NA" with real NA
   corrected$corrected[which(corrected$corrected == "NA")] <- NA
-  res$responses$corrected <- as.data.frame(corrected$corrected, stringsAsFactors = FALSE)
+  res$responses$checked <- as.data.frame(corrected$corrected, stringsAsFactors = FALSE)
   
   ## Cleaned responses (no instrusions or perseverations)
   cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})

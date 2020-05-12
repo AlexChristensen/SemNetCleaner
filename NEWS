@@ -2,6 +2,10 @@ Changes in version 1.2.0
 
 o **MAJOR UPDATE**: overhauled `textcleaner` system to be more functionally efficient, convenient, and aesthetically intuitive
 
+o ADD: a walkthrough has been added prior to the manual spell-check in `textcleaner`
+
+o ADD: a help option has been added to `textcleaner`
+
 o UPDATE: error catching added to `textcleaner` and `correct.changes` so not all is lost (data up to error will be saved and returned)
 
 o MOVE: `equate` and `finalize` moved from SemNetCleaner to SemNeT

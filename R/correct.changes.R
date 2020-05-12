@@ -154,7 +154,7 @@ correct.changes <- function(textcleaner.obj, changes)
   
   ## Make sure to replace faux "NA" with real NA
   corrected$corrected[which(corrected$corrected == "NA")] <- NA
-  res$responses$corrected <- as.data.frame(corrected$corrected, stringsAsFactors = FALSE)
+  res$responses$checked <- as.data.frame(corrected$corrected, stringsAsFactors = FALSE)
   
   ## Cleaned responses (no instrusions or perseverations)
   cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})

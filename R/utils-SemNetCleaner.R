@@ -833,7 +833,7 @@ appropriate.answer <- function (answer, choices, default, dictionary = FALSE)
   if(!dictionary)
   {
     # QWERTY response options
-    qwert <- c(c("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")[1:(length(choices[-c(1:default)]))], "B")
+    qwert <- c(c("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")[1:(length(choices[-c(1:default)]))], "B", "H")
     
     # Approriate answer values
     app.ans <- c(defaults, qwert)
@@ -858,10 +858,10 @@ appropriate.answer <- function (answer, choices, default, dictionary = FALSE)
     }else{
       
       # Let user know of why response is inappropriate
-      message("Inappropriate response option.")
+      message("Inappropriate selection.")
       
       # Have them type a new response
-      answer <- readline(prompt = "Please type new response option: ")
+      answer <- readline(prompt = "Please enter a new selection: ")
     }
   }
   
@@ -976,15 +976,17 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE)
       # Set up options
       if(default == 10)
       {
-        op <- paste0(crayon::underline("Word options\n"), word,
-                     crayon::underline("\nString options\n"), string,
-                     crayon::underline("\nResponse options"), resp,
+        op <- paste0(styletext("Word options\n", defaults = "underline"), word,
+                     styletext("\nString options\n", defaults = "underline"), string,
+                     styletext("\nResponse options", defaults = "underline"), resp,
                      collapse = "")
+        
       }else if(default == 5)
       {
-        op <- paste0(crayon::underline("Word options\n"), def,
-                     crayon::underline("\nResponse options"), resp,
+        op <- paste0(styletext("Word options\n", defaults = "underline"), def,
+                     styletext("\nResponse options", defaults = "underline"), resp,
                      collapse = "")
+        
       }else{stop("Error in customMenu")}
       
   }else{op <- c(op, "")}
@@ -1060,7 +1062,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       # Title for spell-check
       title <- paste(paste("\nOriginal response: ", "'", original, "'", sep = ""),
                      paste("Auto-corrected response: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
-                     paste("Response to manually spell-check: ", paste("'", crayon::yellow(context[check]), "'", sep = ""), sep = ""),
+                     paste("Response to manually spell-check: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
                      sep = "\n\n")
       
       # Choices for spell-check
@@ -1073,10 +1075,10 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       customMenu(choices = choices, title = title, default = 10)
       
       # Message user
-      message("Press 'B' to GO BACK or 'esc' to STOP.\n")
+      message("Press 'B' to GO BACK, 'H' for HELP, or 'esc' to STOP.\n")
       
       # Present prompt
-      ans <- readline(prompt = "Response option (accepts lowercase): ")
+      ans <- readline(prompt = "Selection (accepts lowercase): ")
       
       # Check for user stoppage
       if(ans == "")
@@ -1137,7 +1139,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                          default = 2,
                          dictionary = TRUE)
               
-              dict.ans <- readline(prompt = "Response option: ")
+              dict.ans <- readline(prompt = "Selection: ")
               
               dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
               
@@ -1212,7 +1214,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                      default = 2,
                      dictionary = TRUE)
           
-          dict.ans <- readline(prompt = "Response option: ")
+          dict.ans <- readline(prompt = "Selection: ")
           
           dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
           
@@ -1274,7 +1276,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                          default = 2,
                          dictionary = TRUE)
               
-              dict.ans <- readline(prompt = "Response option: ")
+              dict.ans <- readline(prompt = "Selection: ")
               
               dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
               
@@ -1327,6 +1329,14 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         
       }else if(ans == length(choices) + 1) # GO BACK
       {go.back <- TRUE
+      }else if(ans == length(choices) + 2) # HELP
+      {
+        # Get `textcleaner` documentation
+        textcleaner_help()
+        
+        # Renew prompt
+        ans <- 30
+        
       }else{# RESPONSE OPTION 11-20
         
         ## Set up change matrix
@@ -1365,10 +1375,10 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     while(ans == 30)
     {
       # Title for spell-check
-      title <- paste(paste("\nResponse to manually spell-check: ", paste("'", crayon::yellow(check), "'", sep = ""), sep = ""))
+      title <- paste(paste("\nResponse to manually spell-check: ", paste("'", colortext(check, defaults = "highlight"), "'", sep = ""), sep = ""))
       
       # Choices for spell-check
-      choices <- c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD RESPONSE", possible)
+      choices <- c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD WORD", possible)
       
       # Save answer
       customMenu(choices = choices, title = title, default = 5)
@@ -1377,7 +1387,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       message("Press 'B' to GO BACK or 'esc' to STOP.\n")
       
       # Present prompt
-      ans <- readline(prompt = "Response option (accepts lowercase): ")
+      ans <- readline(prompt = "Select option (accepts lowercase): ")
       
       # Check for user stoppage
       if(ans == "")
@@ -1438,7 +1448,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                          default = 2,
                          dictionary = TRUE)
               
-              dict.ans <- readline(prompt = "Response option: ")
+              dict.ans <- readline(prompt = "Selection: ")
               
               dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
               
@@ -1488,6 +1498,14 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         
       }else if(ans == length(choices) + 1) # GO BACK
       {go.back <- TRUE
+      }else if(ans == length(choices) + 2) # HELP
+      {
+        # Get `textcleaner` documentation
+        textcleaner_help()
+        
+        # Renew prompt
+        ans <- 30
+        
       }else{# RESPONSE OPTION 8-17
         
         ## Set up change matrix
@@ -1566,19 +1584,19 @@ error.fun <- function(result, SUB_FUN, FUN)
   message(paste("\nBe sure to provide the following information:\n"))
   
   # To reproduce
-  message(crayon::bold("To Reproduce:"))
-  message(paste(" \u2022 Function error occured in: ", SUB_FUN, " function of ", FUN, sep = ""))
+  message(styletext("To Reproduce:", defaults = "bold"))
+  message(paste(" ", textsymbol("bullet"), " Function error occured in: ", SUB_FUN, " function of ", FUN, sep = ""))
   
   # R, SemNetCleaner, and SemNetDictionaries
-  message(crayon::bold("\nR, SemNetCleaner, and SemNetDictionaries versions:"))
-  message(paste(" \u2022 R version: ", Rversion, sep = ""))
-  message(paste(" \u2022 SemNetCleaner version: ", SNCversion, sep = ""))
-  message(paste(" \u2022 SemNetDictionaries version: ", SNDversion, sep = ""))
+  message(styletext("\nR, SemNetCleaner, and SemNetDictionaries versions:", defaults = "bold"))
+  message(paste(" ", textsymbol("bullet"), " R version: ", Rversion, sep = ""))
+  message(paste(" ", textsymbol("bullet"), " SemNetCleaner version: ", SNCversion, sep = ""))
+  message(paste(" ", textsymbol("bullet"), " SemNetDictionaries version: ", SNDversion, sep = ""))
   
   # Desktop
-  message(crayon::bold("\nOperating System:"))
-  message(paste(" \u2022 OS: ", OS, sep = ""))
-  message(paste(" \u2022 Version: ", OSversion, sep = ""))
+  message(styletext("\nOperating System:", defaults = "bold"))
+  message(paste(" ", textsymbol("bullet"), " OS: ", OS, sep = ""))
+  message(paste(" ", textsymbol("bullet"), " Version: ", OSversion, sep = ""))
 }
 
 #' Spell-check using \code{\link{SemNetDictionaries}}
@@ -1603,6 +1621,12 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' Allows user to continue to manually spell-check their data
 #' after they closed or errored out of \code{\link[SemNetCleaner]{spellcheck.dictionary}}.
 #' Defaults to \code{NULL}
+#' 
+#' @param walkthrough Boolean.
+#' Whether a walkthrough should be provided (recommended for first time users).
+#' Defaults to \code{NULL}, which will ask whether you would like a walkthrough.
+#' Set to \code{TRUE} to do the walkthrough.
+#' Set to \code{FALSE} to skip the walkthrough
 #' 
 #' @return Returns a list containing:
 #' 
@@ -1630,8 +1654,10 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' 
 #' @noRd
 # Spell-check for dictionary----
-# Updated 17.04.2020
-spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = NULL, continue = NULL)
+# Updated 24.04.2020
+spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL,
+                                   data = NULL, continue = NULL,
+                                   walkthrough = NULL)
 {
   # Continuation check
   if(is.null(continue))
@@ -1730,6 +1756,9 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = N
     data <- continue$data
   }
   
+  # Check for walkthrough
+  walk_through(walkthrough)
+  
   # Set up progress bar (Windows only)
   if(Sys.info()["sysname"] == "Windows")
   {
@@ -1741,6 +1770,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = N
   # Loop through for manual spell-check
   while(main.count != (length(ind) + 1))
   {
+    
     # Set up target index
     i <- ind[main.count]
     
@@ -2086,7 +2116,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, data = N
     customMenu(choices = choices, title = title, default = 4, dictionary = TRUE)
     
     ## User response
-    ans <- readline(prompt = "Response option: ")
+    ans <- readline(prompt = "Selection: ")
     
     ## Make sure it's an appropriate response
     ans <- appropriate.answer(answer = ans, choices = choices, default = 4, dictionary = TRUE)
@@ -2336,49 +2366,643 @@ update.monikers <- function (word, monikers, monk.list)
   return(monk.list)
 }
 
-#' No Response Omit
+#' Colorfies Text
 #' 
-#' @description A function that uses NR in place of \code{NA} for missing responses
-#' (does the same thing as \code{na.omit})
+#' Makes text a wide range of colors (8-bit color codes)
 #' 
-#' @param object
-#' An R object
+#' @param text Character.
+#' Text to color
 #' 
-#' @param ...
-#' Additional arguments
-#' 
-#' @return 
+#' @return Colorfied text
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
-#' 
-# No Response Omit----
-# Updated 19.04.2020
-nr.omit <- function(object, ...)
-{object[-which(object == "")]}
+# Color text----
+# Updated 24.04.2020
+colortext <- function(text, number = NULL, defaults = NULL)
+{
+  # Defaults for number (white text)
+  if(is.null(number) || number < 0 || number > 231)
+  {number <- 15}
+  
+  
+  # Check for default color
+  if(!is.null(defaults))
+  {
+      number <- switch(defaults,
+                       message = 204,
+                       highlight = 226,
+                       red = 9,
+                       orange = 208,
+                       yellow = 11,
+                       "light green" = 10,
+                       green = 34,
+                       cyan = 14,
+                       blue = 12,
+                       magenta = 13,
+                       pink = 211,
+      )
+  }
+  
+  return(paste("\033[38;5;", number, "m", text, "\033[0m", sep = ""))
+}
 
-#' Is No Response?
+#' Stylizes Text
 #' 
-#' @description A function that uses NR in place of \code{NA} for missing responses
-#' (does the same thing as \code{is.na})
+#' Makes text bold, italics, underlined, and strikethrough
 #' 
-#' @param object
-#' An R object
+#' @param text Character.
+#' Text to stylized
 #' 
-#' @param ...
-#' Additional arguments
+#' @return Sytlized text
 #' 
-#' @return 
+#' @author Alexander Christensen <alexpaulchristensen@gmail.com>
+#' 
+#' @noRd
+# Style text----
+# Updated 24.04.2020
+styletext <- function(text, defaults = c("bold", "italics", "highlight",
+                                         "underline", "strikethrough"))
+{
+  if(missing(defaults))
+  {number <- 0
+  }else{
+    
+    # Get number code
+    number <- switch(defaults,
+                     bold = 1,
+                     italics = 3,
+                     underline = 4,
+                     highlight = 7,
+                     strikethrough = 9
+    )
+    
+  }
+  
+  return(paste("\033[", number, ";m", text, "\033[0m", sep = ""))
+}
+
+#' Text Symbols
+#' 
+#' Makes text symbols (star, checkmark, square root)
+#' 
+#' @param symbol Character.
+#' 
+#' @return Outputs symbol
+#' 
+#' @author Alexander Christensen <alexpaulchristensen@gmail.com>
+#' 
+#' @noRd
+# Symbols----
+# Updated 24.04.2020
+textsymbol <- function(symbol = c("alpha", "beta", "chi", "delta",
+                                  "eta", "gamma", "lambda", "omega",
+                                  "phi", "pi", "rho", "sigma", "tau",
+                                  "theta", "square root", "infinity",
+                                  "check mark", "x", "bullet")
+                       )
+{
+  # Get number code
+  sym <- switch(symbol,
+                alpha = "\u03B1",
+                beta = "\u03B2",
+                chi = "\u03C7",
+                delta = "\u03B4",
+                eta = "\u03B7",
+                gamma = "\u03B3",
+                lambda = "\u03BB,",
+                omega = "\u03C9",
+                phi = "\u03C6",
+                pi = "\u03C0",
+                rho = "\u03C1",
+                sigma = "\u03C3",
+                tau = "\u03C4",
+                theta = "\u03B8",
+                "square root" = "\u221A",
+                infinity = "\u221E",
+                "check mark" = "\u2713",
+                x = "\u2717",
+                bullet = "\u2022"
+  )
+  
+  return(sym)
+}
+
+#' Walkthrough for \code{\link[SemNetCleaner]{textcleaner}}'s Manual Spell-check
+#' 
+#' Provides a walkthrough of the options you can use to spell-check responses
+#' 
+#' @param walkthrough Boolean.
+#' Whether to start the walkthrough
+#' 
+#' @return NULL
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
 #' 
-# Is No Response----
-# Updated 19.04.2020
-is.nr <- function(object, ...)
-{object == ""}
+# Walkthrough----
+# Updated 24.04.2020
+walk_through <- function(walkthrough)
+{
+  # Do walkthrough?
+  do.it <- FALSE
+  
+  # Check if NULL
+  if(is.null(walkthrough))
+  {
+    # Ask user
+    customMenu(choices = c("Yes", "No"),
+               title = c(paste("\nBefore starting manual spell-check, would you like to do a walkthrough?",
+                               colortext("\n(Recommended for first time users)", defaults = "message"))),
+               default = 2, dictionary = TRUE)
+    
+    # Get response
+    ans <- readline("Selection: ")
+    
+    # Make sure answer is appropriate
+    ans <- appropriate.answer(ans, choices = 1:2, default = 2, dictionary = TRUE)
+    
+    if(ans == 1)
+    {do.it <- TRUE
+    }else{message("\nWalkthrough skipped.")}
+    
+  }else if(walkthrough)
+  {do.it <- TRUE}
+  
+  # If do the walkthrough is TRUE, then do it
+  if(do.it)
+  {
+    # Introduction to walkthrough
+    cat(colortext("\nWelcome to the manual spell-check walkthrough for `textcleaner`!", defaults = "message"))
+    
+    cat(colortext("\n\nThe manual spell-check process is designed to allow you to", defaults = "message"))
+    cat(colortext("\nhave maximum control over the responses that need spell-checking.", defaults = "message"))
+    cat(colortext("\nThis walkthrough will guide you through each response option", defaults = "message"))
+    cat(colortext("\nin the manual spell-check menu by using examples of responses", defaults = "message"))
+    cat(colortext("\nyou might encounter.", defaults = "message"))
+    
+    cat(colortext("\n\nThere are generally two types of responses you might encounter:", defaults = "message"))
+    cat(colortext("\na single word or multiple word response. This latter type is a", defaults = "message"))
+    cat(colortext("\nbit tricky because the response could be a single response or", defaults = "message"))
+    cat(colortext("\nit could be multiple responses entered as a single string.", defaults = "message"))
+    
+    cat(colortext("\n\nBecause `textcleaner` spell-checks each word individually, your", defaults = "message"))
+    cat(colortext("\nintervention is necessary to determine how to properly split", defaults = "message"))
+    cat(colortext("\nthese responses. These multiple word responses is where the", defaults = "message"))
+    cat(colortext("\n`textcleaner` function starts and our walkthrough begins.\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    # Introduction to multiple word response
+    cat(colortext("\nThe multiple word response we will use for our example was given", defaults = "message"))
+    cat(colortext("\nby an actual participant:", defaults = "message"))
+    
+    cat("\n\n'turtle catdog elephant fish bird squiral rabbit fox deer monkey giraff'\n")
+    
+    cat(colortext("\nWhen this multiple word response was passed through the automated", defaults = "message"))
+    cat(colortext("\nspell-check, it was changed to:", defaults = "message"))
+    
+    cat("\n\n'turtle' 'catdog' 'elephant' 'fish' 'bird' 'squirrel' 'rabbit' 'fox' 'deer' 'monkey' 'giraffe'\n")
+    
+    cat(colortext("\nThe automated spell-check handled a few errors in the original", defaults = "message"))
+    cat(colortext("\nresponse. First, the words in the response were separated into", defaults = "message"))
+    cat(colortext("\nindividual responses. Second, the responses 'squiral' and 'giraff'", defaults = "message"))
+    cat(colortext("\nwere automatically corrected to 'squirrel' and 'giraffe',", defaults = "message"))
+    cat(colortext("\nrespectively. The word 'catdog', however, was not successfully", defaults = "message"))
+    cat(colortext("\nseparated and is passed on to you to be manually spell-checked.\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nBelow is the interactive menu that will appear when manually spell-checking responses:\n", defaults = "message"))
+    
+    Sys.sleep(5)
+    
+    #-------------------------#
+    ## Begin example of menu ##
+    #-------------------------#
+    
+    original <- paste("turtle catdog elephant fish bird squiral rabbit fox deer monkey giraff")
+    context <- paste("turtle", "catdog", "elephant", "fish", "bird",  "squirrel", "rabbit", "fox", "deer", "monkey", "giraffe")
+    context <- unlist(strsplit(context, split = " "))
+    check <- 2
+    
+    title <- paste(paste("\nOriginal response: ", "'", original, "'", sep = ""),
+                   paste("Auto-corrected response: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
+                   paste("Response to manually spell-check: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
+                   sep = "\n\n")
+    
+    word <- c("SKIP WORD", "ADD WORD TO DICTIONARY", "TYPE MY OWN WORD", "GOOGLE WORD", "BAD WORD")
+    string <- c("KEEP ORIGINAL", "KEEP AUTO-CORRECT", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
+    resp <- best.guess(word = "catdog", full.dictionary = SemNetDictionaries::animals.dictionary, dictionary = "animals")
+    
+    choices <- c(word, string, resp)
+    
+    customMenu(choices = choices, title = title, default = 10)
+    
+    message("Press 'B' to GO BACK or 'esc' to STOP.\n")
+    
+    cat("Response option (accepts lowercase):\n\n")
+    
+    #-----------------------#
+    ## End example of menu ##
+    #-----------------------#
+    
+    readline("Press ENTER to continue...\n(make sure to expand window vertically to see the full menu)")
+    
+    # First three lines
+    cat(paste(colortext("\nAs you can see, the interactive menu contains", defaults = "message"),
+              colortext(styletext("a lot", "italics"), defaults = "message"),
+              colortext("of information.", defaults = "message"))
+    )
+    cat(colortext("\nThe purpose of this walkthrough is to get familiar with this menu", defaults = "message"))
+    cat(colortext("\nby breaking it down into digestible pieces. We'll start with the", defaults = "message"))
+    cat(colortext("\nfirst three lines:\n", defaults = "message"))
+    
+    cat(title)
+    
+    linebreak <- function(){cat("\n\n", colortext(paste(rep("-", getOption("width")), collapse = ""), defaults = "message"), "\n")}
+    
+    linebreak()
+    
+    cat(paste("\n", "Original response:\n",
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the original response that the participant typed", sep = ""), defaults = "message"),
+              "\n",
+              sep = "")
+    )
+    
+    cat(paste("\n", "Auto-corrected response:\n",
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the response that the automated spell-check derived", sep = ""), defaults = "message"),
+              "\n",
+              sep = "")
+    )
+    
+    cat(paste("\n", "Response to manually spell-check: '", colortext("catdog", defaults = "highlight"), "'\n",
+              paste(
+                colortext(paste(" ", textsymbol("bullet"), " Refers to the ", sep = ""), defaults = "message"),
+                styletext(colortext("target", defaults = "message"), defaults = "italics"),
+                colortext(paste(" response to be manually spell-checked", sep = ""), defaults = "message"),
+                sep = ""
+              ),
+              "\n\n",
+              sep = "")
+    )
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nThese first three lines provide you with the full context of the", defaults = "message"))
+    cat(colortext("\nparticipant's response to help you make a more informed decision.", defaults = "message"))
+    cat(paste(colortext("\nThe ", defaults = "message"), "Auto-corrected response:",
+              colortext(" is the current state of the response.", defaults = "message"),
+              sep = "")
+    )
+    
+    cat(colortext("\nThat is, if you do nothing to manually spell-check the response,", defaults = "message"))
+    cat(colortext("\nthen these are the responses that will be retained. In our example,", defaults = "message"))
+    cat(paste(colortext("\nwe want to change to target response: ", defaults = "message"),
+              "'", colortext("catdog", defaults = "highlight"), "'",
+              colortext(".", defaults = "message"),
+              sep = "")
+    )
+    
+    cat(colortext("\n\nNext, we'll move on to the possible options we have to", defaults = "message"))
+    cat(colortext("\ncorrect this response.\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    # Word options
+    cat(colortext("\nThe first set of options we have are to correct the target", defaults = "message"))
+    cat(paste(colortext("\nword: ", defaults = "message"),
+              "'", colortext("catdog", defaults = "highlight"), "'",
+              colortext(". These options allow you to make a decision", defaults = "message"),
+              sep = "")
+    )
+    
+    cat(colortext("\nabout how to handle this single word in the response. That is,", defaults = "message"))
+    cat(colortext("\nThese options will only affect the target word. There are five", defaults = "message"))
+    cat(colortext("\noptions:", defaults = "message"))
+    
+    
+    word.set <- paste(1:5, ": ", word, sep = "")
+    
+    cat(paste(styletext("\n\nWord options\n", defaults = "underline"),
+              paste0(word.set, c(rep.int("  ", min(20, 5) - 1L)), sep = "", collapse = "")))
+    
+    linebreak()
+    
+    cat(paste("\n", "1: SKIP WORD\n",
+              colortext(paste(" ", textsymbol("bullet"), " Keeps word 'as is' and moves on to next word to be spell-checked", sep = ""), defaults = "message"),
+              "\n",
+              sep = "")
+    )
+    
+    cat(paste("\n", "2: ADD WORD TO DICTIONARY\n",
+              colortext(paste(" ", textsymbol("bullet"), " Adds word to dictionary for future spell-checking", sep = ""), defaults = "message"),
+              "\n",
+              sep = "")
+    )
+    
+    cat(paste("\n", "3: TYPE MY OWN WORD\n", 
+              colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the word", sep = ""), defaults = "message"),
+              "\n",
+              sep = "")
+    )
+    
+    cat(paste("\n", "4: GOOGLE WORD\n", 
+              colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the word", sep = ""), defaults = "message"),
+              "\n",
+              sep = "")
+    )
+    
+    cat(paste("\n", "5: BAD WORD\n", 
+              colortext(paste(" ", textsymbol("bullet"), " Marks the word as an inappropriate response (NA)", sep = ""), defaults = "message"),
+              "\n\n",
+              sep = "")
+    )
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nThese options only affect the target word. But what if you want", defaults = "message"))
+    cat(colortext("\nto change multiple words or the entire string of responses? We", defaults = "message"))
+    cat(colortext("\nmove to those options next.\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    # String options
+    cat(colortext("\nThe next set of options are able to correct the entire string", defaults = "message"))
+    cat(colortext("\nof responses. These options will affect the entire string", defaults = "message"))
+    cat(colortext("\nrather than just the target word. There are also five options:", defaults = "message"))
+    
+    string.set <- paste(6:10, ": ", string, sep = "")
+    
+    cat(paste(styletext("\n\nString options\n", defaults = "underline"),
+              paste0(string.set, c(rep.int("  ", min(20, 5) - 1L)), sep = "", collapse = "")))
+    
+    linebreak()
+    
+    cat(paste("\n", "6: KEEP ORIGINAL\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Reverts the string back to the", sep = ""), defaults = "message"),
+                    "Original response:",
+                    colortext("the participant provided.", defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n", "7: KEEP AUTO-CORRECT\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Keeps the string 'as is' with the", sep = ""), defaults = "message"),
+                    "Auto-correct response:",
+                    colortext("provided by the automated spell-check.", defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n", "8: TYPE MY OWN STRING\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the", sep = ""), defaults = "message"),
+                    "Original response:",
+                    colortext("the participant provided.", defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n", "9: GOOGLE STRING\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the", sep = ""), defaults = "message"),
+                    "Original response:",
+                    colortext("the participant provided.", defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n", "10: BAD STRING\n", 
+              colortext(paste(" ", textsymbol("bullet"), " Marks the entire string as an inappropriate response (NA)", sep = ""), defaults = "message"),
+              "\n\n",
+              sep = ""
+    )
+    )
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nThese options only affect the entire string. They allow you to", defaults = "message"))
+    cat(colortext("\nlook beyond the target word and to make a decision about the", defaults = "message"))
+    cat(colortext("\nwhole string. These options are most useful when considering", defaults = "message"))
+    cat(colortext("\na multiple word response as a single response (rather than", defaults = "message"))
+    cat(colortext("\nmultiple individual responses).\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    # Response options
+    cat(colortext("\nThe final set of options only affect the target word. These", defaults = "message"))
+    cat(colortext("\noptions are `textcleaner`'s best guess for what the response", defaults = "message"))
+    cat(colortext("\nmight be. These response options offer quick corrections or", defaults = "message"))
+    cat(colortext("\npotential directions for what the user meant to type. Below", defaults = "message"))
+    cat(colortext("\nthe response options are two convenience options and an", defaults = "message"))
+    cat(colortext("\ninput for your selection.", defaults = "message"))
+    
+    resp.set <- paste(c("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"), ": ", resp, sep = "")
+    
+    cat(paste(styletext("\n\nResponse options\n", defaults = "underline"),
+              paste0(resp.set, c(rep.int("  ", min(20, 5) - 1L)), sep = "", collapse = "")))
+    
+    cat(colortext("\n\nPress 'B' to GO BACK, 'H' for HELP, or 'esc' to STOP.\n", defaults = "message"))
+    
+    cat("\nSelection (accepts lowercase): ")
+    
+    linebreak()
+    
+    cat(paste("\n", styletext("\nResponse options\n", defaults = "underline"),
+              paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess (letters correspond to the response)", sep = ""), defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n'B'\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Takes you back to the previous response (use if you make a mistake or just want to go back)", sep = ""), defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n'H'\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Takes you to the documentation of `textcleaner`", sep = ""), defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\n'esc'\n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Exits textcleaner completely but saves your output", sep = ""), defaults = "message")),
+              "\n", sep = ""
+    )
+    )
+    
+    cat(paste("\nSelection (accepts lowercase): \n",
+              paste(colortext(paste(" ", textsymbol("bullet"), " Where you input the option you select", sep = ""), defaults = "message")),
+              "\n\n", sep = ""
+    )
+    )
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nThese make up all the options you'll use in `textcleaner`. They", defaults = "message"))
+    cat(colortext("\nenable total control over correcting the response(s). When there", defaults = "message"))
+    cat(colortext("\nis only a single word response, then the 'String options' will", defaults = "message"))
+    cat(colortext("\nnot be available (because they are no longer necessary).", defaults = "message"))
+    
+    cat(colortext("\n\nThis concludes the walkthrough of the manual spell-check process", defaults = "message"))
+    cat(colortext("\nin `textcleaner`. You're now prepared to work through your data.\n", defaults = "message"))
+  }
+  
+  cat("\n")
+  
+  readline("Press ENTER to start manual spell-check")
+  
+}
+
+#' Gets Help for \code{\link[SemNetCleaner]{textcleaner}}'s Manual Spell-check
+#' 
+#' Provides a help for the options you can use to spell-check responses
+#' 
+#' @param ... Additional arguments
+#' 
+#' @return NULL
+#' 
+#' @author Alexander Christensen <alexpaulchristensen@gmail.com>
+#' 
+#' @noRd
+#' 
+# Help----
+# Updated 24.04.2020
+textcleaner_help <- function(...)
+{
+  linebreak <- function(){cat("\n\n", colortext(paste(rep("-", getOption("width")), collapse = ""), defaults = "message"), "\n")}
+  
+  linebreak()
+  
+  cat(paste("\n", "Original response:\n",
+            colortext(paste(" ", textsymbol("bullet"), " Refers to the original response that the participant typed", sep = ""), defaults = "message"),
+            "\n",
+            sep = "")
+  )
+  
+  cat(paste("\n", "Auto-corrected response:\n",
+            colortext(paste(" ", textsymbol("bullet"), " Refers to the response that the automated spell-check derived", sep = ""), defaults = "message"),
+            "\n",
+            sep = "")
+  )
+  
+  cat(paste("\n", "Response to manually spell-check: '", colortext("catdog", defaults = "highlight"), "'\n",
+            paste(
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the ", sep = ""), defaults = "message"),
+              styletext(colortext("target", defaults = "message"), defaults = "italics"),
+              colortext(paste(" response to be manually spell-checked", sep = ""), defaults = "message"),
+              sep = ""
+            ),
+            sep = "")
+  )
+  
+  linebreak()
+  
+  cat(paste("\n", "1: SKIP WORD\n",
+            colortext(paste(" ", textsymbol("bullet"), " Keeps word 'as is' and moves on to next word to be spell-checked", sep = ""), defaults = "message"),
+            "\n",
+            sep = "")
+  )
+  
+  cat(paste("\n", "2: ADD WORD TO DICTIONARY\n",
+            colortext(paste(" ", textsymbol("bullet"), " Adds word to dictionary for future spell-checking", sep = ""), defaults = "message"),
+            "\n",
+            sep = "")
+  )
+  
+  cat(paste("\n", "3: TYPE MY OWN WORD\n", 
+            colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the word", sep = ""), defaults = "message"),
+            "\n",
+            sep = "")
+  )
+  
+  cat(paste("\n", "4: GOOGLE WORD\n", 
+            colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the word", sep = ""), defaults = "message"),
+            "\n",
+            sep = "")
+  )
+  
+  cat(paste("\n", "5: BAD WORD\n", 
+            colortext(paste(" ", textsymbol("bullet"), " Marks the word as an inappropriate response (NA)", sep = ""), defaults = "message"),
+            sep = "")
+  )
+  
+  linebreak()
+  
+  cat(paste("\n", "6: KEEP ORIGINAL\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Reverts the string back to the", sep = ""), defaults = "message"),
+                  "Original response:",
+                  colortext("the participant provided.", defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n", "7: KEEP AUTO-CORRECT\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Keeps the string 'as is' with the", sep = ""), defaults = "message"),
+                  "Auto-correct response:",
+                  colortext("provided by the automated spell-check.", defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n", "8: TYPE MY OWN STRING\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the", sep = ""), defaults = "message"),
+                  "Original response:",
+                  colortext("the participant provided.", defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n", "9: GOOGLE STRING\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the", sep = ""), defaults = "message"),
+                  "Original response:",
+                  colortext("the participant provided.", defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n", "10: BAD STRING\n", 
+            colortext(paste(" ", textsymbol("bullet"), " Marks the entire string as an inappropriate response (NA)", sep = ""), defaults = "message"),
+            sep = ""
+  )
+  )
+  
+  linebreak()
+  
+  cat(paste("\n", styletext("\nResponse options\n", defaults = "underline"),
+            paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess (letters correspond to the response)", sep = ""), defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n'B'\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Takes you back to the previous response (use if you make a mistake or just want to go back)", sep = ""), defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n'H'\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Takes you to the documentation of `textcleaner`", sep = ""), defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\n'esc'\n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Exits textcleaner completely but saves your output", sep = ""), defaults = "message")),
+            "\n", sep = ""
+  )
+  )
+  
+  cat(paste("\nSelection (accepts lowercase): \n",
+            paste(colortext(paste(" ", textsymbol("bullet"), " Where you input the option you select", sep = ""), defaults = "message")),
+            "\n\n", sep = ""
+  )
+  )
+  
+  readline("Press ENTER to get back to manual spell-check")
+}
 
 #' Levenshtein Distance Adjusted for QWERTY Keyboard
 #' 

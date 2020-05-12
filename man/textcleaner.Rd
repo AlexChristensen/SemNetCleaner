@@ -9,7 +9,8 @@ textcleaner(
   miss = 99,
   partBY = c("row", "col"),
   dictionary = NULL,
-  continue = NULL
+  continue = NULL,
+  walkthrough = NULL
 )
 }
 \arguments{
@@ -41,6 +42,12 @@ A result previously unfinished that still needs to be completed.
 Allows you to continue to manually spell-check their data
 after you've closed or errored out.
 Defaults to \code{NULL}}
+
+\item{walkthrough}{Boolean.
+Whether a walkthrough should be provided (recommended for first time users).
+Defaults to \code{NULL}, which will ask whether you would like a walkthrough.
+Set to \code{TRUE} to do the walkthrough.
+Set to \code{FALSE} to skip the walkthrough}
 }
 \value{
 This function returns a list containing the following objects:
