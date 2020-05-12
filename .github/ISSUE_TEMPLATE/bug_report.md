@@ -15,7 +15,7 @@ Copy and paste error code here
 ```
 
 **To Reproduce:**
-- Function error occurred in: [e.g. ,moniker function of textcleaner]
+- Function error occurred in: [e.g., moniker function of textcleaner]
 
 *Optional (but extremely helpful): Attach data to issue or send data to alexpaulchristensen@gmail.com*
 
@@ -32,3 +32,4 @@ Copy and paste error code here
 - [e.g., function with arguments]
 - [e.g., worked before but doesn't now]
 - [e.g., expected behavior]
+- [e.g., other things you've tried]
