@@ -5,10 +5,6 @@
 #' 
 #' @param textcleaner.obj Object from \code{\link[SemNetCleaner]{textcleaner}}
 #' 
-#' @param changes Matrix.
-#' A matrix with changes made the \code{\link[SemNetCleaner]{textcleaner}}
-#' object \code{$spellcheck$automated}
-#' 
 #' @return This function returns the corrected lists from \code{\link[SemNetCleaner]{textcleaner}}s:
 #' 
 #' \item{binary}{A matrix of responses where each row represents a participant
@@ -40,6 +36,9 @@
 #' 
 #' \item{\code{auto}}
 #' {Only the incorrect responses that were changed during spell-check}
+#' 
+#' \item{\code{changes}}
+#' {Only the changes made within the function \code{\link[SemNetCleaner]{correct.changes}}}
 #' 
 #' }
 #' 
@@ -77,12 +76,14 @@
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
+#' @importFrom utils edit
+#' 
 #' @export
 #' 
 # Correct changes----
-# Updated 19.04.2020
+# Updated 16.06.2020
 # Major update: 19.04.2020
-correct.changes <- function(textcleaner.obj, changes)
+correct.changes <- function(textcleaner.obj)
 {
   # Check if textcleaner object is input
   if(!class(textcleaner.obj) == "textcleaner")
@@ -90,6 +91,32 @@ correct.changes <- function(textcleaner.obj, changes)
   
   # Store textcleaner object as result list
   res <- textcleaner.obj
+  
+  ## Original automated responses
+  automated <- res$spellcheck$automated
+  
+  # Get changes
+  changes <- edit(automated)
+  
+  # Provide changes for user
+  ## Find rows that have changed
+  target.changes <- which(apply(automated[,-1] != changes[,-1], 1, function(x){any(x)}))
+  
+  ## Initialize track changes
+  track.changes <- list()
+  
+  ## Loop through changes
+  for(i in 1:length(target.changes))
+  {
+    ## Set up change matrix
+    chn.mat <- rbind(automated[target.changes[i],-1], changes[target.changes[i],-1])
+    colnames(chn.mat) <- rep("to", ncol(chn.mat))
+    row.names(chn.mat) <- c("Automated", "Corrected")
+    
+    track.changes[[automated[target.changes[i],1]]] <- chn.mat
+  }
+  
+  res$spellcheck$changes <- track.changes
   
   ## Original is used (rather than corrected) to run through same preprocessing
   ## as in textcleaner (far more efficient than actually changing through each

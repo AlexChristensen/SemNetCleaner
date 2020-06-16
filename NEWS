@@ -1,6 +1,13 @@
+Changes in version 1.2.1
+
+o UPDATE: `edit` function added within the `correct.changes` function to allow more seamless interface
+
+o UPDATE: change tracking has been added to `correct.changes` in the output (`$spellcheck$changes`)
+
+
 Changes in version 1.2.0
 
-o **MAJOR UPDATE**: overhauled `textcleaner` system to be more functionally efficient, convenient, and aesthetically intuitive
+o **MAJOR UPDATE**: overhauled `textcleaner` and `correct.changes` system to be more functionally efficient, convenient, and aesthetically intuitive
 
 o ADD: a walkthrough has been added prior to the manual spell-check in `textcleaner`
 

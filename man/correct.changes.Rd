@@ -4,14 +4,10 @@
 \alias{correct.changes}
 \title{Correct Changes from \code{\link[SemNetCleaner]{textcleaner}}}
 \usage{
-correct.changes(textcleaner.obj, changes)
+correct.changes(textcleaner.obj)
 }
 \arguments{
 \item{textcleaner.obj}{Object from \code{\link[SemNetCleaner]{textcleaner}}}
-
-\item{changes}{Matrix.
-A matrix with changes made the \code{\link[SemNetCleaner]{textcleaner}}
-object \code{$spellcheck$automated}}
 }
 \value{
 This function returns the corrected lists from \code{\link[SemNetCleaner]{textcleaner}}s:
@@ -45,6 +41,9 @@ after words response. Also converts all upper-case letters to lower case}
 
 \item{\code{auto}}
 {Only the incorrect responses that were changed during spell-check}
+
+\item{\code{changes}}
+{Only the changes made within the function \code{\link[SemNetCleaner]{correct.changes}}}
 
 }
 

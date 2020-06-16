@@ -1653,7 +1653,7 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' @import SemNetDictionaries
 #' 
 #' @noRd
-# Spell-check for dictionary----
+# Manual spell-check----
 # Updated 24.04.2020
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL,
                                    data = NULL, continue = NULL,
@@ -2503,7 +2503,7 @@ textsymbol <- function(symbol = c("alpha", "beta", "chi", "delta",
 #' @noRd
 #' 
 # Walkthrough----
-# Updated 24.04.2020
+# Updated 09.06.2020
 walk_through <- function(walkthrough)
 {
   # Do walkthrough?
@@ -2514,7 +2514,7 @@ walk_through <- function(walkthrough)
   {
     # Ask user
     customMenu(choices = c("Yes", "No"),
-               title = c(paste("\nBefore starting manual spell-check, would you like to do a walkthrough?",
+               title = c(paste("\nBefore starting the manual spell-check, would you like to do a walkthrough?",
                                colortext("\n(Recommended for first time users)", defaults = "message"))),
                default = 2, dictionary = TRUE)
     
@@ -2546,12 +2546,21 @@ walk_through <- function(walkthrough)
     cat(colortext("\n\nThere are generally two types of responses you might encounter:", defaults = "message"))
     cat(colortext("\na single word or multiple word response. This latter type is a", defaults = "message"))
     cat(colortext("\nbit tricky because the response could be a single response or", defaults = "message"))
-    cat(colortext("\nit could be multiple responses entered as a single string.", defaults = "message"))
+    cat(colortext("\nit could be multiple responses entered as though it were a", defaults = "message"))
+    cat(colortext("\nsingle response.", defaults = "message"))
     
     cat(colortext("\n\nBecause `textcleaner` spell-checks each word individually, your", defaults = "message"))
     cat(colortext("\nintervention is necessary to determine how to properly split", defaults = "message"))
-    cat(colortext("\nthese responses. These multiple word responses is where the", defaults = "message"))
-    cat(colortext("\n`textcleaner` function starts and our walkthrough begins.\n\n", defaults = "message"))
+    cat(colortext("\nthese responses. By demonstrating how to correct this type of", defaults = "message"))
+    cat(colortext("\nresponse, you'll be prepared to correct single responses as well.", defaults = "message"))
+    
+    cat(colortext("\n\nThis is because these multiple word responses can be checked", defaults = "message"))
+    cat(colortext("\nindividually or across all words in the response. Therefore, all", defaults = "message"))
+    cat(colortext("\nexplanation for how to use the manual spell-check options of", defaults = "message"))
+    cat(colortext("\n`textcleaner` are discussed in this single example.", defaults = "message"))
+    
+    cat(colortext("\n\nThese multiple word responses are where the `textcleaner`", defaults = "message"))
+    cat(colortext("\nfunction starts and our walkthrough begins.\n\n", defaults = "message"))
     
     readline("Press ENTER to continue...")
     
@@ -2609,7 +2618,7 @@ walk_through <- function(walkthrough)
     ## End example of menu ##
     #-----------------------#
     
-    readline("Press ENTER to continue...\n(make sure to expand window vertically to see the full menu)")
+    readline("Press ENTER to continue...\n(make sure to expand R's Console vertically to see the full menu)")
     
     # First three lines
     cat(paste(colortext("\nAs you can see, the interactive menu contains", defaults = "message"),
@@ -2633,7 +2642,7 @@ walk_through <- function(walkthrough)
     )
     
     cat(paste("\n", "Auto-corrected response:\n",
-              colortext(paste(" ", textsymbol("bullet"), " Refers to the response that the automated spell-check derived", sep = ""), defaults = "message"),
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the response that the automated spell-check corrected to", sep = ""), defaults = "message"),
               "\n",
               sep = "")
     )
@@ -2672,18 +2681,22 @@ walk_through <- function(walkthrough)
     readline("Press ENTER to continue...")
     
     # Word options
-    cat(colortext("\nThe first set of options we have are to correct the target", defaults = "message"))
-    cat(paste(colortext("\nword: ", defaults = "message"),
-              "'", colortext("catdog", defaults = "highlight"), "'",
-              colortext(". These options allow you to make a decision", defaults = "message"),
-              sep = "")
+    cat(colortext("\nThe first set of options (i.e., ", defaults = "message"),
+        styletext("Word options", defaults = "underline"),
+        colortext(") we have are", defaults = "message"),
+        sep = ""
     )
-    
-    cat(colortext("\nabout how to handle this single word in the response. That is,", defaults = "message"))
-    cat(colortext("\nThese options will only affect the target word. There are five", defaults = "message"))
-    cat(colortext("\noptions:", defaults = "message"))
-    
-    
+    cat(colortext("\nto correct the target word:", defaults = "message"),
+        paste("'", colortext("catdog", defaults = "highlight"), "'",
+              colortext(". These options allow", defaults = "message"),
+              sep = "")
+        )
+    cat(colortext("\nyou to make a decision about how to handle this single", defaults = "message"))
+    cat(colortext("\nword in the response -- that is, these options will", defaults = "message"),
+        colortext(styletext("\nonly", "italics"), defaults = "message"),
+        colortext("affect the target word. There are five options:", defaults = "message")
+        )
+
     word.set <- paste(1:5, ": ", word, sep = "")
     
     cat(paste(styletext("\n\nWord options\n", defaults = "underline"),
@@ -2692,7 +2705,7 @@ walk_through <- function(walkthrough)
     linebreak()
     
     cat(paste("\n", "1: SKIP WORD\n",
-              colortext(paste(" ", textsymbol("bullet"), " Keeps word 'as is' and moves on to next word to be spell-checked", sep = ""), defaults = "message"),
+              colortext(paste(" ", textsymbol("bullet"), ' Keeps word "as is" and moves on to next word to be spell-checked', sep = ""), defaults = "message"),
               "\n",
               sep = "")
     )
@@ -2710,7 +2723,7 @@ walk_through <- function(walkthrough)
     )
     
     cat(paste("\n", "4: GOOGLE WORD\n", 
-              colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the word", sep = ""), defaults = "message"),
+              colortext(paste(" ", textsymbol("bullet"), ' Opens your default browser and "Googles" the word', sep = ""), defaults = "message"),
               "\n",
               sep = "")
     )
@@ -2724,15 +2737,21 @@ walk_through <- function(walkthrough)
     readline("Press ENTER to continue...")
     
     cat(colortext("\nThese options only affect the target word. But what if you want", defaults = "message"))
-    cat(colortext("\nto change multiple words or the entire string of responses? We", defaults = "message"))
+    cat(colortext("\nto change multiple words or the", defaults = "message"),
+        colortext(styletext("entire", defaults = "italics"), defaults = "message"),
+        colortext("string of responses? We", defaults = "message"))
     cat(colortext("\nmove to those options next.\n\n", defaults = "message"))
     
     readline("Press ENTER to continue...")
     
     # String options
-    cat(colortext("\nThe next set of options are able to correct the entire string", defaults = "message"))
-    cat(colortext("\nof responses. These options will affect the entire string", defaults = "message"))
-    cat(colortext("\nrather than just the target word. There are also five options:", defaults = "message"))
+    cat(colortext("\nThe next set of options (i.e., ", defaults = "message"),
+        styletext("String options", defaults = "underline"),
+        colortext(") are able to", defaults = "message"),
+        sep = "")
+    cat(colortext("\ncorrect the entire string of responses. These options will", defaults = "message"))
+    cat(colortext("\naffect the entire string rather than just the target word.", defaults = "message"))
+    cat(colortext("\nThere are also five options:", defaults = "message"))
     
     string.set <- paste(6:10, ": ", string, sep = "")
     
@@ -2791,11 +2810,17 @@ walk_through <- function(walkthrough)
     readline("Press ENTER to continue...")
     
     # Response options
-    cat(colortext("\nThe final set of options only affect the target word. These", defaults = "message"))
-    cat(colortext("\noptions are `textcleaner`'s best guess for what the response", defaults = "message"))
-    cat(colortext("\nmight be. These response options offer quick corrections or", defaults = "message"))
-    cat(colortext("\npotential directions for what the user meant to type. Below", defaults = "message"))
-    cat(colortext("\nthe response options are two convenience options and an", defaults = "message"))
+    cat(colortext("\nThe final set of options (i.e., ", defaults = "message"),
+        styletext("Response options", defaults = "underline"),
+        colortext(") only affect the", defaults = "message"),
+        sep = "")
+    cat(colortext("\ntarget word. These options are `textcleaner`'s best guess for", defaults = "message"))
+    cat(colortext("\nwhat the response nmight be. These response options offer quick", defaults = "message"))
+    cat(colortext("\ncorrections or potential directions for what the user meant to", defaults = "message"))
+    cat(colortext("\nBelow the", defaults = "message"),
+        styletext("Response options", defaults = "underline"),
+        colortext("are two convenience options and an ", defaults = "message")
+        )
     cat(colortext("\ninput for your selection.", defaults = "message"))
     
     resp.set <- paste(c("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"), ": ", resp, sep = "")
@@ -2809,7 +2834,7 @@ walk_through <- function(walkthrough)
     
     linebreak()
     
-    cat(paste("\n", styletext("\nResponse options\n", defaults = "underline"),
+    cat(paste(styletext("\nResponse options\n", defaults = "underline"),
               paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess (letters correspond to the response)", sep = ""), defaults = "message")),
               "\n", sep = ""
     )

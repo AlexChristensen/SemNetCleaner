@@ -1,7 +1,7 @@
 Package: SemNetCleaner
 Title: An Automated Cleaning Tool for Semantic and Linguistic Data
-Version: 1.2.0
-Date: 2020-06-08
+Version: 1.2.1
+Date: 2020-06-16
 Authors@R: c(person("Alexander P.", "Christensen", email = "alexpaulchristensen@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-9798-7037")))
 Maintainer: Alexander P. Christensen <alexpaulchristensen@gmail.com>
 Description: Implements several functions that automates the cleaning and spell-checking of text data. Also converges, finalizes, removes plurals and continuous strings, and puts text data in binary format for semantic network analysis. Uses the 'SemNetDictionaries' package to make the cleaning process more accurate, efficient, and reproducible.
