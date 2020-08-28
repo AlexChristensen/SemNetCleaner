@@ -1,5 +1,7 @@
 Changes in version 1.2.1
 
+o UPDATE: `correct.changes` included within `textcleaner` to streamline code for single function preprocessing
+
 o UPDATE: `edit` function added within the `correct.changes` function to allow more seamless interface
 
 o UPDATE: change tracking has been added to `correct.changes` in the output (`$spellcheck$changes`)

@@ -1041,7 +1041,7 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE)
 #' @noRd
 #' 
 # Menu for Manual Spell-check----
-# Updated 13.04.2020
+# Updated 28.08.2020
 spellcheck.menu <- function (check, context = NULL, possible, original,
                              current.index, changes, full.dictionary, category)
 {
@@ -1075,13 +1075,13 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       customMenu(choices = choices, title = title, default = 10)
       
       # Message user
-      message("Press 'B' to GO BACK, 'H' for HELP, or 'esc' to STOP.\n")
+      message("Press 'B' to GO BACK, 'H' for HELP, or 'X' to EXIT.\n")
       
       # Present prompt
       ans <- readline(prompt = "Selection (accepts lowercase): ")
       
       # Check for user stoppage
-      if(ans == "")
+      if(tolower(ans) == "x")
       {return("STOP")}
       
       # Check for appropriate answer
@@ -1654,7 +1654,7 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' 
 #' @noRd
 # Manual spell-check----
-# Updated 24.04.2020
+# Updated 21.08.2020
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL,
                                    data = NULL, continue = NULL,
                                    walkthrough = NULL)
@@ -1680,10 +1680,13 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL,
       {category <- "fruits"
       }else if(!"fruits" %in% target && "vegetables" %in% target)
       {category <- "vegetables"
+      }else if("jobs" %in% target)
+      {category <- "jobs"
       }else if("hot" %in% target || "good" %in% target)
       {category <- "synonym"
       }else if("animals" %in% target)
-      {category <- "animals"}
+      {category <- "animals"
+      }else{category <- "general"}
     }
     
     # Load dictionaries
@@ -1754,6 +1757,9 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL,
     if(!is.null(continue$multi.count))
     {multi.count <- continue$multi.count}
     data <- continue$data
+    
+    # Do not run through walkthrough
+    walkthrough <- FALSE
   }
   
   # Check for walkthrough
@@ -2253,7 +2259,7 @@ correspondence.matrix <- function (from, to)
 #' 
 #' @noRd
 # Spell Corrected Matrix----
-# Updated 17.04.2020
+# Updated 20.08.2020
 correct.data <- function (data, corr.mat)
 {
   # Get number of cases
@@ -2286,14 +2292,27 @@ correct.data <- function (data, corr.mat)
     # Convert responses in their correct order back into data
     correct.ord <- na.omit(as.vector(t(corr)))
     
-    # Compute number of intrusions
-    behav.mat[i,"Intrusions"] <- sum(correct.ord == "NA")
+    if(length(correct.ord) > 0)
+    {
+      # Compute number of intrusions
+      behav.mat[i,"Intrusions"] <- sum(correct.ord == "NA")
+      
+      # Compute number of perseverations
+      behav.mat[i,"Perseverations"] <- length(correct.ord[-which(correct.ord == "NA")]) - length(unique(correct.ord[-which(correct.ord == "NA")]))
+      
+      # Insert into corrected matrix
+      correct.mat[i,1:length(correct.ord)] <- correct.ord
+      
+    }else{
+      
+      # Compute number of intrusions
+      behav.mat[i,"Intrusions"] <- 0
+      
+      # Compute number of perseverations
+      behav.mat[i,"Perseverations"] <- 0
+      
+    }
     
-    # Compute number of perseverations
-    behav.mat[i,"Perseverations"] <- length(correct.ord[-which(correct.ord == "NA")]) - length(unique(correct.ord[-which(correct.ord == "NA")]))
-    
-    # Insert into corrected matrix
-    correct.mat[i,1:length(correct.ord)] <- correct.ord
   }
   
   # Remove columns that are all NA
@@ -2877,7 +2896,7 @@ walk_through <- function(walkthrough)
   
   cat("\n")
   
-  readline("Press ENTER to start manual spell-check")
+  readline("Press ENTER to start manual spell-check...")
   
 }
 
@@ -2996,7 +3015,7 @@ textcleaner_help <- function(...)
   
   linebreak()
   
-  cat(paste("\n", styletext("\nResponse options\n", defaults = "underline"),
+  cat(paste("\n", styletext("Response options\n", defaults = "underline"),
             paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess (letters correspond to the response)", sep = ""), defaults = "message")),
             "\n", sep = ""
   )
@@ -3009,7 +3028,7 @@ textcleaner_help <- function(...)
   )
   
   cat(paste("\n'H'\n",
-            paste(colortext(paste(" ", textsymbol("bullet"), " Takes you to the documentation of `textcleaner`", sep = ""), defaults = "message")),
+            paste(colortext(paste(" ", textsymbol("bullet"), " Outputs the information you see here. For other help information, see `?textcleaner`", sep = ""), defaults = "message")),
             "\n", sep = ""
   )
   )
@@ -3026,7 +3045,7 @@ textcleaner_help <- function(...)
   )
   )
   
-  readline("Press ENTER to get back to manual spell-check")
+  readline("Press ENTER to get back to manual spell-check...")
 }
 
 #' Levenshtein Distance Adjusted for QWERTY Keyboard

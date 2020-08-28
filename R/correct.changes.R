@@ -81,10 +81,38 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 16.06.2020
+# Updated 21.08.2020
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj)
 {
+  
+  # Set up message to user
+  cat(colortext("\nYou will now have a chance to correct the changes that", defaults = "message"))
+  cat(colortext("\nwere made during the automated spell-checking process.", defaults = "message"))
+  cat(colortext("\nA spreadsheet will open allowing you to manually correct", defaults = "message"))
+  cat(colortext("\nthese changes.\n\n", defaults = "message"))
+  
+  readline("Press ENTER to continue...")
+  
+  cat(colortext("\n\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
+  cat(colortext("\nrow number provided in the output object `$spellcheck$correspondence`", defaults = "message"))
+  cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
+  
+  cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
+  cat(colortext(paste("\nand columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
+                      "are the automated spell-check responses."), defaults = "message"))
+  cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
+  
+  readline("Press ENTER to continue...")
+    
+  cat(colortext(paste("\nYou should change columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
+                      "by manually typing responses."), defaults = "message"))
+  cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
+  cat(colortext('\nyou can exit this process by clicking the "X" in the top right', defaults = "message"))
+  cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
+  
+  readline("Press ENTER to proceed with spell-check.")
+
   # Check if textcleaner object is input
   if(!class(textcleaner.obj) == "textcleaner")
   {stop("A 'textcleaner' class object was not input in the 'textcleaner.obj' argument")}
@@ -102,119 +130,131 @@ correct.changes <- function(textcleaner.obj)
   ## Find rows that have changed
   target.changes <- which(apply(automated[,-1] != changes[,-1], 1, function(x){any(x)}))
   
-  ## Initialize track changes
-  track.changes <- list()
-  
-  ## Loop through changes
-  for(i in 1:length(target.changes))
+  # If there are no changes, then return original object
+  if(length(target.changes) == 0)
   {
-    ## Set up change matrix
-    chn.mat <- rbind(automated[target.changes[i],-1], changes[target.changes[i],-1])
-    colnames(chn.mat) <- rep("to", ncol(chn.mat))
-    row.names(chn.mat) <- c("Automated", "Corrected")
+    message("\nNo responses changed.\n")
     
-    track.changes[[automated[target.changes[i],1]]] <- chn.mat
+    return(textcleaner.obj)
+    
+  }else{
+    
+    ## Initialize track changes
+    track.changes <- list()
+    
+    ## Loop through changes
+    for(i in 1:length(target.changes))
+    {
+      ## Set up change matrix
+      chn.mat <- rbind(automated[target.changes[i],-1], changes[target.changes[i],-1])
+      colnames(chn.mat) <- rep("to", ncol(chn.mat))
+      row.names(chn.mat) <- c("Automated", "Corrected")
+      
+      track.changes[[automated[target.changes[i],1]]] <- chn.mat
+    }
+    
+    res$spellcheck$changes <- track.changes
+    
+    ## Original is used (rather than corrected) to run through same preprocessing
+    ## as in textcleaner (far more efficient than actually changing through each
+    ## object in the results list)
+    original <- as.matrix(res$responses$original)
+    
+    # Create new correspondence matrix
+    correspondence <- res$spellcheck$correspondence
+    
+    # Get number of columns between correspondence and changes matrices to match
+    if(ncol(correspondence) > ncol(changes))
+    {
+      ## Difference in number of columns
+      diff <- ncol(correspondence) - ncol(changes)
+      
+      ## Tack on NA columns
+      for(i in 1:diff)
+      {changes <- as.matrix(cbind(changes, rep(NA, nrow(changes))))}
+      
+    }else if(ncol(correspondence) < ncol(changes))
+    {
+      ## Difference in number of columns
+      diff <- ncol(changes) - ncol(correspondence)
+      
+      ## Tack on NA columns
+      for(i in 1:diff)
+      {correspondence <- as.matrix(cbind(correspondence, rep(NA, nrow(correspondence))))}
+    }
+    
+    # Update correspondence matrix
+    correspondence[row.names(res$spellcheck$automated),] <- changes
+    res$spellcheck$correspondence <- correspondence
+    
+    # Create 'from' list
+    from <- as.list(correspondence[,"from"])
+    
+    # Create 'to' list
+    to <- apply(correspondence[,grep("to", colnames(correspondence))], 1, function(x){unname(na.omit(x))})
+    
+    # Create correspondence matrix (error catch)
+    corr.mat <- try(
+      correspondence.matrix(from, to),
+      silent = TRUE
+    )
+    
+    if(any(class(corr.mat) == "try-error"))
+    {return(error.fun(corr.mat, "correspondence.matrix", "correct.changes"))}
+    
+    ## Update with changes made by user
+    res$spellcheck$automated <- changes
+    
+    # Get spell-corrected data (error catch)
+    corrected <- try(
+      correct.data(original, corr.mat),
+      silent = TRUE
+    )
+    
+    if(any(class(corrected) == "try-error"))
+    {return(error.fun(corrected, "correct.data", "correct.changes"))}
+    
+    ## Collect behavioral data
+    behavioral <- corrected$behavioral
+    
+    ## Make sure to replace faux "NA" with real NA
+    corrected$corrected[which(corrected$corrected == "NA")] <- NA
+    
+    ## Cleaned responses (no instrusions or perseverations)
+    cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
+    
+    max.resp <- max(unlist(lapply(cleaned.list, length)))
+    
+    cleaned.matrix <- t(sapply(
+      lapply(cleaned.list, function(x, max.resp){
+        c(x, rep(NA, max.resp - length(x)))
+      }, max.resp = max.resp)
+      ,rbind))
+    
+    colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
+                                                           digits = nchar(ncol(cleaned.matrix)) - 1,
+                                                           flag = "0"), sep = "")
+    
+    res$responses$clean <- cleaned.matrix
+    
+    # Convert to binary response matrix (error catch)
+    res$responses$binary <- try(
+      resp2bin(corrected$corrected),
+      silent = TRUE
+    )
+    
+    if(any(class(res$responses$binary) == "try-error"))
+    {return(error.fun(res$responses$binary, "resp2bin", "correct.changes"))}
+    
+    behavioral <- cbind(behavioral, rowSums(res$responses$binary))
+    colnames(behavioral)[3] <- "Appropriate"
+    res$behavioral <- as.data.frame(behavioral)
+    
+    #make 'textcleaner' class
+    class(res) <- "textcleaner"
+    
+    return(res)
+    
   }
   
-  res$spellcheck$changes <- track.changes
-  
-  ## Original is used (rather than corrected) to run through same preprocessing
-  ## as in textcleaner (far more efficient than actually changing through each
-  ## object in the results list)
-  original <- as.matrix(res$responses$original)
-  
-  # Create new correspondence matrix
-  correspondence <- res$spellcheck$correspondence
-  
-  # Get number of columns between correspondence and changes matrices to match
-  if(ncol(correspondence) > ncol(changes))
-  {
-    ## Difference in number of columns
-    diff <- ncol(correspondence) - ncol(changes)
-    
-    ## Tack on NA columns
-    for(i in 1:diff)
-    {changes <- as.matrix(cbind(changes, rep(NA, nrow(changes))))}
-    
-  }else if(ncol(correspondence) < ncol(changes))
-  {
-    ## Difference in number of columns
-    diff <- ncol(changes) - ncol(correspondence)
-    
-    ## Tack on NA columns
-    for(i in 1:diff)
-    {correspondence <- as.matrix(cbind(correspondence, rep(NA, nrow(correspondence))))}
-  }
-  
-  # Update correspondence matrix
-  correspondence[row.names(res$spellcheck$automated),] <- changes
-  
-  # Create 'from' list
-  from <- as.list(correspondence[,"from"])
-  
-  # Create 'to' list
-  to <- apply(correspondence[,grep("to", colnames(correspondence))], 1, function(x){unname(na.omit(x))})
-  
-  # Create correspondence matrix (error catch)
-  corr.mat <- try(
-    correspondence.matrix(from, to),
-    silent = TRUE
-  )
-  
-  if(any(class(corr.mat) == "try-error"))
-  {return(error.fun(corr.mat, "correspondence.matrix", "correct.changes"))}
-  
-  ## Update with changes made by user
-  res$spellcheck$automated <- changes
-  
-  # Get spell-corrected data (error catch)
-  corrected <- try(
-    correct.data(original, corr.mat),
-    silent = TRUE
-  )
-  
-  if(any(class(corrected) == "try-error"))
-  {return(error.fun(corrected, "correct.data", "correct.changes"))}
-  
-  ## Collect behavioral data
-  behavioral <- corrected$behavioral
-  
-  ## Make sure to replace faux "NA" with real NA
-  corrected$corrected[which(corrected$corrected == "NA")] <- NA
-  res$responses$checked <- as.data.frame(corrected$corrected, stringsAsFactors = FALSE)
-  
-  ## Cleaned responses (no instrusions or perseverations)
-  cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
-  
-  max.resp <- max(unlist(lapply(cleaned.list, length)))
-  
-  cleaned.matrix <- t(sapply(
-    lapply(cleaned.list, function(x, max.resp){
-      c(x, rep(NA, max.resp - length(x)))
-    }, max.resp = max.resp)
-    ,rbind))
-  
-  colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
-                                                         digits = nchar(ncol(cleaned.matrix)) - 1,
-                                                         flag = "0"), sep = "")
-  
-  res$responses$clean <- cleaned.matrix
-  
-  # Convert to binary response matrix (error catch)
-  res$responses$binary <- try(
-    resp2bin(corrected$corrected),
-    silent = TRUE
-  )
-  
-  if(any(class(res$responses$binary) == "try-error"))
-  {return(error.fun(res$responses$binary, "resp2bin", "correct.changes"))}
-  
-  behavioral <- cbind(behavioral, rowSums(res$responses$binary))
-  colnames(behavioral)[3] <- "Appropriate"
-  res$behavioral <- as.data.frame(behavioral)
-  
-  #make 'textcleaner' class
-  class(res) <- "textcleaner"
-  
-  return(res)
 }

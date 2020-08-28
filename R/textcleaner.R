@@ -116,7 +116,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 19.04.2020
+# Updated 21.08.2020
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
@@ -174,15 +174,19 @@ textcleaner <- function(data = NULL, miss = 99,
     ## Obtain unique responses for efficient spell-checking
     uniq.resp <- na.omit(unique(unlist(data)))
     
+    # Sort out dictionaries
+    if(is.null(dictionary))
+    {dictionary <- "general"}
+    
     # Perform spell-check
     spell.check <- try(
       spellcheck.dictionary(uniq.resp = uniq.resp,
-                            dictionary = ifelse(is.null(dictionary), "general", dictionary),
+                            dictionary = dictionary,
                             data = data, walkthrough = walkthrough),
       silent <- TRUE
     )
     
-  }else if(length(continue) == 14) # Continue spell-check
+  }else if(length(continue) != 3) # Continue spell-check
   {spell.check <- spellcheck.dictionary(continue = continue)
   }else{spell.check <- continue}
   
@@ -284,8 +288,16 @@ textcleaner <- function(data = NULL, miss = 99,
   colnames(behavioral)[3] <- "Appropriate"
   res$behavioral <- as.data.frame(behavioral)
 
-  #make 'textcleaner' class
+  # Make 'textcleaner' class
   class(res) <- "textcleaner"
+  
+  # Correct auto-corrections
+  res <- correct.changes(res)
+  
+  # Let user know spell-check is complete
+  Sys.sleep(1)
+  message("\nPreprocessing complete.\n")
+  Sys.sleep(1)
 
   return(res)
 }
