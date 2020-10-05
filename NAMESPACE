@@ -2,6 +2,7 @@
 
 export(best.guess)
 export(bin2resp)
+export(convert2snafu)
 export(correct.changes)
 export(pluralize)
 export(qwerty.dist)
@@ -21,3 +22,4 @@ importFrom(utils,read.csv)
 importFrom(utils,read.table)
 importFrom(utils,setTxtProgressBar)
 importFrom(utils,txtProgressBar)
+importFrom(utils,write.table)

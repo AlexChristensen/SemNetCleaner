@@ -1,10 +1,16 @@
-Changes in version 1.2.1
+Changes in version 1.4.0
+
+o ADD: function to convert cleaned data to the SNAFU library's format in Python: `convert2snafu`
 
 o UPDATE: `correct.changes` included within `textcleaner` to streamline code for single function preprocessing
 
 o UPDATE: `edit` function added within the `correct.changes` function to allow more seamless interface
 
 o UPDATE: change tracking has been added to `correct.changes` in the output (`$spellcheck$changes`)
+
+o UPDATE: `textcleaner`'s help is now more helpful
+
+o UPDATE: text styling (face and color) are now adaptive to OS, software (R and RStudio), and RStudio theme
 
 
 Changes in version 1.2.0

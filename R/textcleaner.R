@@ -26,17 +26,17 @@
 #' Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 #' (See \code{\link{SemNetDictionaries}} for more details)
 #' 
+#' @param add.path Character.
+#' Path to additional dictionaries to be found.
+#' DOES NOT search recursively (through all folders in path)
+#' to avoid time intensive search.
+#' Set to \code{"choose"} to open an interactive directory explorer
+#' 
 #' @param continue List.
 #' A result previously unfinished that still needs to be completed.
 #' Allows you to continue to manually spell-check their data
 #' after you've closed or errored out.
 #' Defaults to \code{NULL}
-#' 
-#' @param walkthrough Boolean.
-#' Whether a walkthrough should be provided (recommended for first time users).
-#' Defaults to \code{NULL}, which will ask whether you would like a walkthrough.
-#' Set to \code{TRUE} to do the walkthrough.
-#' Set to \code{FALSE} to skip the walkthrough
 #' 
 #' @return This function returns a list containing the following objects:
 #' 
@@ -48,11 +48,11 @@
 #' 
 #' \itemize{
 #' 
-#' \item{clean}
+#' \item{\code{clean}}
 #' {A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 #' This can be used as a final dataset for analyses (e.g., fluency of responses)}
 #' 
-#' \item{original}
+#' \item{\code{original}}
 #' {The original response matrix that has had white spaces before and
 #' after words response. Also converts all upper-case letters to lower case}
 #' 
@@ -116,13 +116,13 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 21.08.2020
+# Updated 08.09.2020
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
-                        dictionary = NULL,
-                        continue = NULL,
-                        walkthrough = NULL)
+                        dictionary = NULL, add.path = NULL,
+                        continue = NULL#, walkthrough = NULL
+                        )
 {
   # Check if user is continuing from a previous point
   if(is.null(continue))
@@ -182,7 +182,9 @@ textcleaner <- function(data = NULL, miss = 99,
     spell.check <- try(
       spellcheck.dictionary(uniq.resp = uniq.resp,
                             dictionary = dictionary,
-                            data = data, walkthrough = walkthrough),
+                            add.path = add.path,
+                            data = data#, walkthrough = walkthrough
+                            ),
       silent <- TRUE
     )
     
@@ -251,7 +253,6 @@ textcleaner <- function(data = NULL, miss = 99,
   
   ## Make sure to replace faux "NA" with real NA
   corrected$corrected[which(corrected$corrected == "NA")] <- NA
-  res$responses$checked <- as.data.frame(corrected$corrected, stringsAsFactors = FALSE)
   
   ## Cleaned responses (no instrusions or perseverations)
   cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
@@ -269,7 +270,6 @@ textcleaner <- function(data = NULL, miss = 99,
                                                          flag = "0"), sep = "")
   
   res$responses$clean <- cleaned.matrix
-  
   
   # Convert to binary response matrix (error catch)
   res$responses$binary <- try(
@@ -292,12 +292,52 @@ textcleaner <- function(data = NULL, miss = 99,
   class(res) <- "textcleaner"
   
   # Correct auto-corrections
-  res <- correct.changes(res)
+  res <- try(correct.changes(res), silent = TRUE)
+  
+  if(any(class(res) == "try-error"))
+  {
+    error.fun(res, "correct.changes", "textcleaner")
+    
+    return(res)
+  }
   
   # Let user know spell-check is complete
   Sys.sleep(1)
   message("\nPreprocessing complete.\n")
-  Sys.sleep(1)
+  Sys.sleep(2)
+  
+  # Let user know where to send their dictionaries and monikers
+  dictionary.output <- paste(
+    textsymbol("bullet"),
+    "Dictionary output: `OBJECT_NAME$dictionary`",
+    sep = " "
+  )
+  
+  moniker.output <- paste(
+    textsymbol("bullet"),
+    "Moniker output: `OBJECT_NAME$spellcheck$manual`",
+    sep = " "
+  )
+  
+  cat(
+    
+    colortext(
+      
+      paste(
+        "Consider submitting your dictionary and spelling corrections (i.e., monikers) to:\n\n",
+        "https://github.com/AlexChristensen/SemNetDictionaries/issues/new/choose\n\n",
+        dictionary.output, "\n\n",
+        moniker.output, "\n\n"
+      ),
+      
+      defaults = "message"
+      
+    )
+  
+  )
+  
+  Sys.sleep(2)
+  
 
   return(res)
 }

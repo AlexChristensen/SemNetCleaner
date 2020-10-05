@@ -3,8 +3,8 @@
 
 .onAttach <- function(libname, pkgname)
 {
-    msg <- paste('For help getting started, type `browseVignettes("SemNetCleaner")` \n')
+    msg <- paste('\nFor help getting started, see <https://doi.org/10.31234/osf.io/eht87> \n')
     msg <- paste(msg,"For bugs and errors, submit an issue to <https://github.com/AlexChristensen/SemNetCleaner/issues>\n\n")
-    msg <- paste(msg, "WARNING: There have been major updates to the SemNetCleaner package.\n Please see 'Package NEWS' for a detailed list of updates", sep = "")
+    msg <- paste(msg, "WARNING: There have been major updates to the SemNetCleaner package.\n Please see 'Package NEWS' for a detailed list of updates\n", sep = "")
     packageStartupMessage(msg)
 }

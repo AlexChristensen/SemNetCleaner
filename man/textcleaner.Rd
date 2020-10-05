@@ -9,8 +9,8 @@ textcleaner(
   miss = 99,
   partBY = c("row", "col"),
   dictionary = NULL,
-  continue = NULL,
-  walkthrough = NULL
+  add.path = NULL,
+  continue = NULL
 )
 }
 \arguments{
@@ -37,17 +37,17 @@ Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.
 Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 (See \code{\link{SemNetDictionaries}} for more details)}
 
+\item{add.path}{Character.
+Path to additional dictionaries to be found.
+DOES NOT search recursively (through all folders in path)
+to avoid time intensive search.
+Set to \code{"choose"} to open an interactive directory explorer}
+
 \item{continue}{List.
 A result previously unfinished that still needs to be completed.
 Allows you to continue to manually spell-check their data
 after you've closed or errored out.
 Defaults to \code{NULL}}
-
-\item{walkthrough}{Boolean.
-Whether a walkthrough should be provided (recommended for first time users).
-Defaults to \code{NULL}, which will ask whether you would like a walkthrough.
-Set to \code{TRUE} to do the walkthrough.
-Set to \code{FALSE} to skip the walkthrough}
 }
 \value{
 This function returns a list containing the following objects:
@@ -60,11 +60,11 @@ and a response that a participant has not provided is a '\code{0}'}
 
 \itemize{
 
-\item{clean}
+\item{\code{clean}}
 {A response matrix that has been spell-checked and de-pluralized with duplicates removed.
 This can be used as a final dataset for analyses (e.g., fluency of responses)}
 
-\item{original}
+\item{\code{original}}
 {The original response matrix that has had white spaces before and
 after words response. Also converts all upper-case letters to lower case}
 

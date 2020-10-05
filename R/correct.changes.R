@@ -81,7 +81,7 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 21.08.2020
+# Updated 10.09.2020
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj)
 {
@@ -94,7 +94,7 @@ correct.changes <- function(textcleaner.obj)
   
   readline("Press ENTER to continue...")
   
-  cat(colortext("\n\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
+  cat(colortext("\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
   cat(colortext("\nrow number provided in the output object `$spellcheck$correspondence`", defaults = "message"))
   cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
   
@@ -146,14 +146,15 @@ correct.changes <- function(textcleaner.obj)
     for(i in 1:length(target.changes))
     {
       ## Set up change matrix
-      chn.mat <- rbind(automated[target.changes[i],-1], changes[target.changes[i],-1])
-      colnames(chn.mat) <- rep("to", ncol(chn.mat))
-      row.names(chn.mat) <- c("Automated", "Corrected")
+      chn.mat <- rbind(automated[target.changes[i],], changes[target.changes[i],])
+      colnames(chn.mat)[-1] <- rep("to", ncol(chn.mat)-1)
+      row.names(chn.mat) <- c("Previous", "Corrected")
+      chn.mat <- chn.mat[,-which(apply(chn.mat, 2, function(x){all(is.na(x))}))]
       
       track.changes[[automated[target.changes[i],1]]] <- chn.mat
     }
     
-    res$spellcheck$changes <- track.changes
+    res$spellcheck$verified <- track.changes
     
     ## Original is used (rather than corrected) to run through same preprocessing
     ## as in textcleaner (far more efficient than actually changing through each
