@@ -126,9 +126,17 @@ correct.changes <- function(textcleaner.obj)
   # Get changes
   changes <- edit(automated)
   
+  # Get differences
+  differences <- automated[,-1] != changes[,-1]
+  
+  ## Ensure matrix
+  if(!is.matrix(differences)){
+    differences <- t(as.matrix(differences))
+  }
+  
   # Provide changes for user
   ## Find rows that have changed
-  target.changes <- which(apply(automated[,-1] != changes[,-1], 1, function(x){any(x)}))
+  target.changes <- which(apply(differences, 1, function(x){any(x)}))
   
   # If there are no changes, then return original object
   if(length(target.changes) == 0)
