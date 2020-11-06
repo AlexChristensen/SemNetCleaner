@@ -24,9 +24,25 @@ Copy and paste error code here
 - SemNetCleaner: [e.g., 1.2.0]
 - SemNetDictionaries: [e.g., 1.1.6]
 
+Don't know your versions? You can check using the following code:
+```
+# R
+R.version$version.string
+# SemNetCleaner
+packageVersion("SemNetCleaner")
+# SemNetDictionaries
+packageVersion("SemNetDictionaries")
+```
+
 **Operating System:**
  - OS: [e.g., Windows, Mac, Linux]
  - Version [e.g., 10 x64 build 18363]
+
+Don't know your OS? You can check using the following code:
+```
+# OS
+Sys.info()[1:3]
+```
 
 **Additional context and comments**
 - [e.g., function with arguments]
