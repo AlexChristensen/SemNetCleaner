@@ -3027,7 +3027,7 @@ textcleaner_help <- function(check, context, original, possible)
     
     cat(paste("\n", "Auto-corrected string:\n\n",
               paste("'", context, "'", sep = "", collapse = " "), "\n\n",
-              colortext(paste(" ", textsymbol("bullet"), " Refers to the string that the automated spell-check derived", sep = ""), defaults = "message"),
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the auto-corrected string that the automated spell-check derived", sep = ""), defaults = "message"),
               "\n",
               sep = "")
     )
@@ -3050,8 +3050,9 @@ textcleaner_help <- function(check, context, original, possible)
   cat(paste("\n", "Target word: '", colortext(check, defaults = "highlight"), "'\n",
             paste(
               colortext(paste(" ", textsymbol("bullet"), " Refers to the ", sep = ""), defaults = "message"),
-              styletext(colortext("target", defaults = "message"), defaults = "italics"),
-              colortext(paste(" response to be manually spell-checked", sep = ""), defaults = "message"),
+              #styletext(colortext("target", defaults = "message"), defaults = "italics"),
+              colortext("target", defaults = "message"),
+              colortext(paste(" word to be manually spell-checked", sep = ""), defaults = "message"),
               sep = ""
             ),
             sep = "")
@@ -3060,31 +3061,31 @@ textcleaner_help <- function(check, context, original, possible)
   linebreak()
   
   cat(paste("\n", "1: SKIP WORD\n",
-            colortext(paste(" ", textsymbol("bullet"), " Keeps the target response 'as is' and moves on to next word to be spell-checked", sep = ""), defaults = "message"),
+            colortext(paste(" ", textsymbol("bullet"), " Keeps the target word 'as is' and moves on to next word to be spell-checked", sep = ""), defaults = "message"),
             "\n",
             sep = "")
   )
   
   cat(paste("\n", "2: ADD WORD TO DICTIONARY\n",
-            colortext(paste(" ", textsymbol("bullet"), " Adds the target response to dictionary for future spell-checking", sep = ""), defaults = "message"),
+            colortext(paste(" ", textsymbol("bullet"), " Adds the target word to dictionary for future spell-checking", sep = ""), defaults = "message"),
             "\n",
             sep = "")
   )
   
   cat(paste("\n", "3: TYPE MY OWN WORD\n", 
-            colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the target response", sep = ""), defaults = "message"),
+            colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the target word", sep = ""), defaults = "message"),
             "\n",
             sep = "")
   )
   
   cat(paste("\n", "4: GOOGLE WORD\n", 
-            colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the target response", sep = ""), defaults = "message"),
+            colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the target word", sep = ""), defaults = "message"),
             "\n",
             sep = "")
   )
   
   cat(paste("\n", "5: BAD WORD\n", 
-            colortext(paste(" ", textsymbol("bullet"), " Marks the target response as an inappropriate response (NA)", sep = ""), defaults = "message"),
+            colortext(paste(" ", textsymbol("bullet"), " Marks the target word as an inappropriate response (NA)", sep = ""), defaults = "message"),
             sep = "")
   )
   
