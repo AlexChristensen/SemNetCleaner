@@ -1972,9 +1972,14 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, add.path
           changes <- result$changes
           full.dictionary <- result$full.dictionary
           
+          ## Check for BAD STRING
+          if(all(target == "NA")){
+            result$end <- TRUE
+          }
+          
           ## Increase multiple response count
-          if(result$end)
-          {multi.count <- length(check.words) + 1
+          if(result$end){
+            multi.count <- length(check.words) + 1
           }else{multi.count <- multi.count + 1}
         }
         
