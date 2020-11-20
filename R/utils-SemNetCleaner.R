@@ -1062,9 +1062,9 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     while(ans == 30)
     {
       # Title for spell-check
-      title <- paste(paste("\nOriginal response: ", "'", original, "'", sep = ""),
-                     paste("Auto-corrected response: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
-                     paste("Response to manually spell-check: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
+      title <- paste(paste("\nOriginal string: ", "'", original, "'", sep = ""),
+                     paste("Auto-corrected string: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
+                     paste("Target word: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
                      sep = "\n\n")
       
       # Choices for spell-check
@@ -1377,7 +1377,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     while(ans == 30)
     {
       # Title for spell-check
-      title <- paste(paste("\nResponse to manually spell-check: ", paste("'", colortext(check, defaults = "highlight"), "'", sep = ""), sep = ""))
+      title <- paste(paste("\nTarget word: ", paste("'", colortext(check, defaults = "highlight"), "'", sep = ""), sep = ""))
       
       # Choices for spell-check
       choices <- c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD WORD", possible)
@@ -3013,16 +3013,16 @@ textcleaner_help <- function(check, context, original, possible)
   
   if(!is.null(context))
   {
-    cat(paste("\n", "Original response:\n\n",
+    cat(paste("\n", "Original string:\n\n",
               paste("'", original, "'", sep = ""), "\n\n",
-              colortext(paste(" ", textsymbol("bullet"), " Refers to the original response that the participant typed", sep = ""), defaults = "message"),
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the original string that the participant typed", sep = ""), defaults = "message"),
               "\n",
               sep = "")
     )
     
-    cat(paste("\n", "Auto-corrected response:\n\n",
+    cat(paste("\n", "Auto-corrected string:\n\n",
               paste("'", context, "'", sep = "", collapse = " "), "\n\n",
-              colortext(paste(" ", textsymbol("bullet"), " Refers to the response that the automated spell-check derived", sep = ""), defaults = "message"),
+              colortext(paste(" ", textsymbol("bullet"), " Refers to the string that the automated spell-check derived", sep = ""), defaults = "message"),
               "\n",
               sep = "")
     )
@@ -3042,7 +3042,7 @@ textcleaner_help <- function(check, context, original, possible)
     
   }
   
-  cat(paste("\n", "Response to manually spell-check: '", colortext(check, defaults = "highlight"), "'\n",
+  cat(paste("\n", "Target word: '", colortext(check, defaults = "highlight"), "'\n",
             paste(
               colortext(paste(" ", textsymbol("bullet"), " Refers to the ", sep = ""), defaults = "message"),
               styletext(colortext("target", defaults = "message"), defaults = "italics"),
@@ -3089,7 +3089,7 @@ textcleaner_help <- function(check, context, original, possible)
   {
     cat(paste("\n", "6: KEEP ORIGINAL\n",
               paste(colortext(paste(" ", textsymbol("bullet"), " Reverts the string back to the", sep = ""), defaults = "message"),
-                    "Original response:",
+                    "Original string:",
                     colortext("the participant provided", defaults = "message")),
               "\n", sep = ""
     )
@@ -3097,7 +3097,7 @@ textcleaner_help <- function(check, context, original, possible)
     
     cat(paste("\n", "7: KEEP AUTO-CORRECT\n",
               paste(colortext(paste(" ", textsymbol("bullet"), " Keeps the string 'as is' with the", sep = ""), defaults = "message"),
-                    "Auto-correct response:",
+                    "Auto-correct string:",
                     colortext("provided by the automated spell-check", defaults = "message")),
               "\n", sep = ""
     )
@@ -3105,7 +3105,7 @@ textcleaner_help <- function(check, context, original, possible)
     
     cat(paste("\n", "8: TYPE MY OWN STRING\n",
               paste(colortext(paste(" ", textsymbol("bullet"), " Allows you to type your own correction for the", sep = ""), defaults = "message"),
-                    "Original response:",
+                    "Original string:",
                     colortext("the participant provided", defaults = "message")),
               "\n", sep = ""
     )
@@ -3113,7 +3113,7 @@ textcleaner_help <- function(check, context, original, possible)
     
     cat(paste("\n", "9: GOOGLE STRING\n",
               paste(colortext(paste(" ", textsymbol("bullet"), " Opens your default browser and 'Googles' the", sep = ""), defaults = "message"),
-                    "Original response:",
+                    "Original string:",
                     colortext("the participant provided", defaults = "message")),
               "\n", sep = ""
     )
@@ -3129,7 +3129,7 @@ textcleaner_help <- function(check, context, original, possible)
     
     cat(paste("\n", styletext("Response options\n", defaults = "underline"),
               customMenu(choices = choices, title = NULL, default = 10, help = TRUE), "\n",
-              paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess (letters correspond to the response)", sep = ""), defaults = "message")),
+              paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess for the target word (letters correspond to the response)", sep = ""), defaults = "message")),
               "\n", sep = ""
     )
     )
@@ -3138,7 +3138,7 @@ textcleaner_help <- function(check, context, original, possible)
     
     cat(paste("\n", styletext("Response options\n", defaults = "underline"),
               customMenu(choices = choices, title = NULL, default = 5, help = TRUE), "\n",
-              paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess (letters correspond to the response)", sep = ""), defaults = "message")),
+              paste(colortext(paste(" ", textsymbol("bullet"), " Potential options based on `textcleaner`'s best guess for the target word (letters correspond to the response)", sep = ""), defaults = "message")),
               "\n", sep = ""
     )
     )
