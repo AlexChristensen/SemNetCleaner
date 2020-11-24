@@ -26,6 +26,18 @@
 #' Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 #' (See \code{\link{SemNetDictionaries}} for more details)
 #' 
+#' @param spelling Character vector.
+#' English spelling to be used.
+#' \itemize{
+#' 
+#' \item{\code{"UK"}}
+#' {For British spelling (e.g., colour)}
+#' 
+#' \item{\code{"US"}}
+#' {For American spelling (e.g., color)}
+#' 
+#' }
+#' 
 #' @param add.path Character.
 #' Path to additional dictionaries to be found.
 #' DOES NOT search recursively (through all folders in path)
@@ -120,8 +132,8 @@
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
-                        dictionary = NULL, add.path = NULL,
-                        continue = NULL#, walkthrough = NULL
+                        dictionary = NULL, spelling = c("UK", "US"),
+                        add.path = NULL, continue = NULL#, walkthrough = NULL
                         )
 {
   # Check if user is continuing from a previous point

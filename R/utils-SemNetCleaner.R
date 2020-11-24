@@ -455,6 +455,104 @@ response.splitter <- function (vec, full.dict)
   }else{return(vec)}
 }
 
+#' British-US English Conversion (Vector)
+#' 
+#' @description A sub-routine function to convert English spelling
+#' 
+#' @param vec Character vector.
+#' A vector with words to be checked for English spelling
+#' 
+#' @param spelling Character.
+#' Either \code{"UK"} or \code{"US"} for their respective spelling
+#' 
+#' @param dictionary Boolean.
+#' If \code{TRUE}, then duplicates are removed and the words are alphabetized
+#' 
+#' @return British or US spellings of words
+#' 
+#' @author Alexander Christensen <alexpaulchristensen@gmail.com>
+#' 
+#' @noRd
+# British-US Conversion (Vector)----
+# Updated 24.11.2020
+brit.us.conv.vector <- function (vec, spelling = c("UK", "US"), dictionary = FALSE)
+{
+  if(toupper(spelling) == "UK"){
+    
+    # Check for any US spelling in the vector
+    if(any(vec %in% names(SemNetDictionaries::brit2us))){
+      
+      # Target US spelling
+      target.US <- which(!is.na(vec[match(names(SemNetDictionaries::brit2us), vec)]))
+      
+      # Get GB spelling
+      spelling.GB <- unname(unlist(SemNetDictionaries::brit2us[target.US]))
+    
+      # Change US to GB
+      vec[na.omit(match(names(SemNetDictionaries::brit2us), vec))] <- spelling.GB
+      
+    }
+    
+    
+  }else if(toupper(spelling) == "US"){
+    
+    # Check for any GB spelling in the vector
+    if(any(vec %in% SemNetDictionaries::brit2us)){
+      
+      # Target GB spelling
+      target.GB <- which(!is.na(vec[match(SemNetDictionaries::brit2us, vec)]))
+      
+      # Get US spelling
+      spelling.US <- names(unlist(SemNetDictionaries::brit2us[target.GB]))
+      
+      # Change US to GB
+      vec[na.omit(match(SemNetDictionaries::brit2us, vec))] <- spelling.US
+      
+    }
+    
+  }
+  
+  # Remove duplicates and alphabetize
+  if(dictionary){
+    vec <- sort(unique(vec))
+  }
+  
+  return(vec)
+}
+
+#' British-US English Conversion (List)
+#' 
+#' @description A sub-routine function to convert English spelling
+#' 
+#' @param vec Character vector.
+#' A vector with words to be checked for English spelling
+#' 
+#' @param spelling Character.
+#' Either \code{"UK"} or \code{"US"} for their respective spelling
+#' 
+#' @return British or US spellings of words
+#' 
+#' @author Alexander Christensen <alexpaulchristensen@gmail.com>
+#' 
+#' @noRd
+# British-US Conversion (List)----
+# Updated 24.11.2020
+brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
+{
+
+  vec <- unlist(lapply(vec, strsplit, split = " "), recursive = FALSE)
+  
+  vec <- lapply(vec, function(x, spelling, dictionary){
+    
+    converted <- brit.us.vector(x, spelling = spelling)
+    
+    paste(converted, collapse = " ")
+    
+  }, spelling = spelling)
+  
+  return(vec)
+}
+
 #' Identifies words that are already spelled correctly and automatically
 #' spell corrects responses
 #' 
@@ -482,7 +580,7 @@ response.splitter <- function (vec, full.dict)
 #' @noRd
 # Automated Spell-check----
 # Updated 10.04.2020
-auto.spellcheck <- function(check, full.dict, dictionary)
+auto.spellcheck <- function(check, full.dict, dictionary, spelling)
 {
   # Change names of indices
   names(check) <- formatC(1:length(check),
@@ -1612,6 +1710,19 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' @param dictionary Character vector.
 #' See \code{\link{SemNetDictionaries}}
 #' 
+#' @param spelling Character vector.
+#' English spelling to be used.
+#' \itemize{
+#' 
+#' \item{\code{"UK"}}
+#' {For British spelling (e.g., colour)}
+#' 
+#' \item{\code{"US"}}
+#' {For American spelling (e.g., color)}
+#' 
+#' }
+#' 
+#' 
 #' @param add.path Character.
 #' Path to additional dictionaries to be found.
 #' DOES NOT search recursively (through all folders in path)
@@ -1662,8 +1773,8 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' @noRd
 # Manual spell-check----
 # Updated 07.09.2020
-spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, add.path = NULL,
-                                   data = NULL, continue = NULL#, walkthrough = NULL
+spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling = NULL,
+                                   add.path = NULL, data = NULL, continue = NULL#, walkthrough = NULL
                                    )
 {
   # Line break function
@@ -1703,18 +1814,25 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, add.path
     ## Full dictionary
     full.dictionary <- SemNetDictionaries::load.dictionaries(dictionary, add.path = add.path)
     
-    ## Save original dictionary (to comparse against later)
+    ## English conversion
+    full.dictionary <- brit.us.conv.vector(full.dictionary, spelling = spelling, dictionary = TRUE)
+    
+    ## Save original dictionary (to compare against later)
     orig.dictionary <- full.dictionary
     
-    # Initialize 'from' and 'to' list for changes
+    # Initialize 'from' list
     from <- as.list(uniq.resp)
+    ## English conversion
+    from <- brit.us.conversion(from, spelling = spelling)
+    # Initialize 'to' list for changes
     to <- from
     
     # Perform initial spell-check
     initial <- try(
       auto.spellcheck(check = from,
                       full.dict = full.dictionary,
-                      dictionary = dictionary),
+                      dictionary = dictionary,
+                      spelling = spelling),
       silent = TRUE
     )
     
