@@ -1,4 +1,13 @@
-Changes in version 1.4.0
+Changes in version 1.3.1
+
+o UPDATE: `textcleaner` now allows for either UK or US English spelling
+
+o FIX: `correct.changes` did not like vectors (see GitHub Issue #4)
+
+o FIX: bug for BAD STRING option in `textcleaner` fixed (see GitHub Issue #5)
+
+
+Changes in version 1.3.0
 
 o ADD: function to convert cleaned data to the SNAFU library's format in Python: `convert2snafu`
 

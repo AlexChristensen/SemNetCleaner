@@ -474,7 +474,7 @@ response.splitter <- function (vec, full.dict)
 #' 
 #' @noRd
 # British-US Conversion (Vector)----
-# Updated 24.11.2020
+# Updated 27.11.2020
 brit.us.conv.vector <- function (vec, spelling = c("UK", "US"), dictionary = FALSE)
 {
   if(toupper(spelling) == "UK"){
@@ -536,7 +536,7 @@ brit.us.conv.vector <- function (vec, spelling = c("UK", "US"), dictionary = FAL
 #' 
 #' @noRd
 # British-US Conversion (List)----
-# Updated 24.11.2020
+# Updated 27.11.2020
 brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
 {
 
@@ -544,9 +544,11 @@ brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
   
   vec <- lapply(vec, function(x, spelling, dictionary){
     
-    converted <- brit.us.vector(x, spelling = spelling)
+    converted <- brit.us.conv.vector(x, spelling = spelling)
     
-    paste(converted, collapse = " ")
+    conv <- paste(converted, collapse = " ")
+    
+    return(conv)
     
   }, spelling = spelling)
   
@@ -1141,7 +1143,7 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help
 #' @noRd
 #' 
 # Menu for Manual Spell-check----
-# Updated 07.09.2020
+# Updated 27.11.2020
 spellcheck.menu <- function (check, context = NULL, possible, original,
                              current.index, changes, full.dictionary, category)
 {
@@ -1823,7 +1825,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     # Initialize 'from' list
     from <- as.list(uniq.resp)
     ## English conversion
-    from <- brit.us.conversion(from, spelling = spelling)
+    from <- brit.us.conv.list(from, spelling = spelling)
     # Initialize 'to' list for changes
     to <- from
     

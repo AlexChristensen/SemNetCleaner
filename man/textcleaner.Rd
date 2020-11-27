@@ -9,6 +9,7 @@ textcleaner(
   miss = 99,
   partBY = c("row", "col"),
   dictionary = NULL,
+  spelling = c("UK", "US"),
   add.path = NULL,
   continue = NULL
 )
@@ -36,6 +37,18 @@ Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.
 
 Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 (See \code{\link{SemNetDictionaries}} for more details)}
+
+\item{spelling}{Character vector.
+English spelling to be used.
+\itemize{
+
+\item{\code{"UK"}}
+{For British spelling (e.g., colour)}
+
+\item{\code{"US"}}
+{For American spelling (e.g., color)}
+
+}}
 
 \item{add.path}{Character.
 Path to additional dictionaries to be found.
