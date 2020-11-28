@@ -31,10 +31,10 @@
 #' \itemize{
 #' 
 #' \item{\code{"UK"}}
-#' {For British spelling (e.g., colour)}
+#' {For British spelling (e.g., colour, grey, programme, theatre)}
 #' 
 #' \item{\code{"US"}}
-#' {For American spelling (e.g., color)}
+#' {For American spelling (e.g., color, gray, program, theater)}
 #' 
 #' }
 #' 
@@ -128,7 +128,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 08.09.2020
+# Updated 28.11.2020
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
@@ -136,6 +136,15 @@ textcleaner <- function(data = NULL, miss = 99,
                         add.path = NULL, continue = NULL#, walkthrough = NULL
                         )
 {
+  # Check for dictionary spelling
+  if(missing(spelling)){
+    spelling <- "US"
+    message("The 'spelling' argument was not set. Using default: 'US' English spelling")
+    Sys.sleep(0.5)
+  }else{
+    spelling <- match.arg(spelling)
+  }
+  
   # Check if user is continuing from a previous point
   if(is.null(continue))
   {
@@ -194,6 +203,7 @@ textcleaner <- function(data = NULL, miss = 99,
     spell.check <- try(
       spellcheck.dictionary(uniq.resp = uniq.resp,
                             dictionary = dictionary,
+                            spelling = spelling,
                             add.path = add.path,
                             data = data#, walkthrough = walkthrough
                             ),
@@ -211,7 +221,7 @@ textcleaner <- function(data = NULL, miss = 99,
   # Let the user know that their data is being prepared
   message("\nPreparing your data...")
   
-  # Intialize results to return
+  # Initialize results to return
   res <- list()
   
   # Specify variables from spellcheck.dictionary returns

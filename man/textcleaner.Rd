@@ -43,10 +43,10 @@ English spelling to be used.
 \itemize{
 
 \item{\code{"UK"}}
-{For British spelling (e.g., colour)}
+{For British spelling (e.g., colour, grey, programme, theatre)}
 
 \item{\code{"US"}}
-{For American spelling (e.g., color)}
+{For American spelling (e.g., color, gray, program, theater)}
 
 }}
 

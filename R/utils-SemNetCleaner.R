@@ -211,14 +211,17 @@ bad.response <- function (word, ...)
 #' @param dictionary Character vector.
 #' A dictionary to look for word in (see \code{\link{SemNetDictionaries}})
 #' 
+#' @param spelling Character.
+#' Either \code{"UK"} or \code{"US"} for their respective spelling
+#' 
 #' @return Either a string that's been spell-corrected or the original string
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
 # Individual Word Spell-Checker----
-# Updated 10.04.2020
-ind.word.check <- function (string, full.dict, dictionary)
+# Updated 28.11.2020
+ind.word.check <- function (string, full.dict, dictionary, spelling)
 {
   # Split string
   spl <- unlist(strsplit(string," "))
@@ -242,7 +245,7 @@ ind.word.check <- function (string, full.dict, dictionary)
   # Re-check for misnomers
   # Check if any dictionaries were improted from SemNetDictionaries
   if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
-  {resp <- moniker(word = resp, misnom = SemNetDictionaries::load.monikers(dictionary))}
+  {resp <- moniker(word = resp, misnom = SemNetDictionaries::load.monikers(dictionary), spelling = spelling)}
   
   return(resp)
 }
@@ -257,6 +260,9 @@ ind.word.check <- function (string, full.dict, dictionary)
 #' @param misnom A list of monikers.
 #' See \code{\link[SemNetDictionaries]{dictionaries}} for options
 #' 
+#' @param spelling Character.
+#' Either \code{"UK"} or \code{"US"} for their respective spelling
+#' 
 #' @return If \code{word} matches a moniker, then the appropriate word is returned.
 #' If \code{word} does not match a moniker, then the \code{word} is returned
 #' 
@@ -264,8 +270,8 @@ ind.word.check <- function (string, full.dict, dictionary)
 #' 
 #' @noRd
 # Moniker----
-# Updated 10.04.2020
-moniker <- function (word, misnom)
+# Updated 28.11.2020
+moniker <- function (word, misnom, spelling)
 {
   #unlist possible responses
   mis <- unlist(misnom)
@@ -284,6 +290,9 @@ moniker <- function (word, misnom)
     misnomed <- word
   }
   
+  #convert between UK-US spelling
+  misnomed <- brit.us.conv(vec = misnomed, spelling = spelling, dictionary = FALSE)
+  
   return(misnomed)
 }
 
@@ -301,6 +310,9 @@ moniker <- function (word, misnom)
 #' @param dictionary Character vector.
 #' A dictionary to look for word in (see \code{\link{SemNetDictionaries}})
 #' 
+#' @param spelling Character.
+#' Either \code{"UK"} or \code{"US"} for their respective spelling
+#' 
 #' @return A vector with responses de-combined based on dictionary entries
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
@@ -309,8 +321,8 @@ moniker <- function (word, misnom)
 #' 
 #' @noRd
 # Multiple words----
-# Updated 11.04.2020
-multiple.words <- function (vec, full.dict, dictionary)
+# Updated 28.11.2020
+multiple.words <- function (vec, full.dict, dictionary, spelling)
 {
   # Split vector
   spl <- unlist(strsplit(vec, " "))
@@ -356,7 +368,7 @@ multiple.words <- function (vec, full.dict, dictionary)
         spacing <- c(paste(spl[i-1], spl[i]), paste(spl[i-1], spl[i], sep = ""))
         
         ### Convert monikers
-        spacing <- unique(unlist(lapply(spacing, moniker, dictionary)))
+        spacing <- unique(unlist(lapply(spacing, moniker, dictionary, spelling = spelling)))
         
         ### Check for only one solution
         if(sum(spacing %in% full.dict) == 1)
@@ -369,7 +381,7 @@ multiple.words <- function (vec, full.dict, dictionary)
         spacing <- c(paste(spl[i], spl[i+1]), paste(spl[i], spl[i+1], sep = ""))
         
         ### Convert monikers
-        spacing <- unique(unlist(lapply(spacing, moniker, dictionary)))
+        spacing <- unique(unlist(lapply(spacing, moniker, dictionary, spelling = spelling)))
         
         ### Check for only one solution
         if(sum(spacing %in% full.dict) == 1)
@@ -396,7 +408,7 @@ multiple.words <- function (vec, full.dict, dictionary)
     }
     
     # Check for common misspellings and monikers
-    vec <- unlist(lapply(spl, moniker, misnom = SemNetDictionaries::load.monikers(dictionary)))
+    vec <- unlist(lapply(spl, moniker, misnom = SemNetDictionaries::load.monikers(dictionary), spelling = spelling))
   }else if(length(spl) > 1)
   {
     # Correct if only one best guess exists
@@ -535,9 +547,9 @@ brit.us.conv.vector <- function (vec, spelling = c("UK", "US"), dictionary = FAL
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
-# British-US Conversion (List)----
+# British-US Conversion----
 # Updated 27.11.2020
-brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
+brit.us.conv <- function (vec, spelling = c("UK", "US"), dictionary)
 {
 
   vec <- unlist(lapply(vec, strsplit, split = " "), recursive = FALSE)
@@ -550,7 +562,11 @@ brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
     
     return(conv)
     
-  }, spelling = spelling)
+  }, spelling = spelling, dictionary = dictionary)
+  
+  if(dictionary){
+    vec <- sort(unlist(vec))
+  }
   
   return(vec)
 }
@@ -570,6 +586,9 @@ brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
 #' @param dictionary Character.
 #' A dictionary to look for word in (see \code{\link{SemNetDictionaries}})
 #' 
+#' @param spelling Character.
+#' Either \code{"UK"} or \code{"US"} for their respective spelling
+#' 
 #' @return A list containing:
 #' 
 #' \item{incorrect}{Indices corresponding to responses that need to
@@ -581,7 +600,7 @@ brit.us.conv.list <- function (vec, spelling = c("UK", "US"))
 #' 
 #' @noRd
 # Automated Spell-check----
-# Updated 10.04.2020
+# Updated 28.11.2020
 auto.spellcheck <- function(check, full.dict, dictionary, spelling)
 {
   # Change names of indices
@@ -661,7 +680,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
     if(length(monik)!=0) # Checks in case of only using general dictionary
     {
       ## Check for monikers
-      mons <- lapply(sing, moniker, monik)
+      mons <- unlist(lapply(sing, moniker, monik, spelling = spelling), recursive = FALSE)
       
       ## Identify responses found in dictionary
       ind3 <- which(!is.na(match(unlist(mons),full.dict)))
@@ -676,7 +695,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
       mons <- orig[-as.numeric(names.ind)]
       
       ## Check for pluralized monikers
-      mons <- lapply(mons, function(x, monik){moniker(singularize(x), monik)}, monik)
+      mons <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
       
       ## Identify responses found in dictionary
       ind4 <- which(!is.na(match(unlist(mons),full.dict)))
@@ -707,7 +726,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   message(paste("\nAttempting to auto-correct the remaining", length(mons),"responses individually..."), appendLF = FALSE)
   
   # Spell-check each individual word within the list (including multiple word responses)
-  ind.check <- lapply(mons, ind.word.check, full.dict = full.dict, dictionary = dictionary)
+  ind.check <- unlist(lapply(mons, ind.word.check, full.dict = full.dict, dictionary = dictionary, spelling = spelling), recursive = FALSE)
   
   ## Identify responses found in dictionary
   ind5 <- which(!is.na(match(unlist(ind.check),full.dict)))
@@ -732,7 +751,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   message("\nParsing multi-word responses...", appendLF = FALSE)
   
   # Search through responses with more than minimum words (varies based on dictionary)
-  multi.word <- lapply(ind.check, multiple.words, full.dict = full.dict, dictionary = dictionary)
+  multi.word <- lapply(ind.check, multiple.words, full.dict = full.dict, dictionary = dictionary, spelling = spelling)
   
   ## Identify responses found in dictionary
   ### Check responses that changed
@@ -1817,7 +1836,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     full.dictionary <- SemNetDictionaries::load.dictionaries(dictionary, add.path = add.path)
     
     ## English conversion
-    full.dictionary <- brit.us.conv.vector(full.dictionary, spelling = spelling, dictionary = TRUE)
+    full.dictionary <- brit.us.conv(full.dictionary, spelling = spelling, dictionary = TRUE)
     
     ## Save original dictionary (to compare against later)
     orig.dictionary <- full.dictionary
@@ -1825,7 +1844,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     # Initialize 'from' list
     from <- as.list(uniq.resp)
     ## English conversion
-    from <- brit.us.conv.list(from, spelling = spelling)
+    from <- brit.us.conv(from, spelling = spelling, dictionary = FALSE)
     # Initialize 'to' list for changes
     to <- from
     
@@ -1876,6 +1895,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     dictionary <- continue$dictionary
     full.dictionary <- continue$full.dictionary
     orig.dictionary <- continue$orig.dictionary
+    spelling <- continue$spelling
     category <- continue$category
     from <- continue$from
     to <- continue$to
@@ -1956,6 +1976,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           res$dictionary <- dictionary
           res$full.dictionary <- full.dictionary
           res$orig.dictionary <- orig.dictionary
+          res$spelling <- spelling
           res$category <- category
           res$from <- from
           res$to <- to
@@ -1990,6 +2011,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           res$dictionary <- dictionary
           res$full.dictionary <- full.dictionary
           res$orig.dictionary <- orig.dictionary
+          res$spelling <- spelling
           res$category <- category
           res$from <- from
           res$to <- to
@@ -2137,6 +2159,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         res$dictionary <- dictionary
         res$full.dictionary <- full.dictionary
         res$orig.dictionary <- orig.dictionary
+        res$spelling <- spelling
         res$category <- category
         res$from <- from
         res$to <- to
@@ -2171,6 +2194,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         res$dictionary <- dictionary
         res$full.dictionary <- full.dictionary
         res$orig.dictionary <- orig.dictionary
+        res$spelling <- spelling
         res$category <- category
         res$from <- from
         res$to <- to
@@ -2350,8 +2374,9 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     
     ## Check for monikers
     for(i in 1:length(to))
-      for(j in 1:length(to[[i]]))
-      {to[[i]][j] <- moniker(to[[i]][j], SemNetDictionaries::load.monikers(target))}
+      for(j in 1:length(to[[i]])){
+        to[[i]][j] <- unlist(moniker(to[[i]][j], SemNetDictionaries::load.monikers(target), spelling = spelling))
+      }
     
     ## Let user know
     message("done")
