@@ -329,26 +329,39 @@ textcleaner <- function(data = NULL, miss = 99,
   Sys.sleep(2)
   
   # Let user know where to send their dictionaries and monikers
-  dictionary.output <- paste(
-    textsymbol("bullet"),
-    "Dictionary output: `OBJECT_NAME$dictionary`",
-    sep = " "
-  )
+  if("dictionary" %in% names(res)){
+    
+    dictionary.output <- paste(
+      textsymbol("bullet"),
+      "Dictionary output: `OBJECT_NAME$dictionary`",
+      sep = " "
+    )
+    
+  }
   
   moniker.output <- paste(
     textsymbol("bullet"),
-    "Moniker output: `OBJECT_NAME$spellcheck$manual`",
+    "Moniker output: `OBJECT_NAME$moniker`",
     sep = " "
   )
+  
+  ## Save moniker object (doubles up but makes it easy for the user)
+  res$moniker <- res$spellcheck$manual
   
   cat(
     
     colortext(
       
       paste(
-        "Consider submitting your dictionary and spelling corrections (i.e., monikers) to:\n\n",
+        paste(
+          "Consider submitting your",
+          ifelse("dictionary" %in% names(res), " dictionary and", ""),
+          " spelling corrections (i.e., monikers) to:\n\n",
+          sep = ""
+        ),
         "https://github.com/AlexChristensen/SemNetDictionaries/issues/new/choose\n\n",
-        dictionary.output, "\n\n",
+        ifelse("dictionary" %in% names(res), paste(dictionary.output, "\n\n"), ""),
+        #dictionary.output,
         moniker.output, "\n\n"
       ),
       

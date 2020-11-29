@@ -6,6 +6,8 @@ o FIX: `correct.changes` did not like vectors (see GitHub Issue #4)
 
 o FIX: bug for BAD STRING option in `textcleaner` fixed (see GitHub Issue #5)
 
+o UPDATE: new output and message for dictionary and monikers in `textcleaner`
+
 
 Changes in version 1.3.0
 

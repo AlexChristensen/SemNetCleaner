@@ -1793,7 +1793,7 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' 
 #' @noRd
 # Manual spell-check----
-# Updated 07.09.2020
+# Updated 29.11.2020
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling = NULL,
                                    add.path = NULL, data = NULL, continue = NULL#, walkthrough = NULL
                                    )
@@ -1844,7 +1844,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     # Initialize 'from' list
     from <- as.list(uniq.resp)
     ## English conversion
-    from <- brit.us.conv(from, spelling = spelling, dictionary = FALSE)
+    #from <- brit.us.conv(from, spelling = spelling, dictionary = FALSE)
     # Initialize 'to' list for changes
     to <- from
     
