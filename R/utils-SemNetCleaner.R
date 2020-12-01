@@ -304,6 +304,9 @@ moniker <- function (word, misnom, spelling)
 #' @param vec Character vector.
 #' A vector with words to potentially be de-combined
 #' 
+#' @param multi.min Numeric.
+#' Length of multiple word resposnes in the dictionary
+#' 
 #' @param full.dict Character vector.
 #' Dictionary entries
 #' 
@@ -321,20 +324,14 @@ moniker <- function (word, misnom, spelling)
 #' 
 #' @noRd
 # Multiple words----
-# Updated 28.11.2020
-multiple.words <- function (vec, full.dict, dictionary, spelling)
+# Updated 01.12.2020
+multiple.words <- function (vec, multi.min, full.dict, dictionary, spelling)
 {
   # Split vector
   spl <- unlist(strsplit(vec, " "))
   
   # Remove bad responses
   spl <- na.omit(bad.response(spl))
-  
-  # Multiple word responses greater than in dictionary
-  dict.lens <- unlist(lapply(full.dict, function(x){length(unlist(strsplit(x, " ")))}))
-  
-  # Set multiple word minimum in response to be considered for split
-  multi.min <- ceiling(median(dict.lens) + 2 * sd(dict.lens))
   
   # Check for multiple words
   if(length(spl) >= multi.min)
@@ -600,7 +597,7 @@ brit.us.conv <- function (vec, spelling = c("UK", "US"), dictionary)
 #' 
 #' @noRd
 # Automated Spell-check----
-# Updated 28.11.2020
+# Updated 01.12.2020
 auto.spellcheck <- function(check, full.dict, dictionary, spelling)
 {
   # Change names of indices
@@ -668,55 +665,63 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   ## Correct common misspellings and monikers ##
   #--------------------------------------------#
   
-  # Let user know
-  message("\nAuto-correcting common misspellings and monikers...", appendLF = FALSE)
-  
-  # Check if any dictionaries were improted from SemNetDictionaries
-  if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
-  {
-    # Load moniker
-    monik <- SemNetDictionaries::load.monikers(dictionary)
+  if(all(dictionary == "general")){
     
-    if(length(monik)!=0) # Checks in case of only using general dictionary
+    mons <- sing
+    
+  }else{
+    
+    # Let user know
+    message("\nAuto-correcting common misspellings and monikers...", appendLF = FALSE)
+    
+    # Check if any dictionaries were improted from SemNetDictionaries
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
     {
-      ## Check for monikers
-      mons <- unlist(lapply(sing, moniker, monik, spelling = spelling), recursive = FALSE)
+      # Load moniker
+      monik <- SemNetDictionaries::load.monikers(dictionary)
       
-      ## Identify responses found in dictionary
-      ind3 <- which(!is.na(match(unlist(mons),full.dict)))
-      
-      ## Update original responses
-      orig[names(mons)[ind3]] <- mons[ind3]
-      
-      ## Update correctly spelled indices
-      names.ind <- sort(c(names.ind, names(mons)[ind3]))
-      
-      ## Update singularized responses
-      mons <- orig[-as.numeric(names.ind)]
-      
-      ## Check for pluralized monikers
-      mons <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
-      
-      ## Identify responses found in dictionary
-      ind4 <- which(!is.na(match(unlist(mons),full.dict)))
-      
-      ## Update original responses
-      orig[names(mons)[ind4]] <- mons[ind4]
-      
-      ## Update correctly spelled indices
-      names.ind <- sort(c(names.ind, names(mons)[ind4]))
-      
-      ## Update singularized responses
-      mons <- orig[-as.numeric(names.ind)]
-      
+      if(length(monik)!=0) # Checks in case of only using general dictionary
+      {
+        ## Check for monikers
+        mons <- unlist(lapply(sing, moniker, monik, spelling = spelling), recursive = FALSE)
+        
+        ## Identify responses found in dictionary
+        ind3 <- which(!is.na(match(unlist(mons),full.dict)))
+        
+        ## Update original responses
+        orig[names(mons)[ind3]] <- mons[ind3]
+        
+        ## Update correctly spelled indices
+        names.ind <- sort(c(names.ind, names(mons)[ind3]))
+        
+        ## Update singularized responses
+        mons <- orig[-as.numeric(names.ind)]
+        
+        ## Check for pluralized monikers
+        mons <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
+        
+        ## Identify responses found in dictionary
+        ind4 <- which(!is.na(match(unlist(mons),full.dict)))
+        
+        ## Update original responses
+        orig[names(mons)[ind4]] <- mons[ind4]
+        
+        ## Update correctly spelled indices
+        names.ind <- sort(c(names.ind, names(mons)[ind4]))
+        
+        ## Update singularized responses
+        mons <- orig[-as.numeric(names.ind)]
+        
+      }
     }
+    
+    # Add artificial pause for smoother feel
+    Sys.sleep(0.50)
+    
+    # Let user know
+    message("done.")
+    
   }
-  
-  # Add artificial pause for smoother feel
-  Sys.sleep(0.50)
-  
-  # Let user know
-  message("done.")
   
   #------------------------------#
   ## Individualized spell-check ##
@@ -750,8 +755,19 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   # Let user know
   message("\nParsing multi-word responses...", appendLF = FALSE)
   
+  # Multiple word responses greater than in dictionary
+  dict.lens <- unlist(lapply(full.dict, function(x){length(unlist(strsplit(x, " ")))}))
+  
+  # Set multiple word minimum in response to be considered for split
+  multi.min <- ceiling(median(dict.lens) + 2 * sd(dict.lens))
+  
+  # Check for minimum length of 1
+  if(multi.min == 1){
+    multi.min <- 2
+  }
+  
   # Search through responses with more than minimum words (varies based on dictionary)
-  multi.word <- lapply(ind.check, multiple.words, full.dict = full.dict, dictionary = dictionary, spelling = spelling)
+  multi.word <- lapply(ind.check, multiple.words, multi.min = multi.min, full.dict = full.dict, dictionary = dictionary, spelling = spelling)
   
   ## Identify responses found in dictionary
   ### Check responses that changed
@@ -1792,8 +1808,8 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' @import SemNetDictionaries
 #' 
 #' @noRd
-# Manual spell-check----
-# Updated 29.11.2020
+# MANUAL spell-check----
+# Updated 01.12.2020
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling = NULL,
                                    add.path = NULL, data = NULL, continue = NULL#, walkthrough = NULL
                                    )
@@ -1836,7 +1852,9 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     full.dictionary <- SemNetDictionaries::load.dictionaries(dictionary, add.path = add.path)
     
     ## English conversion
+    message(paste("\nConverting dictionary to '", spelling, "' spelling...", sep = ""), appendLF = FALSE)
     full.dictionary <- brit.us.conv(full.dictionary, spelling = spelling, dictionary = TRUE)
+    message("done")
     
     ## Save original dictionary (to compare against later)
     orig.dictionary <- full.dictionary
@@ -2078,7 +2096,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
               message("\nThis is the first response. 'GO BACK' is not available.")
               
               # Add artificial pause for smoother feel
-              Sys.sleep(1)
+              Sys.sleep(0.5)
             }
           }else{
             
@@ -2258,7 +2276,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           message("This is the first response. 'GO BACK' is not available.")
           
           # Add artificial pause for smoother feel
-          Sys.sleep(1)
+          Sys.sleep(0.5)
         }
         
       }else{

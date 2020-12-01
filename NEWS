@@ -8,6 +8,10 @@ o FIX: bug for BAD STRING option in `textcleaner` fixed (see GitHub Issue #5)
 
 o UPDATE: new output and message for dictionary and monikers in `textcleaner`
 
+o FIX: bug for moniker check when `dictionary = "general"` in `textcleaner` (see GitHub Issue #7)
+
+o UPDATE: internal adjustment for parsing multiple words with the general dictionary (speeds up process)
+
 
 Changes in version 1.3.0
 
