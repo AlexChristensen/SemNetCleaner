@@ -128,7 +128,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 28.11.2020
+# Updated 02.12.2020
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
@@ -148,6 +148,9 @@ textcleaner <- function(data = NULL, miss = 99,
   # Check if user is continuing from a previous point
   if(is.null(continue))
   {
+    ## Make sure data is not tibble
+    data <- as.matrix(data)
+    
     ## Make participants by row
     if(partBY=="col")
     {
