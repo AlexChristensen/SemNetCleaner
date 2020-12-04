@@ -3,7 +3,7 @@
 \docType{data}
 \name{open.clean}
 \alias{open.clean}
-\title{Cleaned response Matrices (Openness and Verbal Fluency)}
+\title{Cleaned Response Matrices (Openness and Verbal Fluency)}
 \format{
 open.clean (matrix, 516 x 35)
 }

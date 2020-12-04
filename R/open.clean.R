@@ -1,5 +1,5 @@
-# Cleaned response Matrices (Openness and Verbal Fluency)----
-#' Cleaned response Matrices (Openness and Verbal Fluency)
+# Cleaned Response Matrices (Openness and Verbal Fluency)----
+#' Cleaned Response Matrices (Openness and Verbal Fluency)
 #'
 #' Cleaned response matrices for the Animals verbal fluency data (\emph{n} = 516)
 #' from Christensen et al. (2018).

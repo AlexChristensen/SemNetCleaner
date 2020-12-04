@@ -4,7 +4,7 @@
 #' Preprocessed \code{\link[SemNetCleaner]{textcleaner}} object for the Animals verbal fluency data (\emph{n} = 516)
 #' from Christensen and Kenett (2020).
 #' 
-#' @name open.clean
+#' @name open.preprocess
 #' 
 #' @docType data
 #' 
