@@ -2,6 +2,8 @@ Changes in version 1.3.2
 
 o UPDATE: faster conversion between US and UK spellings
 
+o FIX: revert of `singularize`
+
 
 Changes in version 1.3.1
 
