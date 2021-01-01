@@ -1809,7 +1809,7 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' 
 #' @noRd
 # MANUAL spell-check----
-# Updated 01.12.2020
+# Updated 01.01.2021
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling = NULL,
                                    add.path = NULL, data = NULL, continue = NULL#, walkthrough = NULL
                                    )
@@ -1853,7 +1853,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     
     ## English conversion
     message(paste("\nConverting dictionary to '", spelling, "' spelling...", sep = ""), appendLF = FALSE)
-    full.dictionary <- brit.us.conv(full.dictionary, spelling = spelling, dictionary = TRUE)
+    full.dictionary <- brit.us.conv.vector(full.dictionary, spelling = spelling, dictionary = TRUE)
     message("done")
     
     ## Save original dictionary (to compare against later)
