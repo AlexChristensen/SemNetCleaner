@@ -7,7 +7,7 @@
 #' File extensions supported:
 #' \itemize{
 #' \item{.Rdata} \item{.rds} \item{.csv} \item{.xlsx}
-#' \item{.xls} \item{.sav} \item{.txt} \item{.mat}
+#' \item{.xls} \item{.sav} \item{.txt} \item{.mat} \item{.dat}
 #' }
 #'
 #' @param file Character.
@@ -49,6 +49,8 @@
 #' {\code{\link[utils]{read.table}}}
 #' \item{.mat}
 #' {\code{\link[R.matlab]{readMat}}}
+#' \item{.dat}
+#' {\code{\link[utils]{read.table}}}
 #' }
 #' 
 #' @return A data frame containing a representation of the data in the file.
@@ -100,7 +102,7 @@
 #' 
 #' @export
 # Read data----
-# Updated 15.04.2020
+# Updated 02.01.2021
 read.data <- function (file = file.choose(), header = TRUE, sep = ",", ...)
 {
     # Grab extension
@@ -108,22 +110,26 @@ read.data <- function (file = file.choose(), header = TRUE, sep = ",", ...)
     
     # Report error
     if(!ext %in% c("rdata", "rds", "csv", "xlsx",
-                   "xls", "sav", "txt", "mat", ""))
+                   "xls", "sav", "txt", "mat", "dat",
+                   ""))
     {stop("File extension not supported")}
     
     # Determine data load
     if(ext != "")
     {
-        switch(ext,
-               rdata = load(file, envir = .GlobalEnv),
-               rds = readRDS(file),
-               csv = read.csv(file, header = header, sep = sep, as.is = TRUE, ...),
-               xlsx = as.data.frame(readxl::read_xlsx(file, col_names = header, ...)),
-               xls = as.data.frame(readxl::read_xls(file, col_names = header, ...)),
-               sav = foreign::read.spss(file, to.data.frame = TRUE, stringAsFactors = FALSE, ...),
-               txt = read.table(file, header = header, sep = sep, ...),
-               mat = as.data.frame(R.matlab::readMat(file, ...))
+        data <- switch(ext,
+                       rdata = load(file, envir = .GlobalEnv),
+                       rds = readRDS(file),
+                       csv = read.csv(file, header = header, sep = sep, as.is = TRUE, ...),
+                       xlsx = as.data.frame(readxl::read_xlsx(file, col_names = header, ...)),
+                       xls = as.data.frame(readxl::read_xls(file, col_names = header, ...)),
+                       sav = foreign::read.spss(file, to.data.frame = TRUE, stringAsFactors = FALSE, ...),
+                       txt = read.table(file, header = header, sep = sep, ...),
+                       mat = as.data.frame(R.matlab::readMat(file, ...)),
+                       dat = read.table(file, header = header, sep = sep, ...)
         )
-    }else{read.table(file, header = header, sep = sep, ...)}
+    }else{data <- read.table(file, header = header, sep = sep, ...)}
+    
+    return(data)
 }
 #----

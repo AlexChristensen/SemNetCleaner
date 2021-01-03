@@ -4,7 +4,7 @@
 \alias{singularize}
 \title{Converts Words to their Singular Form}
 \usage{
-singularize(word)
+singularize(word, dictionary = TRUE)
 }
 \arguments{
 \item{word}{Character.

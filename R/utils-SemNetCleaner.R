@@ -597,7 +597,7 @@ brit.us.conv <- function (vec, spelling = c("UK", "US"), dictionary)
 #' 
 #' @noRd
 # Automated Spell-check----
-# Updated 01.12.2020
+# Updated 02.01.2020
 auto.spellcheck <- function(check, full.dict, dictionary, spelling)
 {
   # Change names of indices
@@ -607,7 +607,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   
   # Keep full indices
   full.names <- names(check)
-  
+
   # Save original responses
   orig <- check
   
@@ -619,12 +619,43 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   message("\nIdentifying correctly spelled responses...", appendLF = FALSE)
   
   # Index correctly and incorrectly spelled responses
-  ind <- which(!is.na(match(unlist(check),full.dict)))
-  names.ind <- names(check)[ind]
+  ## Check if all are spelled correctly or incorrectly
+  targets <- match(unlist(check),full.dict)
   
-  # Remove responses from original
-  check <- orig[-as.numeric(names.ind)]
-  auto.spell <- names(check)
+  if(all(is.na(targets))){ # All spelled incorrectly
+    
+    check <- orig
+    auto.spell <- names(check)
+    
+  }else if(all(!is.na(targets))){ # All spelled correctly
+    
+    ind <- 1:length(check)
+    names.ind <- names(check)[ind]
+    
+    # Message
+    message("\n\nAll words passed automated spell-check. Ending spell-check...")
+    
+    # Initialize result list
+    res <- list()
+    
+    res$manual <- as.numeric()
+    auto <- matrix("", nrow = 0, ncol = 2)
+    colnames(auto) <- c("from", "to_1")
+    res$auto <- auto
+    res$to <- orig
+    
+    return(res)
+    
+  }else{
+    
+    ## Get indices
+    ind <- which(!is.na(targets))
+    names.ind <- names(check)[ind]
+    
+    # Remove responses from original
+    check <- orig[-as.numeric(names.ind)]
+    auto.spell <- names(check)
+  }
   
   # Add artificial pause for smoother feel
   Sys.sleep(0.50)
@@ -644,16 +675,48 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   sing <- lapply(check,singularize)
   
   ## Identify responses found in dictionary
-  ind2 <- which(!is.na(match(unlist(sing),full.dict)))
+  ## Check if all are spelled correctly or incorrectly
+  targets <- match(unlist(sing),full.dict)
   
-  ## Update original responses
-  orig[names(sing)[ind2]] <- sing[ind2]
-  
-  ## Update correctly spelled indices
-  names.ind <- sort(c(names.ind, names(sing)[ind2]))
-  
-  ## Update singularized responses
-  sing <- orig[-as.numeric(names.ind)]
+  if(all(is.na(targets))){ # All spelled incorrectly
+    
+    sing <- check
+    auto.spell <- names(sing)
+    
+  }else if(all(!is.na(targets))){ # All spelled correctly
+    
+    ## Get indices
+    ind2 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(sing)[ind2]] <- sing[ind2]
+    
+    # Message
+    message("\n\nAll words passed automated spell-check. Ending spell-check...")
+    
+    # Initialize result list
+    res <- list()
+    
+    res$manual <- as.numeric()
+    res$auto <- setdiff(as.numeric(names(check)), res$manual)
+    res$to <- orig
+    
+    return(res)
+    
+  }else{
+    
+    ## Get indices
+    ind2 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(sing)[ind2]] <- sing[ind2]
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(sing)[ind2]))
+    
+    ## Update singularized responses
+    sing <- orig[-as.numeric(names.ind)]
+  }
   
   # Add artificial pause for smoother feel
   Sys.sleep(0.50)
@@ -667,7 +730,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   
   if(all(dictionary == "general")){
     
-    mons <- sing
+    mons2 <- sing
     
   }else{
     
@@ -686,33 +749,100 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
         mons <- unlist(lapply(sing, moniker, monik, spelling = spelling), recursive = FALSE)
         
         ## Identify responses found in dictionary
-        ind3 <- which(!is.na(match(unlist(mons),full.dict)))
+        ## Check if all are spelled correctly or incorrectly
+        targets <- match(unlist(mons),full.dict)
         
-        ## Update original responses
-        orig[names(mons)[ind3]] <- mons[ind3]
-        
-        ## Update correctly spelled indices
-        names.ind <- sort(c(names.ind, names(mons)[ind3]))
-        
-        ## Update singularized responses
-        mons <- orig[-as.numeric(names.ind)]
+        if(all(is.na(targets))){ # All spelled incorrectly
+          
+          mons <- sing
+          auto.spell <- names(mons)
+          
+        }else if(all(!is.na(targets))){ # All spelled correctly
+          
+          ## Get indices
+          ind3 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons)[ind3]] <- mons[ind3]
+          
+          # Message
+          message("\n\nAll words passed automated spell-check. Ending spell-check...")
+          
+          # Initialize result list
+          res <- list()
+          
+          res$manual <- as.numeric()
+          res$auto <- setdiff(as.numeric(names(sing)), res$manual)
+          res$to <- orig
+          
+          return(res)
+          
+        }else{
+          
+          ## Get indices
+          ind3 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons)[ind3]] <- mons[ind3]
+          
+          ## Update correctly spelled indices
+          names.ind <- sort(c(names.ind, names(mons)[ind3]))
+          
+          ## Update singularized responses
+          mons <- orig[-as.numeric(names.ind)]
+          
+        }
         
         ## Check for pluralized monikers
-        mons <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
+        mons2 <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x, dictionary = FALSE), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
         
         ## Identify responses found in dictionary
-        ind4 <- which(!is.na(match(unlist(mons),full.dict)))
+        ## Check if all are spelled correctly or incorrectly
+        targets <- match(unlist(mons2),full.dict)
         
-        ## Update original responses
-        orig[names(mons)[ind4]] <- mons[ind4]
-        
-        ## Update correctly spelled indices
-        names.ind <- sort(c(names.ind, names(mons)[ind4]))
-        
-        ## Update singularized responses
-        mons <- orig[-as.numeric(names.ind)]
+        if(all(is.na(targets))){ # All spelled incorrectly
+          
+          mons2 <- mons
+          auto.spell <- names(mons2)
+          
+        }else if(all(!is.na(targets))){ # All spelled correctly
+          
+          ## Get indices
+          ind4 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons2)[ind4]] <- mons2[ind4]
+          
+          # Message
+          message("\n\nAll words passed automated spell-check. Ending spell-check...")
+          
+          # Initialize result list
+          res <- list()
+          
+          res$manual <- as.numeric()
+          res$auto <- setdiff(as.numeric(names(mons2)), res$manual)
+          res$to <- orig
+          
+          return(res)
+          
+        }else{
+          
+          ## Get indices
+          ind4 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons2)[ind4]] <- mons2[ind4]
+          
+          ## Update correctly spelled indices
+          names.ind <- sort(c(names.ind, names(mons2)[ind4]))
+          
+          ## Update singularized responses
+          mons2 <- orig[-as.numeric(names.ind)]
+          
+        }
         
       }
+      
     }
     
     # Add artificial pause for smoother feel
@@ -728,22 +858,55 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   #------------------------------#
   
   # Let user know
-  message(paste("\nAttempting to auto-correct the remaining", length(mons),"responses individually..."), appendLF = FALSE)
+  message(paste("\nAttempting to auto-correct the remaining", length(mons2),"responses individually..."), appendLF = FALSE)
   
   # Spell-check each individual word within the list (including multiple word responses)
-  ind.check <- unlist(lapply(mons, ind.word.check, full.dict = full.dict, dictionary = dictionary, spelling = spelling), recursive = FALSE)
+  ind.check <- unlist(lapply(mons2, ind.word.check, full.dict = full.dict, dictionary = dictionary, spelling = spelling), recursive = FALSE)
   
   ## Identify responses found in dictionary
-  ind5 <- which(!is.na(match(unlist(ind.check),full.dict)))
+  ## Check if all are spelled correctly or incorrectly
+  targets <- match(unlist(ind.check),full.dict)
   
-  ## Update original responses
-  orig[names(ind.check)[ind5]] <- ind.check[ind5]
-  
-  ## Update correctly spelled indices
-  names.ind <- sort(c(names.ind, names(ind.check)[ind5]))
-  
-  ## Update individually checked responses
-  ind.check <- orig[-as.numeric(names.ind)]
+  if(all(is.na(targets))){ # All spelled incorrectly
+    
+    ind.check <- mons
+    auto.spell <- names(ind.check)
+    
+  }else if(all(!is.na(targets))){ # All spelled correctly
+    
+    ## Get indices
+    ind5 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(ind.check)[ind5]] <- ind.check[ind5]
+    
+    # Message
+    message("\n\nAll words passed automated spell-check. Ending spell-check...")
+    
+    # Initialize result list
+    res <- list()
+    
+    res$manual <- as.numeric()
+    res$auto <- setdiff(as.numeric(names(ind.check)), res$manual)
+    res$to <- orig
+    
+    return(res)
+    
+  }else{
+    
+    ## Get indices
+    ind5 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(ind.check)[ind5]] <- ind.check[ind5]
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(ind.check)[ind5]))
+    
+    ## Update individually checked responses
+    ind.check <- orig[-as.numeric(names.ind)]
+    
+  }
   
   # Let user know
   message(paste("done.\n(", length(ind.check), " unique responses still need to be corrected)", sep = ""))
@@ -782,7 +945,9 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   responses <- unlist(multi.word, recursive = FALSE)[grep("response", names(unlist(multi.word, recursive = FALSE)))]
   
   ### Update original responses
-  orig[names(multi.word)[changed]] <- responses[changed]
+  if(length(responses[changed]) != 0){
+    orig[names(multi.word)[changed]] <- responses[changed]
+  }
   
   ### Indices of correctly spelled responses
   ind6 <- unlist(lapply(multi.word, function(x)
@@ -792,11 +957,15 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
     }else{return(FALSE)}
   }))
   
-  ## Update correctly spelled indices
-  names.ind <- sort(c(names.ind, names(multi.word)[ind6]))
-  
-  ## Update checked responses
-  multi.word <- orig[-as.numeric(names.ind)]
+  if(length(names(multi.word)[ind6]) != 0){
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(multi.word)[ind6]))
+    
+    ## Update checked responses
+    multi.word <- orig[-as.numeric(names.ind)]
+    
+  }
   
   # Search through responses with more than 1 but can be individually split into separate responses
   multi.word <- lapply(multi.word, response.splitter, full.dict = full.dict)
@@ -810,20 +979,27 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
     }else{return(FALSE)}
   }))
   
-  ### Update original responses
-  orig[names(multi.word)[ind7]] <- multi.word[ind7]
-  
-  ## Update correctly spelled indices
-  names.ind <- sort(c(names.ind, names(multi.word)[ind7]))
-  
-  ## Update checked responses
-  multi.word <- orig[-as.numeric(names.ind)]
+  if(length(multi.word[ind7]) != 0){
+    
+    ### Update original responses
+    orig[names(multi.word)[ind7]] <- multi.word[ind7]
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(multi.word)[ind7]))
+    
+    ## Update checked responses
+    multi.word <- orig[-as.numeric(names.ind)]
+  }
   
   # Let user know
   message("done")
   
   # Let user know how many responses need to be spell-checked
-  message(paste("\nAutomated spell-checking complete.\nAbout ",length(multi.word)," responses still need to be manually spell-checked", sep = ""))
+  if(length(multi.word) != 0){
+    message(paste("\nAutomated spell-checking complete.\nAbout ",length(multi.word)," responses still need to be manually spell-checked", sep = ""))
+  }else{
+    message("\nAll words passed automaed spell-check. Ending spell-check...")
+  }
   
   # Initialize result list
   res <- list()
@@ -1178,9 +1354,10 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help
 #' @noRd
 #' 
 # Menu for Manual Spell-check----
-# Updated 27.11.2020
+# Updated 02.01.2021
 spellcheck.menu <- function (check, context = NULL, possible, original,
-                             current.index, changes, full.dictionary, category)
+                             current.index, changes, full.dictionary, category,
+                             dictionary)
 {
   # Initialize answer
   ans <- 30
@@ -1267,18 +1444,26 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
             ### Loop through non-dictionary responses
             for(i in 1:length(non.dict))
             {
-              customMenu(choices = c("Yes", "No"),
-                         title = paste("\n",
-                                       paste("'", tmo.split[non.dict[i]], "'", sep = ""),
-                                       " was not found in the dictionary. Should ",
-                                       paste("'", tmo.split[non.dict[i]], "'", sep = ""),
-                                       " be added to the dictionary?", sep = ""),
-                         default = 2,
-                         dictionary = TRUE)
+              #customMenu(choices = c("Yes", "No"),
+              #           title = paste("\n",
+              #                         paste("'", tmo.split[non.dict[i]], "'", sep = ""),
+              #                         " was not found in the dictionary. Should ",
+              #                         paste("'", tmo.split[non.dict[i]], "'", sep = ""),
+              #                         " be added to the dictionary?", sep = ""),
+              #           default = 2,
+              #           dictionary = TRUE)
+              #
+              #dict.ans <- readline(prompt = "Selection: ")
+              #
+              #dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
               
-              dict.ans <- readline(prompt = "Selection: ")
+              message(paste("\n'", tmo.split[non.dict[i]], "'", sep = ""),
+                      " was not found in the dictionary.\n")
               
-              dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
+              dict.ans <- yes.no.menu(
+                paste("Should ", paste("'", tmo.split[non.dict[i]], "'", sep = ""),
+                      " be added to the dictionary", sep = "")
+              )
               
               if(dict.ans == 1)
               {
@@ -1342,18 +1527,27 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         ## Check if in dictionary
         if(!original %in% full.dictionary)
         {
-          customMenu(choices = c("Yes", "No"),
-                     title = paste("\n",
-                                   paste("'", original, "'", sep = ""),
-                                   " was not found in the dictionary. Should ",
-                                   paste("'", original, "'", sep = ""),
-                                   " be added to the dictionary?", sep = ""),
-                     default = 2,
-                     dictionary = TRUE)
+          #customMenu(choices = c("Yes", "No"),
+          #           title = paste("\n",
+          #                         paste("'", original, "'", sep = ""),
+          #                         " was not found in the dictionary. Should ",
+          #                         paste("'", original, "'", sep = ""),
+          #                         " be added to the dictionary?", sep = ""),
+          #           default = 2,
+          #           dictionary = TRUE)
+          #
+          #dict.ans <- readline(prompt = "Selection: ")
+          #
+          #dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
           
-          dict.ans <- readline(prompt = "Selection: ")
+          message(paste("'", original, "'", sep = ""),
+                  " was not found in the dictionary.\n")
           
-          dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
+          dict.ans <- yes.no.menu(
+            paste("Should ",
+                  paste("'", original, "'", sep = ""),
+                  " be added to the dictionary", sep = "")
+          )
           
           if(dict.ans == 1)
           {
@@ -1404,18 +1598,27 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
             ### Loop through non-dictionary responses
             for(i in 1:length(non.dict))
             {
-              customMenu(choices = c("Yes", "No"),
-                         title = paste("\n",
-                                       paste("'", ams.split[non.dict[i]], "'", sep = ""),
-                                       " was not found in the dictionary. Should ",
-                                       paste("'", ams.split[non.dict[i]], "'", sep = ""),
-                                       " be added to the dictionary?", sep = ""),
-                         default = 2,
-                         dictionary = TRUE)
+              #customMenu(choices = c("Yes", "No"),
+              #           title = paste("\n",
+              #                         paste("'", ams.split[non.dict[i]], "'", sep = ""),
+              #                         " was not found in the dictionary. Should ",
+              #                         paste("'", ams.split[non.dict[i]], "'", sep = ""),
+              #                         " be added to the dictionary?", sep = ""),
+              #           default = 2,
+              #           dictionary = TRUE)
+              #
+              #dict.ans <- readline(prompt = "Selection: ")
+              #  
+              #dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
               
-              dict.ans <- readline(prompt = "Selection: ")
+              message(paste("\n'", ams.split[non.dict[i]], "'", sep = ""),
+                      " was not found in the dictionary.\n")
               
-              dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
+              dict.ans <- yes.no.menu(
+                paste("Should ",
+                      paste("'", ams.split[non.dict[i]], "'", sep = ""),
+                      " be added to the dictionary", sep = "")
+              )
               
               if(dict.ans == 1)
               {
@@ -1502,7 +1705,9 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     res$end <- end
     
     # Add artificial pause for smoother feel
-    Sys.sleep(1)
+    if(!"general" %in% dictionary){
+      Sys.sleep(1)
+    }
     
     return(res)
     
@@ -1576,18 +1781,27 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
             ### Loop through non-dictionary responses
             for(i in 1:length(non.dict))
             {
-              customMenu(choices = c("Yes", "No"),
-                         title = paste("\n",
-                                       paste("'", tmo.split[non.dict[i]], "'", sep = ""),
-                                       " was not found in the dictionary. Should ",
-                                       paste("'", tmo.split[non.dict[i]], "'", sep = ""),
-                                       " be added to the dictionary?", sep = ""),
-                         default = 2,
-                         dictionary = TRUE)
+              #customMenu(choices = c("Yes", "No"),
+              #           title = paste("\n",
+              #                         paste("'", tmo.split[non.dict[i]], "'", sep = ""),
+              #                         " was not found in the dictionary. Should ",
+              #                         paste("'", tmo.split[non.dict[i]], "'", sep = ""),
+              #                         " be added to the dictionary?", sep = ""),
+              #           default = 2,
+              #           dictionary = TRUE)
+              #  
+              #dict.ans <- readline(prompt = "Selection: ")
+              #  
+              #dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
               
-              dict.ans <- readline(prompt = "Selection: ")
+              message(paste("\n'", tmo.split[non.dict[i]], "'", sep = ""),
+                      " was not found in the dictionary.\n")
               
-              dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
+              dict.ans <- yes.no.menu(
+                paste("Should ",
+                      paste("'", tmo.split[non.dict[i]], "'", sep = ""),
+                      " be added to the dictionary", sep = "")
+              )
               
               if(dict.ans == 1)
               {
@@ -1670,7 +1884,9 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     res$full.dictionary <- full.dictionary
     
     # Add artificial pause for smoother feel
-    Sys.sleep(1)
+    if(!"general" %in% dictionary){
+      Sys.sleep(1)
+    }
     
     return(res)
   }
@@ -1809,7 +2025,7 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' 
 #' @noRd
 # MANUAL spell-check----
-# Updated 01.01.2021
+# Updated 02.01.2021
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling = NULL,
                                    add.path = NULL, data = NULL, continue = NULL#, walkthrough = NULL
                                    )
@@ -1930,18 +2146,22 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     #walkthrough <- FALSE
   }
   
-  # Check for walkthrough
-  walk_through(FALSE)
-  
-  # Set up progress bar (Windows only)
-  if(Sys.info()["sysname"] == "Windows")
-  {
-    pb <- tcltk::tkProgressBar(title = "R progress bar", label = "Spell-check progress",
-                               min = 0, max = length(ind), initial = 0, width = 300)
-    invisible(tcltk::getTkProgressBar(pb))
-  }else{pb <- txtProgressBar(min = 0, max = length(ind), style = 3)}
-  
-  linebreak()
+  # Check if manual spell-check is necessary
+  if(length(ind) != 0){
+    
+    ## Check for walkthrough
+    walk_through(FALSE)
+    
+    ## Set up progress bar (Windows only)
+    if(Sys.info()["sysname"] == "Windows")
+    {
+      pb <- tcltk::tkProgressBar(title = "R progress bar", label = "Spell-check progress",
+                                 min = 0, max = length(ind), initial = 0, width = 300)
+      invisible(tcltk::getTkProgressBar(pb))
+    }else{pb <- txtProgressBar(min = 0, max = length(ind), style = 3)}
+    
+    linebreak()
+  }
   
   # Loop through for manual spell-check
   while(main.count != (length(ind) + 1))
@@ -1975,7 +2195,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
                                                 dictionary = dictionary),
                           original = from[[i]], current.index = i,
                           changes = changes, full.dictionary = full.dictionary,
-                          category = category),
+                          category = category, dictionary = dictionary),
           silent = TRUE
         )
         
@@ -2157,7 +2377,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
                         possible = best.guess(target, full.dictionary = full.dictionary, dictionary),
                         original = from[[i]], current.index = i,
                         changes = changes, full.dictionary = full.dictionary,
-                        category = category),
+                        category = category, dictionary = dictionary),
         silent = TRUE
         
       )
@@ -2315,7 +2535,9 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
   }
   
   # Close progress bar
-  close(pb)
+  if(main.count != 1){
+    close(pb)
+  }
   
   # Initialize final results
   final.res <- list()
@@ -2381,23 +2603,28 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     }else{message("\nDictionary was not saved")}
   }
   
-  # Ad hoc check for monikers
-  if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")]))
-  {
-    ## Let user know
-    message("\nRunning ad hoc check for common misspellings and monikers...", appendLF = FALSE)
+  # Run ad hoc check (if necessary)
+  if(main.count != 1){
     
-    ## Target dictionaries
-    target <- dictionary[na.omit(match(SemNetDictionaries::dictionaries(TRUE), dictionary))]
+    ## Ad hoc check for monikers
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")]))
+    {
+      ### Let user know
+      message("\nRunning ad hoc check for common misspellings and monikers...", appendLF = FALSE)
+      
+      ### Target dictionaries
+      target <- dictionary[na.omit(match(SemNetDictionaries::dictionaries(TRUE), dictionary))]
+      
+      ### Check for monikers
+      for(i in 1:length(to))
+        for(j in 1:length(to[[i]])){
+          to[[i]][j] <- unlist(moniker(to[[i]][j], SemNetDictionaries::load.monikers(target), spelling = spelling))
+        }
+      
+      ### Let user know
+      message("done")
+    }
     
-    ## Check for monikers
-    for(i in 1:length(to))
-      for(j in 1:length(to[[i]])){
-        to[[i]][j] <- unlist(moniker(to[[i]][j], SemNetDictionaries::load.monikers(target), spelling = spelling))
-      }
-    
-    ## Let user know
-    message("done")
   }
   
   # Collect results
@@ -3572,7 +3799,7 @@ system.check <- function (...)
 #' @importFrom utils menu
 #' 
 # Yes/no menu----
-# Updated 22.11.2020
+# Updated 02.01.2021
 yes.no.menu <- function (title = NULL) 
 {
   # function for appropriate response
@@ -3608,7 +3835,7 @@ yes.no.menu <- function (title = NULL)
   }
   
   # append title with Linux style yes/no
-  title <- paste(title, c("[Y/n]? "))
+  title <- paste(title, "[Y/n]? ")
   
   # get response
   ans <- readline(prompt = title)

@@ -46,6 +46,8 @@ the respective read functions. See documentation in the list below:
 {\code{\link[utils]{read.table}}}
 \item{.mat}
 {\code{\link[R.matlab]{readMat}}}
+\item{.dat}
+{\code{\link[utils]{read.table}}}
 }}
 }
 \value{
@@ -60,7 +62,7 @@ format necessary for functions in SemNetCleaner
 File extensions supported:
 \itemize{
 \item{.Rdata} \item{.rds} \item{.csv} \item{.xlsx}
-\item{.xls} \item{.sav} \item{.txt} \item{.mat}
+\item{.xls} \item{.sav} \item{.txt} \item{.mat} \item{.dat}
 }
 }
 \examples{

@@ -81,7 +81,7 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 10.09.2020
+# Updated 02.01.2021
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj)
 {
@@ -123,11 +123,17 @@ correct.changes <- function(textcleaner.obj)
   ## Original automated responses
   automated <- res$spellcheck$automated
   
+  # Make sure automated responses are a matrix
+  if(is.vector(automated)){
+    automated <- t(as.matrix(automated))
+  }
+  
   # Get changes
   changes <- edit(automated)
   
   # Get differences
-  differences <- automated[,-1] != changes[,-1]
+  #differences <- automated[,-1] != changes[,-1]
+  differences <- automated != changes
   
   ## Ensure matrix
   if(!is.matrix(differences)){
@@ -141,7 +147,7 @@ correct.changes <- function(textcleaner.obj)
   # If there are no changes, then return original object
   if(length(target.changes) == 0)
   {
-    message("\nNo responses changed.\n")
+    message("\nNo responses changed.")
     
     return(textcleaner.obj)
     

@@ -128,7 +128,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 02.12.2020
+# Updated 02.01.2021
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
@@ -136,13 +136,18 @@ textcleaner <- function(data = NULL, miss = 99,
                         add.path = NULL, continue = NULL#, walkthrough = NULL
                         )
 {
+  
   # Check for dictionary spelling
-  if(missing(spelling)){
-    spelling <- "US"
-    message("The 'spelling' argument was not set. Using default: 'US' English spelling")
-    Sys.sleep(0.5)
-  }else{
-    spelling <- match.arg(spelling)
+  if(is.null(continue)){
+    
+    if(missing(spelling)){
+      spelling <- "US"
+      message("\nThe 'spelling' argument was not set. Using default: 'US' English spelling")
+      Sys.sleep(0.5)
+    }else{
+      spelling <- match.arg(spelling)
+    }
+    
   }
   
   # Check if user is continuing from a previous point
@@ -317,13 +322,22 @@ textcleaner <- function(data = NULL, miss = 99,
   class(res) <- "textcleaner"
   
   # Correct auto-corrections
-  res <- try(correct.changes(res), silent = TRUE)
-  
-  if(any(class(res) == "try-error"))
-  {
-    error.fun(res, "correct.changes", "textcleaner")
+  ## Check if there were auto-corrections
+  if(length(res$spellcheck$automated) != 0){
     
-    return(res)
+    res.check <- try(correct.changes(res), silent = TRUE)
+    
+    if(any(class(res.check) == "try-error"))
+    {
+      error.fun(res, "correct.changes", "textcleaner")
+      
+      return(res)
+    }else{res <- res.check}
+    
+  }else{
+    
+    message("\nNo auto-corrections were made. Skipping automated spell-check verification.")
+    
   }
   
   # Let user know spell-check is complete

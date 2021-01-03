@@ -57,8 +57,8 @@
 #' 
 #' @export
 #Singularize
-# Updated 01.01.2021
-singularize <- function(word)
+# Updated 02.01.2021
+singularize <- function(word, dictionary = TRUE)
 {
     #check for multiple words
     spl <- unlist(strsplit(word, " "))
@@ -213,12 +213,25 @@ singularize <- function(word)
     }
     
     #return word
-    if(!word %in% checker)
-    {
-        if(multiple)
-        {orig.word <- paste(spl, collapse = " ")}
+    if(dictionary){
         
-        return(orig.word)
+        #check for word in dictionary
+        if(!word %in% checker){
+            if(multiple)
+            {orig.word <- paste(spl, collapse = " ")}
+            
+            return(orig.word)
+        }else{
+            
+            if(multiple)
+            {
+                spl[length(spl)] <- word
+                word <- paste(spl, collapse = " ")
+            }
+            
+            return(word)
+        }
+        
     }else{
         
         if(multiple)
@@ -228,6 +241,7 @@ singularize <- function(word)
         }
         
         return(word)
+        
     }
 }
 #----
