@@ -44,6 +44,20 @@
 #' to avoid time intensive search.
 #' Set to \code{"choose"} to open an interactive directory explorer
 #' 
+#' @param keepStrings Boolean.
+#' Should strings be retained or separated?
+#' Defaults to \code{FALSE}.
+#' Set to \code{TRUE} to retain strings as strings
+#' 
+#' @param allowPunctuations Character vector.
+#' Allows punctuation characters to be included in responses.
+#' Defaults to \code{"-"}.
+#' Set to \code{"all"} to keep all punctuation characters
+#' 
+#' @param allowNumbers Boolean.
+#' Defaults to \code{FALSE}.
+#' Set to \code{TRUE} to keep numbers in text
+#' 
 #' @param continue List.
 #' A result previously unfinished that still needs to be completed.
 #' Allows you to continue to manually spell-check their data
@@ -128,24 +142,44 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 02.01.2021
+# Updated 05.01.2021
+# Keep strings update: 05.01.2020
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
                         dictionary = NULL, spelling = c("UK", "US"),
-                        add.path = NULL, continue = NULL#, walkthrough = NULL
+                        add.path = NULL, keepStrings = FALSE,
+                        allowPunctuations = c("-", "all"),
+                        allowNumbers = FALSE,
+                        continue = NULL#, walkthrough = NULL
                         )
 {
   
-  # Check for dictionary spelling
+  # Warning for keepStrings
+  if(keepStrings){
+    warning("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
+    message("\nPlease send issues to:")
+    message("\nhttps://github.com/AlexChristensen/SemNetCleaner/issues")
+  }
+  
+  
+  # Check for missing arguments
   if(is.null(continue)){
     
+    ## Spelling
     if(missing(spelling)){
       spelling <- "US"
       message("\nThe 'spelling' argument was not set. Using default: 'US' English spelling")
       Sys.sleep(0.5)
     }else{
       spelling <- match.arg(spelling)
+    }
+    
+    ## Allow punctuations
+    if(missing(allowPunctuations)){
+      allowPunctuations <- "-"
+    }else{
+      allowPunctuations <- match.arg(allowPunctuations, several.ok = TRUE)
     }
     
   }
@@ -193,7 +227,7 @@ textcleaner <- function(data = NULL, miss = 99,
     ### Removes white spaces
     ### Makes all responses lower case
     data <- try(
-      prep.spellcheck.dictionary(data),
+      prep.spellcheck.dictionary(data, allowPunctuations, allowNumbers),
       silent = TRUE
     )
     
@@ -213,6 +247,7 @@ textcleaner <- function(data = NULL, miss = 99,
                             dictionary = dictionary,
                             spelling = spelling,
                             add.path = add.path,
+                            keepStrings = keepStrings,
                             data = data#, walkthrough = walkthrough
                             ),
       silent <- TRUE

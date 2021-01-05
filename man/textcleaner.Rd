@@ -11,6 +11,9 @@ textcleaner(
   dictionary = NULL,
   spelling = c("UK", "US"),
   add.path = NULL,
+  keepStrings = FALSE,
+  allowPunctuations = c("-", "all"),
+  allowNumbers = FALSE,
   continue = NULL
 )
 }
@@ -55,6 +58,20 @@ Path to additional dictionaries to be found.
 DOES NOT search recursively (through all folders in path)
 to avoid time intensive search.
 Set to \code{"choose"} to open an interactive directory explorer}
+
+\item{keepStrings}{Boolean.
+Should strings be retained or separated?
+Defaults to \code{FALSE}.
+Set to \code{TRUE} to retain strings as strings}
+
+\item{allowPunctuations}{Character vector.
+Allows punctuation characters to be included in responses.
+Defaults to \code{"-"}.
+Set to \code{"all"} to keep all punctuation characters}
+
+\item{allowNumbers}{Boolean.
+Defaults to \code{FALSE}.
+Set to \code{TRUE} to keep numbers in text}
 
 \item{continue}{List.
 A result previously unfinished that still needs to be completed.

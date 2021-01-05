@@ -106,6 +106,15 @@ convert.miss <- function (data, miss)
 #' @param data Matrix or data frame.
 #' Matrix of raw data
 #' 
+#' @param allowPunctuations Character vector.
+#' Allows punctuation characters to be included in responses.
+#' Defaults to \code{"-"}.
+#' Set to \code{"all"} to keep all punctuation characters
+#' 
+#' @param allowNumbers Boolean.
+#' Defaults to \code{FALSE}.
+#' Set to \code{TRUE} to keep numbers in text
+#' 
 #' @return Data frame prepped for \code{spellcheck.dictionary}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
@@ -113,19 +122,45 @@ convert.miss <- function (data, miss)
 #' @noRd
 #' 
 # Prep for spellcheck.dictionary----
-# Updated 10.04.2020
-prep.spellcheck.dictionary <- function (data)
+# Updated 03.01.2021
+prep.spellcheck.dictionary <- function (data, allowPunctuations, allowNumbers)
 {
   # Remove miscellaneous string additions from data
-  # Keeps dashes
-  data <- apply(data, 2, function(y) gsub("([-])|[[:punct:]]", "\\1", y))
-  data <- apply(data, 2, function(y) gsub("[[:digit:]]+", "", y))
+  ## Remove/allow punctuation
+  if(all(allowPunctuations != "all")){
+    characters <- paste("([", paste(allowPunctuations, collapse = ""), "])|[[:punct:]]", sep = "", collapse = "")
+    data <- apply(data, 2, function(y) gsub(characters, "\\1", y))
+  }
+  
+  ## Remove/allow numbers
+  if(!allowNumbers){
+    data <- apply(data, 2, function(y) gsub("[[:digit:]]+", "", y))
+  }
   
   # Remove white spaces
   data <- apply(apply(data, 2, trimws), 1:2, rm.lead.space)
   
   # Change all to lowercase
   data <- apply(data, 2, tolower)
+  
+  # Remove new lines
+  data <- apply(data, 2, function(y) gsub("[\n\r\t]",  " ", y))
+  
+  # Remove special characters
+  ## Split words
+  data <- apply(data, 2, strsplit, split = " ")
+  ## Remove special characters
+  data <- lapply(data, function(y){
+    lapply(y, function(y) gsub("[^\x20-\x7E]", "", y))
+  })
+  ## Re-combine words
+  data <- lapply(data, function(y){
+    lapply(y, paste, sep = "", collapse = " ")
+  })
+  ## Back into matrix
+  data <- simplify2array(data, higher = FALSE)
+  ## Revert NAs
+  data <- apply(data, 1:2, function(y){ifelse(y == "NA", NA, unlist(y))})
   
   # Convert to data frame
   data <- as.data.frame(data, stringsAsFactors = FALSE)
@@ -220,9 +255,12 @@ bad.response <- function (word, ...)
 #' 
 #' @noRd
 # Individual Word Spell-Checker----
-# Updated 28.11.2020
+# Updated 04.01.2020
 ind.word.check <- function (string, full.dict, dictionary, spelling)
 {
+  # Make string only alphanumeric characters
+  string <- gsub("[^[:alnum:][:space:]]", "", string)
+  
   # Split string
   spl <- unlist(strsplit(string," "))
   
@@ -598,7 +636,7 @@ brit.us.conv <- function (vec, spelling = c("UK", "US"), dictionary)
 #' @noRd
 # Automated Spell-check----
 # Updated 02.01.2020
-auto.spellcheck <- function(check, full.dict, dictionary, spelling)
+auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
 {
   # Change names of indices
   names(check) <- formatC(1:length(check),
@@ -672,7 +710,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   
   # Index pluralized responses
   ## Singularize responses
-  sing <- lapply(check,singularize)
+  sing <- lapply(check, singularize)
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly
@@ -865,11 +903,11 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly
-  targets <- match(unlist(ind.check),full.dict)
+  targets <- match(unlist(ind.check), full.dict)
   
   if(all(is.na(targets))){ # All spelled incorrectly
     
-    ind.check <- mons
+    ind.check <- mons2
     auto.spell <- names(ind.check)
     
   }else if(all(!is.na(targets))){ # All spelled correctly
@@ -945,8 +983,10 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling)
   responses <- unlist(multi.word, recursive = FALSE)[grep("response", names(unlist(multi.word, recursive = FALSE)))]
   
   ### Update original responses
-  if(length(responses[changed]) != 0){
-    orig[names(multi.word)[changed]] <- responses[changed]
+  if(!keepStrings){
+    if(length(responses[changed]) != 0){
+      orig[names(multi.word)[changed]] <- responses[changed]
+    }
   }
   
   ### Indices of correctly spelled responses
@@ -1208,7 +1248,7 @@ appropriate.answer <- function (answer, choices, default, dictionary = FALSE)
 #' @noRd
 #' 
 # Custom Menu----
-# Updated 07.09.2020
+# Updated 03.01.2020
 customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help = FALSE) 
 {
   if (!interactive()) 
@@ -1235,11 +1275,10 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help
     if (ncol > 1L)
       
       # Set up default
-      if(default == 10)
+      if(default == 10 || default == 9)
       {
         word <- fop[1:5]
-        word <- paste0(word, c(rep.int("  ", min(nc, ncol) - 
-                                         1L), "\n"), collapse = "")
+        word <- paste0(word, c(rep.int("  ", 4), "\n"), collapse = "")
         
         # Check number of characters
         nw <- nchar(word)
@@ -1247,9 +1286,9 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help
         if(substr(word, nw-1, nw) != "\n")
         {word <- paste(substr(word, 1, nw-2), "\n")}
         
-        string <- fop[6:10]
-        string <- paste0(string, c(rep.int("  ", min(nc, ncol) - 
-                                             1L), "\n"), collapse = "")
+        string <- fop[6:default]
+        opts <- ifelse(default == 9, 3, 4)
+        string <- paste0(string, c(rep.int("  ", opts), "\n"), collapse = "")
         
         # Check number of characters
         ns <- nchar(string)
@@ -1285,7 +1324,7 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help
     }else{resp <- paste0(paste0(resp, collapse = ""), "\n")}
     
     # Set up options
-    if(default == 10)
+    if(default == 10 || default == 9)
     {
       op <- paste0(styletext("Word options\n", defaults = "underline"), word,
                    styletext("\nString options\n", defaults = "underline"), string,
@@ -1354,10 +1393,10 @@ customMenu <- function (choices, title = NULL, default, dictionary = FALSE, help
 #' @noRd
 #' 
 # Menu for Manual Spell-check----
-# Updated 02.01.2021
+# Updated 04.01.2021
 spellcheck.menu <- function (check, context = NULL, possible, original,
                              current.index, changes, full.dictionary, category,
-                             dictionary)
+                             dictionary, keepStrings, go.back.count)
 {
   # Initialize answer
   ans <- 30
@@ -1365,28 +1404,85 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
   # Initialize GO BACK
   go.back <- FALSE
   
+  # Check if word is already in dictionary (due to dictionary updates)
+  ## Check for multiple words
+  if(!is.null(context)){
+    dict.check <- context[check]
+  }else{dict.check <- check}
+  
+  ## Check dictionary
+  if(dict.check %in% full.dictionary){
+    
+    ## Message that response was cleared by previous decision
+    if(!is.null(context)){
+      message(paste("\nResponse '",
+                    styletext(dict.check, defaults = "bold"), "' in '", styletext(paste(context, collapse = " "), defaults = "bold"),
+                    "' was KEPT AS IS based on a previous manual spell-check decision",
+                    sep = ""))
+    }else{
+      message(paste("\nResponse '",
+                    styletext(dict.check, defaults = "bold"),
+                    "' was KEPT AS IS based on a previous manual spell-check decision",
+                    sep = ""))
+    }
+    
+    ## Initialize result list
+    res <- list()
+    res$go.back <- go.back
+    res$target <- ifelse(is.null(context), dict.check, context)
+    res$changes <- changes
+    res$full.dictionary <- full.dictionary
+    res$end <- if(is.null(context)){NULL}else{FALSE}
+    res$go.back.count <- go.back.count + 1
+    
+    # Add artificial pause for smoother feel
+    if(!"general" %in% dictionary){
+      Sys.sleep(1)
+    }
+    
+    return(res)
+    
+  }
+  
   # Set up based on context (multiple responses)
-  if(!is.null(context))
-  {
+  if(!is.null(context)){
+    
     # Initialize END
     end <- FALSE
     
     while(ans == 30)
     {
       # Title for spell-check
-      title <- paste(paste("\nOriginal string: ", "'", original, "'", sep = ""),
-                     paste("Auto-corrected string: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
-                     paste("Target word: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
-                     sep = "\n\n")
+      if(keepStrings){
+        
+        title <- paste(paste("\nOriginal string: ", "'", original, "'", sep = ""),
+                       paste("Target word: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
+                       sep = "\n\n")
+        
+      }else{
+        
+        title <- paste(paste("\nOriginal string: ", "'", original, "'", sep = ""),
+                       paste("Auto-corrected string: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
+                       paste("Target word: ", paste("'", colortext(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
+                       sep = "\n\n")
+        
+      }
       
       # Choices for spell-check
       word <- c("SKIP WORD", "ADD WORD TO DICTIONARY", "TYPE MY OWN WORD", "GOOGLE WORD", "BAD WORD")
-      string <- c("KEEP ORIGINAL", "KEEP AUTO-CORRECT", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
-
+      if(keepStrings){
+        string <- c("KEEP ORIGINAL", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
+      }else{
+        string <- c("KEEP ORIGINAL", "KEEP AUTO-CORRECT", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
+      }
+      
       choices <- c(word, string, possible)
       
-      # Save answer
-      customMenu(choices = choices, title = title, default = 10)
+      # Default length
+      default <- length(c(word, string))
+      
+      # Output menu
+      customMenu(choices = choices, title = title, default = default)
       
       # Message user
       message("Press 'B' to GO BACK, 'H' for HELP, or 'X' to EXIT.\n")
@@ -1399,13 +1495,63 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       {return("STOP")}
       
       # Check for appropriate answer
-      ans <- appropriate.answer(answer = ans, choices = choices, default = 10)
+      ans <- appropriate.answer(answer = ans, choices = choices, default = default)
       
+      # Change answer for keeping strings
+      if(keepStrings){
+        
+        # Between 7 and length of choices
+        if(ans >= 7 && ans <= length(choices)){
+          ans <- ans + 1
+        }
+        
+      }
+        
       # Answer options
       if(ans == 1) # SKIP WORD
       {
-        ## Message user
-        message(paste("\nResponse was SKIPPED:", paste("'", context[check], "'", sep = "")))
+        
+        ## Check for strings
+        if(keepStrings){
+          
+          ## Message user
+          if(check == 1){
+            
+            message(paste("\nResponse was SKIPPED: '",
+                          styletext(context[check], defaults = "bold"),
+                          " ",
+                          paste(context[-check], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }else if(check == length(unlist(strsplit(context, split = " ")))){
+            
+            message(paste("\nResponse was SKIPPED: '",
+                          paste(context[-check], collapse = " "),
+                          " ",
+                          styletext(context[check], defaults = "bold"),
+                          "'", sep = "", collapse = " "))
+            
+          }else{
+            
+            ## Word number in string
+            word.num <- which(context[check] == unlist(strsplit(context, split = " ")))
+            
+            message(paste("\nResponse was SKIPPED: '",
+                          paste(context[1:(word.num - 1)], collapse = " "),
+                          " ",
+                          styletext(context[word.num], defaults = "bold"),
+                          " ",
+                          paste(context[(word.num + 1):length(unlist(strsplit(context, split = " ")))], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }
+          
+        }else{
+          
+          ## Message user
+          message(paste("\nResponse was SKIPPED:", paste("'", context[check], "'", sep = "")))
+          
+        }
         
       }else if(ans == 2) # ADD WORD TO DICTIONARY
       {
@@ -1414,6 +1560,43 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                                                                  full.dictionary,
                                                                  dictionary.name = "full",
                                                                  save.location = "envir", textcleaner = TRUE)
+        
+        ## Check for strings
+        if(keepStrings){
+          
+          ## Message user
+          if(check == 1){
+            
+            message(paste("\nResponse was KEPT AS: '",
+                          styletext(context[check], defaults = "bold"),
+                          " ",
+                          paste(context[-check], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }else if(check == length(unlist(strsplit(context, split = " ")))){
+            
+            message(paste("\nResponse was KEPT AS: '",
+                          paste(context[-check], collapse = " "),
+                          " ",
+                          styletext(context[check], defaults = "bold"),
+                          "'", sep = "", collapse = " "))
+            
+          }else{
+            
+            ## Word number in string
+            word.num <- which(context[check] == unlist(strsplit(context, split = " ")))
+            
+            message(paste("\nResponse was KEPT AS: '",
+                          paste(context[1:(word.num - 1)], collapse = " "),
+                          " ",
+                          styletext(context[word.num], defaults = "bold"),
+                          " ",
+                          paste(context[(word.num + 1):length(unlist(strsplit(context, split = " ")))], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }
+          
+        }
         
       }else if(ans == 3) # TYPE MY OWN WORD
       {
@@ -1475,8 +1658,47 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
             }
           }
           
-          ## Message user
-          message(paste("\nResponse was CHANGED TO:", paste("'", tmo.split, "'", sep = "", collapse = " ")))
+          ## Check for strings
+          if(keepStrings){
+            
+            ## Message user
+            if(check == 1){
+              
+              message(paste("\nResponse was CHANGED TO: '",
+                            styletext(paste(tmo.split, collapse = " "), defaults = "bold"),
+                            " ",
+                            paste(context[-check], collapse = " "),
+                            "'", sep = "", collapse = " "))
+              
+            }else if(check == length(unlist(strsplit(context, split = " ")))){
+              
+              message(paste("\nResponse was CHANGED TO: '",
+                            paste(context[-check], collapse = " "),
+                            " ",
+                            styletext(paste(tmo.split, collapse = " "), defaults = "bold"),
+                            "'", sep = "", collapse = " "))
+              
+            }else{
+              
+              ## Word number in string
+              word.num <- which(context[check] == unlist(strsplit(context, split = " ")))
+              
+              message(paste("\nResponse was CHANGED TO: '",
+                            paste(context[1:(word.num - 1)], collapse = " "),
+                            " ",
+                            styletext(paste(tmo.split, collapse = " "), defaults = "bold"),
+                            " ",
+                            paste(context[(word.num + 1):length(unlist(strsplit(context, split = " ")))], collapse = " "),
+                            "'", sep = "", collapse = " "))
+              
+            }
+            
+          }else{
+            
+            ## Message user
+            message(paste("\nResponse was CHANGED TO:", paste("'", tmo.split, "'", sep = "", collapse = " ")))
+            
+          }
           
           ## Change responses in context
           context.change <- as.list(context)
@@ -1505,8 +1727,47 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                                  change.matrix = change.mat,
                                  current.index = current.index)
         
-        ## Message user
-        message(paste("\nResponse was CHANGED TO:", paste(NA, sep = "", collapse = " ")))
+        ## Check for strings
+        if(keepStrings){
+          
+          ## Message user
+          if(check == 1){
+            
+            message(paste("\nResponse was CHANGED TO: '",
+                          styletext(NA, defaults = "bold"),
+                          " ",
+                          paste(context[-check], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }else if(check == length(unlist(strsplit(context, split = " ")))){
+            
+            message(paste("\nResponse was CHANGED TO: '",
+                          paste(context[-check], collapse = " "),
+                          " ",
+                          styletext(NA, defaults = "bold"),
+                          "'", sep = "", collapse = " "))
+            
+          }else{
+            
+            ## Word number in string
+            word.num <- which(context[check] == unlist(strsplit(context, split = " ")))
+            
+            message(paste("\nResponse was CHANGED TO: '",
+                          paste(context[1:(word.num - 1)], collapse = " "),
+                          " ",
+                          styletext(NA, defaults = "bold"),
+                          " ",
+                          paste(context[(word.num + 1):length(unlist(strsplit(context, split = " ")))], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }
+          
+        }else{
+          
+          ## Message user
+          message(paste("\nResponse was CHANGED TO:", paste(NA, sep = "", collapse = " ")))
+          
+        }
         
         ## Change responses in context
         context.change <- as.list(context)
@@ -1540,7 +1801,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
           #
           #dict.ans <- appropriate.answer(answer = dict.ans, choices = c("Yes", "No"), default = 2, dictionary = TRUE)
           
-          message(paste("'", original, "'", sep = ""),
+          message(paste("\n'", original, "'", sep = ""),
                   " was not found in the dictionary.\n")
           
           dict.ans <- yes.no.menu(
@@ -1677,7 +1938,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         # Renew prompt
         ans <- 30
         
-      }else{# RESPONSE OPTION 11-20
+      }else{# RESPONSE OPTION
         
         ## Set up change matrix
         change.mat <- t(as.matrix(c(context[check], possible[ans-10])))
@@ -1688,8 +1949,47 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
                                  change.matrix = change.mat,
                                  current.index = current.index)
         
-        ## Message user
-        message(paste("\nResponse was CHANGED TO:", paste("'", possible[ans-10], "'", sep = "")))
+        ## Check for strings
+        if(keepStrings){
+          
+          ## Message user
+          if(check == 1){
+            
+            message(paste("\nResponse was CHANGED TO: '",
+                          styletext(possible[ans-10], defaults = "bold"),
+                          " ",
+                          paste(context[-check], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }else if(check == length(unlist(strsplit(context, split = " ")))){
+            
+            message(paste("\nResponse was CHANGED TO: '",
+                          paste(context[-check], collapse = " "),
+                          " ",
+                          styletext(possible[ans-10], defaults = "bold"),
+                          "'", sep = "", collapse = " "))
+            
+          }else{
+            
+            ## Word number in string
+            word.num <- which(context[check] == unlist(strsplit(context, split = " ")))
+            
+            message(paste("\nResponse was CHANGED TO: '",
+                          paste(context[1:(word.num - 1)], collapse = " "),
+                          " ",
+                          styletext(possible[ans-10], defaults = "bold"),
+                          " ",
+                          paste(context[(word.num + 1):length(unlist(strsplit(context, split = " ")))], collapse = " "),
+                          "'", sep = "", collapse = " "))
+            
+          }
+          
+        }else{
+          
+          ## Message user
+          message(paste("\nResponse was CHANGED TO:", paste("'", possible[ans-10], "'", sep = "")))
+          
+        }
         
         ## Change responses in context
         context[check] <- possible[ans-10]
@@ -1703,6 +2003,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     res$changes <- changes
     res$full.dictionary <- full.dictionary
     res$end <- end
+    res$go.back.count <- go.back.count
     
     # Add artificial pause for smoother feel
     if(!"general" %in% dictionary){
@@ -1882,6 +2183,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     res$target <- check
     res$changes <- changes
     res$full.dictionary <- full.dictionary
+    res$go.back.count <- go.back.count
     
     # Add artificial pause for smoother feel
     if(!"general" %in% dictionary){
@@ -2025,9 +2327,10 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' 
 #' @noRd
 # MANUAL spell-check----
-# Updated 02.01.2021
+# Updated 04.01.2021
 spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling = NULL,
-                                   add.path = NULL, data = NULL, continue = NULL#, walkthrough = NULL
+                                   add.path = NULL, keepStrings = NULL,
+                                   data = NULL, continue = NULL#, walkthrough = NULL
                                    )
 {
   # Line break function
@@ -2087,7 +2390,8 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
       auto.spellcheck(check = from,
                       full.dict = full.dictionary,
                       dictionary = dictionary,
-                      spelling = spelling),
+                      spelling = spelling,
+                      keepStrings = keepStrings),
       silent = TRUE
     )
     
@@ -2113,7 +2417,14 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     
     # Organize indices so that multiple word responses are first
     # and single word responses come after
-    multi.ind <- which(lapply(to[ind], length) >= 2)
+    if(keepStrings){
+      multi.ind <- which(lapply(to[ind], function(x){
+        length(unlist(strsplit(x, split = " ")))
+      }) >= 2)
+    }else{
+      multi.ind <- which(lapply(to[ind], length) >= 2)
+    }
+    
     single.ind <- setdiff(ind, as.numeric(names(multi.ind)))
     ind <- c(as.numeric(names(multi.ind)), single.ind)
     
@@ -2122,6 +2433,12 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     
     # Initialize main counter
     main.count <- 1
+    
+    # Initialize go back counter
+    go.back.count <- 1
+    
+    # Initialize go back reset
+    go.back.reset <- FALSE
     
   }else{
     
@@ -2138,8 +2455,11 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     ind <- continue$ind
     changes <- continue$changes
     main.count <- continue$main.count
+    go.back.count <- continue$go.back.count
+    go.back.reset <- continue$go.back.reset
     if(!is.null(continue$multi.count))
     {multi.count <- continue$multi.count}
+    keepStrings <- continue$keepStrings
     data <- continue$data
     
     # Do not run through walkthrough
@@ -2163,7 +2483,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     linebreak()
   }
   
-  # Loop through for manual spell-check
+  # Loop through for manual spell-check ----
   while(main.count != (length(ind) + 1))
   {
     
@@ -2173,29 +2493,92 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     # Obtain target response(s)
     target <- to[[i]]
     
+    # Keep strings?
+    if(keepStrings){
+      target <- unlist(strsplit(target, split = " "))
+    }
+    
     # Branch based on number of words
     if(length(target) > 1)
     {
+      # Check punctuation
+      target.punct <- gsub("[^[:alnum:][:space:]]", "", target)
+      
       # Check which words are spelled incorrectly
-      check.words <- target[which(!target %in% full.dictionary)]
+      check.words <- target[which(!target.punct %in% full.dictionary)]
       
       # Initialize multi count
       if(is.null(continue$multi.count))
       {multi.count <- 1
       }else{continue$multi.count <- NULL}
       
+      # Check if words have been checked already
+      if(length(check.words) == 0){
+        
+        # Increase go back count
+        result$go.back.count <- go.back.count + 1
+        
+        if(keepStrings){
+          
+          ## Message that response was cleared by previous decision
+          message(paste("\nResponse '",
+                        styletext(paste(target, collapse = " "), defaults = "bold"),
+                        "' was KEPT AS IS based on a previous manual spell-check decision",
+                        sep = ""))
+          
+        }else{
+          
+          ## Message that response was cleared by previous decision
+          message(paste("\nResponse '",
+                        styletext(target, defaults = "bold"),
+                        "' was KEPT AS IS based on a previous manual spell-check decision",
+                        sep = ""))
+          
+        }
+        
+        ## Update go back count
+        if(result$go.back.count == go.back.count){
+          
+          ## If equal then check if reset is activated
+          if(go.back.reset){ ## If activated, then reset
+            go.back.count <- 1
+          }else{ ## If not activated, then activate
+            go.back.reset <- TRUE
+          }
+          
+        }else{
+          
+          ## Update count and do not reset
+          go.back.count <- result$go.back.count
+          go.back.reset <- FALSE
+          
+        }
+        
+        ## Line break
+        linebreak()
+        
+      }
+      
       # Loop through words that need to be checked
-      while(multi.count != (length(check.words) + 1))
-      {
+      while(multi.count != (length(check.words) + 1)){
+        
         ## Run spell-check menu (with error capturing)
         result <- try(
-          spellcheck.menu(check = which(check.words[multi.count] == target), context = target,
+          spellcheck.menu(check = which(check.words[multi.count] == target),
+                          context = target,
                           possible = best.guess(target[which(check.words[multi.count] == target)],
                                                 full.dictionary = full.dictionary,
                                                 dictionary = dictionary),
-                          original = from[[i]], current.index = i,
-                          changes = changes, full.dictionary = full.dictionary,
-                          category = category, dictionary = dictionary),
+                          original = ifelse(keepStrings,
+                                            paste(target, collapse = " "),
+                                            from[[i]]),
+                          current.index = i,
+                          changes = changes,
+                          full.dictionary = full.dictionary,
+                          category = category,
+                          dictionary = dictionary,
+                          keepStrings = keepStrings,
+                          go.back.count = go.back.count),
           silent = TRUE
         )
         
@@ -2223,9 +2606,12 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           res$ind <- ind
           res$changes <- changes
           res$main.count <- main.count
+          res$go.back.count <- go.back.count
+          res$go.back.reset <- go.back.reset
           if(exists("multi.count"))
           {res$multi.count <- multi.count}
           res$data <- data
+          res$keepStrings <- keepStrings
           res$stop <- TRUE
           
           class(res) <- "textcleaner"
@@ -2258,8 +2644,11 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           res$ind <- ind
           res$changes <- changes
           res$main.count <- main.count
+          res$go.back.count <- go.back.count
+          res$go.back.reset <- go.back.reset
           if(exists("multi.count"))
           {res$multi.count <- multi.count}
+          res$keepStrings <- keepStrings
           res$data <- data
           res$stop <- TRUE
           
@@ -2276,9 +2665,28 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           return(res)
         }
         
+        ## Update go back count
+        if(result$go.back.count == go.back.count){
+          
+          ## If equal then check if reset is activated
+          if(go.back.reset){ ## If activated, then reset
+            go.back.count <- 1
+          }else{ ## If not activated, then activate
+            go.back.reset <- TRUE
+          }
+          
+        }else{
+          
+          ## Update count and do not reset
+          go.back.count <- result$go.back.count
+          go.back.reset <- FALSE
+          
+        }
+        
         ## Change with GO BACK option
         if(result$go.back)
         {
+          
           ## Check if it is the first response of multiple
           ## response check
           if(multi.count == 1)
@@ -2289,34 +2697,49 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
               ## Revert to current responses to original
               to[[i]] <- initial.to[[i]]
               
+              ## Previous response
+              prev.resp <- initial.to[[ind[main.count-go.back.count]]]
+              
+              ## String split
+              prev.resp.split <- unlist(strsplit(prev.resp, split = " "))
+              
               ## Revert dictionary
-              if(any(!initial.to[[ind[main.count-1]]] %in% full.dictionary == initial.to[[ind[main.count-1]]] %in% orig.dictionary))
-              {
+              if(any(!prev.resp.split %in% full.dictionary == prev.resp.split %in% orig.dictionary)){
+                
                 ## Targets to remove from full dictionary
-                target.rms <- which(!initial.to[[ind[main.count-1]]] %in% full.dictionary == initial.to[[ind[main.count-1]]] %in% orig.dictionary)
+                target.rms <- which(!prev.resp.split %in% full.dictionary == prev.resp.split %in% orig.dictionary)
                 
                 ## Indices to remove
-                ind.rms <- match(initial.to[[ind[main.count-1]]][target.rms], full.dictionary)
+                ind.rms <- match(prev.resp.split[target.rms], full.dictionary)
                 
                 ## Update full dictionary
                 full.dictionary <- full.dictionary[-ind.rms]
               }
               
               ## Revert to previous responses to original
-              to[[ind[main.count-1]]] <- initial.to[[ind[main.count-1]]]
+              to[[ind[main.count-go.back.count]]] <- prev.resp
               
               ## Revert changes
-              changes <- changes[-which(names(changes) == paste(ind[main.count-1]))]
+              changes <- changes[-which(names(changes) == paste(ind[main.count-go.back.count]))]
               
               ## Update multiple response count
-              main.count <- main.count - 2
+              main.count <- main.count - (go.back.count + 1)
+              
+              ## Reset go back count
+              go.back.count <- 1
+              
               break
             }else{
+              
               ## Let user know they cannot go back any further
               message("\nThis is the first response. 'GO BACK' is not available.")
               
+              ## Line break
+              linebreak()
+              
               # Add artificial pause for smoother feel
               Sys.sleep(0.5)
+              
             }
           }else{
             
@@ -2365,6 +2788,11 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         
       }
       
+      ## Check for keeping strings
+      if(keepStrings){
+        target <- paste(target, collapse = " ")
+      }
+      
       ## Update lists
       to[[i]] <- target
       
@@ -2373,11 +2801,17 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
       # Single response
       ## Run spell-check menu (with error capturing)
       result <- try(
-        spellcheck.menu(check = target, context = NULL,
+        spellcheck.menu(check = target,
+                        context = NULL,
                         possible = best.guess(target, full.dictionary = full.dictionary, dictionary),
-                        original = from[[i]], current.index = i,
-                        changes = changes, full.dictionary = full.dictionary,
-                        category = category, dictionary = dictionary),
+                        original = from[[i]],
+                        current.index = i,
+                        changes = changes,
+                        full.dictionary = full.dictionary,
+                        category = category,
+                        dictionary = dictionary,
+                        keepStrings = keepStrings,
+                        go.back.count = go.back.count),
         silent = TRUE
         
       )
@@ -2406,8 +2840,11 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         res$ind <- ind
         res$changes <- changes
         res$main.count <- main.count
+        res$go.back.count <- go.back.count
+        res$go.back.reset <- go.back.reset
         if(exists("multi.count"))
         {res$multi.count <- multi.count}
+        res$keepStrings <- keepStrings
         res$data <- data
         res$stop <- TRUE
         
@@ -2441,8 +2878,11 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         res$ind <- ind
         res$changes <- changes
         res$main.count <- main.count
+        res$go.back.count <- go.back.count
+        res$go.back.reset <- go.back.reset
         if(exists("multi.count"))
         {res$multi.count <- multi.count}
+        res$keepStrings <- keepStrings
         res$data <- data
         res$stop <- TRUE
         res$target <- target
@@ -2460,6 +2900,24 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         return(res)
       }
       
+      ### Update go back count
+      if(result$go.back.count == go.back.count){
+        
+        ## If equal then check if reset is activated
+        if(go.back.reset){ ## If activated, then reset
+          go.back.count <- 1
+        }else{ ## If not activated, then activate
+          go.back.reset <- TRUE
+        }
+        
+      }else{
+        
+        ## Update count and do not reset
+        go.back.count <- result$go.back.count
+        go.back.reset <- FALSE
+        
+      }
+      
       ## Change with GO BACK option
       if(result$go.back)
       {
@@ -2469,34 +2927,67 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           ## Revert to current responses to original
           to[[i]] <- initial.to[[i]]
           
+          ## Previous response
+          prev.resp <- initial.to[[ind[main.count-go.back.count]]]
+          
+          ## String split
+          prev.resp.split <- unlist(strsplit(prev.resp, split = " "))
+          
           ## Revert dictionary
-          if(any(!initial.to[[ind[main.count-1]]] %in% full.dictionary == initial.to[[ind[main.count-1]]] %in% orig.dictionary))
-          {
+          if(any(!prev.resp.split %in% full.dictionary == prev.resp.split %in% orig.dictionary)){
+            
             ## Targets to remove from full dictionary
-            target.rms <- which(!initial.to[[ind[main.count-1]]] %in% full.dictionary == initial.to[[ind[main.count-1]]] %in% orig.dictionary)
+            target.rms <- which(!prev.resp.split %in% full.dictionary == prev.resp.split %in% orig.dictionary)
             
             ## Indices to remove
-            ind.rms <- match(initial.to[[ind[main.count-1]]][target.rms], full.dictionary)
+            ind.rms <- match(prev.resp.split[target.rms], full.dictionary)
             
             ## Update full dictionary
             full.dictionary <- full.dictionary[-ind.rms]
           }
           
           ## Revert to previous responses to original
-          to[[ind[main.count-1]]] <- initial.to[[ind[main.count-1]]]
+          to[[ind[main.count-go.back.count]]] <- prev.resp
           
           ## Revert changes
-          changes <- changes[-which(names(changes) == paste(ind[main.count-1]))]
+          changes <- changes[-which(names(changes) == paste(ind[main.count-go.back.count]))]
+          
+          ## Revert dictionary
+          #if(any(!initial.to[[ind[main.count-go.back.count]]] %in% full.dictionary == initial.to[[ind[main.count-go.back.count]]] %in% orig.dictionary))
+          #{
+          #  ## Targets to remove from full dictionary
+          #  target.rms <- which(!initial.to[[ind[main.count-go.back.count]]] %in% full.dictionary == initial.to[[ind[main.count-go.back.count]]] %in% orig.dictionary)
+          #  
+          #  ## Indices to remove
+          #  ind.rms <- match(initial.to[[ind[main.count-go.back.count]]][target.rms], full.dictionary)
+          #  
+          #  ## Update full dictionary
+          #  full.dictionary <- full.dictionary[-ind.rms]
+          #}
+          
+          ## Revert to previous responses to original
+          #to[[ind[main.count-go.back.count]]] <- initial.to[[ind[main.count-go.back.count]]]
+          
+          ## Revert changes
+          #changes <- changes[-which(names(changes) == paste(ind[main.count-go.back.count]))]
           
           ## Update multiple response count
-          main.count <- main.count - 2
+          main.count <- main.count - (go.back.count + 1)
+          
+          ## Reset go back count
+          go.back.count <- 1
           
         }else{
+          
           ## Let user know they cannot go back any further
           message("This is the first response. 'GO BACK' is not available.")
           
+          ## Line break
+          linebreak()
+          
           # Add artificial pause for smoother feel
           Sys.sleep(0.5)
+          
         }
         
       }else{
@@ -2507,7 +2998,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
       }
     }
     
-    # Update progress bar
+    # Update progress bar----
     if(Sys.info()["sysname"] == "Windows")
     {
       percent <- floor((main.count/length(ind))*100)
@@ -3587,9 +4078,14 @@ textcleaner_help <- function(check, context, original, possible)
 # Updated 10.04.2020
 ql.dist <- function (wordA, wordB)
 {
+  characters <- paste("([", paste(allowPunctuations, collapse = ""), "])|[[:punct:]]", sep = "", collapse = "")
+  data <- apply(data, 2, function(y) gsub(characters, "\\1", y))
+  
   # Remove diacritic characters
   wordA <- stringi::stri_trans_general(wordA, "Latin-ASCII")
+  wordA <- gsub("([-])|[[:punct:]]", "\\1", wordA)
   wordB <- stringi::stri_trans_general(wordB, "Latin-ASCII")
+  wordB <- gsub("([-])|[[:punct:]]", "\\1", wordB)
   
   # QWERTY Keyboard distance
   # Keyboard structure

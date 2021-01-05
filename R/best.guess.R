@@ -46,9 +46,12 @@
 #' 
 #' @export
 # Best Guess----
-# Updated 19.04.2020
+# Updated 04.01.2020
 best.guess <- function (word, full.dictionary, dictionary = NULL, tolerance = 1)
 {
+    # Remove extra characters for spell-check
+    word <- gsub("([-])|[[:punct:]]", "\\1", word)
+    
     if(!word %in% full.dictionary)
     {
         #grab Damerau-Levenshtein distances
