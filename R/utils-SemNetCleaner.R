@@ -772,12 +772,12 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
     
   }else{
     
-    # Let user know
-    message("\nAuto-correcting common misspellings and monikers...", appendLF = FALSE)
-    
     # Check if any dictionaries were improted from SemNetDictionaries
     if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
     {
+      # Let user know
+      message("\nAuto-correcting common misspellings and monikers...", appendLF = FALSE)
+      
       # Load moniker
       monik <- SemNetDictionaries::load.monikers(dictionary)
       
@@ -881,13 +881,18 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
         
       }
       
+      
+      # Add artificial pause for smoother feel
+      Sys.sleep(0.50)
+      
+      # Let user know
+      message("done.")
+      
+    }else{
+      
+      mons2 <- sing
+      
     }
-    
-    # Add artificial pause for smoother feel
-    Sys.sleep(0.50)
-    
-    # Let user know
-    message("done.")
     
   }
   
