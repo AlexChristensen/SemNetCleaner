@@ -242,6 +242,11 @@ correct.changes <- function(textcleaner.obj)
     ## Cleaned responses (no instrusions or perseverations)
     cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
     
+    ## Check if cleaned.list is a list
+    if(!is.list(cleaned.list)){
+      cleaned.list <- apply(cleaned.list, 1, as.list)
+    }
+    
     max.resp <- max(unlist(lapply(cleaned.list, length)))
     
     cleaned.matrix <- t(sapply(
