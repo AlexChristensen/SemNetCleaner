@@ -81,7 +81,7 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 02.01.2021
+# Updated 19.04.2021
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj)
 {
@@ -163,7 +163,9 @@ correct.changes <- function(textcleaner.obj)
       chn.mat <- rbind(automated[target.changes[i],], changes[target.changes[i],])
       colnames(chn.mat)[-1] <- rep("to", ncol(chn.mat)-1)
       row.names(chn.mat) <- c("Previous", "Corrected")
-      chn.mat <- chn.mat[,-which(apply(chn.mat, 2, function(x){all(is.na(x))}))]
+      if(any(apply(chn.mat, 2, function(x){all(is.na(x))}))){
+        chn.mat <- chn.mat[,-which(apply(chn.mat, 2, function(x){all(is.na(x))}))]
+      }
       
       track.changes[[automated[target.changes[i],1]]] <- chn.mat
     }
@@ -206,7 +208,9 @@ correct.changes <- function(textcleaner.obj)
     from <- as.list(correspondence[,"from"])
     
     # Create 'to' list
-    to <- apply(correspondence[,grep("to", colnames(correspondence))], 1, function(x){unname(na.omit(x))})
+    if(any(is.na(correspondence[,grep("to", colnames(correspondence))]))){
+      to <- apply(correspondence[,grep("to", colnames(correspondence))], 1, function(x){unname(na.omit(x))})
+    }else{to <- correspondence[,grep("to", colnames(correspondence))]}
     
     # Create correspondence matrix (error catch)
     corr.mat <- try(
