@@ -213,11 +213,11 @@ singularize <- function(word, dictionary = TRUE)
     }
     
     #return word
-    if(dictionary){
+    if(isTRUE(dictionary)){
         
         #check for word in dictionary
         if(!word %in% checker){
-            if(multiple)
+            if(isTRUE(multiple))
             {orig.word <- paste(spl, collapse = " ")}
             
             return(orig.word)
