@@ -751,6 +751,11 @@ convert.miss <- function (data, miss)
 #' Defaults to \code{FALSE}.
 #' Set to \code{TRUE} to keep numbers in text
 #' 
+#' @param lowercase Boolean.
+#' Should words be converted to lowercase?
+#' Defaults to \code{TRUE}.
+#' Set to \code{FALSE} to keep words as they are
+#' 
 #' @return Data frame prepped for \code{spellcheck.dictionary}
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
@@ -758,8 +763,8 @@ convert.miss <- function (data, miss)
 #' @noRd
 #' 
 # Prep for spellcheck.dictionary
-# Updated 03.01.2021
-prep.spellcheck.dictionary <- function (data, allowPunctuations, allowNumbers)
+# Updated 06.08.2021
+prep.spellcheck.dictionary <- function (data, allowPunctuations, allowNumbers, lowercase)
 {
   # Remove miscellaneous string additions from data
   ## Remove/allow punctuation
@@ -769,7 +774,7 @@ prep.spellcheck.dictionary <- function (data, allowPunctuations, allowNumbers)
   }
   
   ## Remove/allow numbers
-  if(!allowNumbers){
+  if(!isTRUE(allowNumbers)){
     data <- apply(data, 2, function(y) gsub("[[:digit:]]+", "", y))
   }
   
@@ -777,7 +782,9 @@ prep.spellcheck.dictionary <- function (data, allowPunctuations, allowNumbers)
   data <- apply(apply(data, 2, trimws), 1:2, rm.lead.space)
   
   # Change all to lowercase
-  data <- apply(data, 2, tolower)
+  if(isTRUE(lowercase)){
+    data <- apply(data, 2, tolower)
+  }
   
   # Remove new lines
   data <- apply(data, 2, function(y) gsub("[\n\r\t]",  " ", y))

@@ -58,6 +58,11 @@
 #' Defaults to \code{FALSE}.
 #' Set to \code{TRUE} to keep numbers in text
 #' 
+#' @param lowercase Boolean.
+#' Should words be converted to lowercase?
+#' Defaults to \code{TRUE}.
+#' Set to \code{FALSE} to keep words as they are
+#' 
 #' @param continue List.
 #' A result previously unfinished that still needs to be completed.
 #' Allows you to continue to manually spell-check their data
@@ -143,14 +148,14 @@
 #' @export
 # Text Cleaner----
 # Updated 05.01.2021
-# Keep strings update: 05.01.2020
+# Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 textcleaner <- function(data = NULL, miss = 99,
                         partBY = c("row","col"),
                         dictionary = NULL, spelling = c("UK", "US"),
                         add.path = NULL, keepStrings = FALSE,
                         allowPunctuations = c("-", "all"),
-                        allowNumbers = FALSE,
+                        allowNumbers = FALSE, lowercase = TRUE,
                         continue = NULL#, walkthrough = NULL
                         )
 {
@@ -227,7 +232,7 @@ textcleaner <- function(data = NULL, miss = 99,
     ### Removes white spaces
     ### Makes all responses lower case
     data <- try(
-      prep.spellcheck.dictionary(data, allowPunctuations, allowNumbers),
+      prep.spellcheck.dictionary(data, allowPunctuations, allowNumbers, lowercase),
       silent = TRUE
     )
     
