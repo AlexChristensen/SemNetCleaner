@@ -81,7 +81,7 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 19.04.2021
+# Updated 06.08.2021
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj)
 {
@@ -129,7 +129,7 @@ correct.changes <- function(textcleaner.obj)
   }
   
   # Get changes
-  changes <- edit(automated)
+  changes <- editData::editData(automated)
   
   # Get differences
   #differences <- automated[,-1] != changes[,-1]
