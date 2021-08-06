@@ -129,7 +129,14 @@ correct.changes <- function(textcleaner.obj)
   }
   
   # Get changes
-  changes <- editData::editData(automated)
+  ## Check operating system
+  OS <- system.check()$OS
+  
+  if(OS == "linux"){
+    changes <- edit(automated)
+  }else{
+    changes <- editData::editData(automated)
+  }
   
   # Get differences
   #differences <- automated[,-1] != changes[,-1]
