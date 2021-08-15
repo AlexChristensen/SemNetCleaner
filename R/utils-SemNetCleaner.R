@@ -3878,7 +3878,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
     if(Sys.info()["sysname"] == "Windows")
     {
       percent <- floor((main.count/length(ind))*100)
-      info <- sprintf(paste(main.count, "of", length(ind), "responses done"), percent)
+      info <- suppressWarnings(sprintf(paste(main.count, "of", length(ind), "responses done"), percent))
       tcltk::setTkProgressBar(pb, main.count, sprintf("Spell-check Progress (%s)", info), info)
       
     }else{
