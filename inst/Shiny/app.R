@@ -1,8 +1,9 @@
 library(shiny)
 library(editData)
+library(miniUI)
 
 ui <- fluidPage(
-  h2("Preprocessing Check"),
+  gadgetTitleBar("Preprocessing Check"),
   editableDTUI("table1"),
 )
 server <- function(input, output) {
@@ -15,15 +16,15 @@ server <- function(input, output) {
   # Call GUI
   df = callModule(editableDT, "table1", data = automated)
   
+  # Check for 'done' button press
   observeEvent(input$done, {
-    result=df()
-    stopApp(invisible(result))
+    stopApp(df())
   })
   
+  # Check for 'cancel' button press
   observeEvent(input$cancel, {
-    result=df()
-    stopApp(invisible(result))
+    stopApp()
   })
-
+  
 }
 shinyApp(ui, server)
