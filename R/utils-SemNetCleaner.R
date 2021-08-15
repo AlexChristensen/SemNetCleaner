@@ -1719,6 +1719,16 @@ textcleaner_help <- function(check, context, original, possible)
   readline("Press ENTER to get back to manual spell-check...")
 }
 
+#' Taken from editData version 0.2.1
+#' 
+#' @noRd
+# Edit Data
+# Updated 15.08.2021
+SemNetCleanerEdit <- function()
+{
+  shiny::runApp(appDir = system.file("Shiny", package="SemNetCleaner"))
+}
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #### AUTOMATED SPELL-CHECK ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#

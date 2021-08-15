@@ -135,9 +135,7 @@ correct.changes <- function(textcleaner.obj)
   if(OS == "linux"){
     changes <- edit(automated)
   }else{
-    automated <- as.data.frame(automated) # Make sure data frame for input
-    assign(automated, envir = globalenv()) # Assign so editData sees it
-    changes <- editData::editData(automated) # Make changes
+    changes <- SemNetCleanerEdit(automated) # Make changes
     automated <- as.matrix(automated) # Convert back to matrix
     changes <- as.matrix(changes) # Convert changes to matrix
     changes <- ifelse(changes == "", NA, changes) # Replace blanks with NA
