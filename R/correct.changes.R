@@ -81,7 +81,7 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 06.08.2021
+# Updated 15.08.2021
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj)
 {
@@ -135,7 +135,11 @@ correct.changes <- function(textcleaner.obj)
   if(OS == "linux"){
     changes <- edit(automated)
   }else{
-    changes <- editData::editData(automated)
+    automated <- as.data.frame(automated) # Make sure data frame for input
+    changes <- editData::editData(automated) # Make changes
+    automated <- as.matrix(automated) # Convert back to matrix
+    changes <- as.matrix(changes) # Convert changes to matrix
+    changes <- ifelse(changes == "", NA, changes) # Replace blanks with NA
   }
   
   # Get differences
