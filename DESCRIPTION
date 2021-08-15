@@ -12,7 +12,7 @@ NeedsCompilation: no
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.6.0), SemNetDictionaries (>= 0.1.8)
-Imports: stringdist, searcher, tcltk, foreign, readxl, R.matlab, stringi, rstudioapi, easycsv, editData
+Imports: stringdist, searcher, tcltk, foreign, readxl, R.matlab, stringi, rstudioapi, easycsv, editData, DataEditR
 Suggests: knitr, htmlTable, markdown, rmarkdown
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1

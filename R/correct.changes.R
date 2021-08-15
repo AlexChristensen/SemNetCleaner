@@ -136,7 +136,8 @@ correct.changes <- function(textcleaner.obj)
     changes <- edit(automated)
   }else{
     automated <- as.data.frame(automated) # Make sure data frame for input
-    changes <- editData::editData(automated) # Make changes
+    #changes <- editData::editData(automated) # Make changes
+    changes <- DataEditR::data_edit(x = automated)
     automated <- as.matrix(automated) # Convert back to matrix
     changes <- as.matrix(changes) # Convert changes to matrix
     changes <- ifelse(changes == "", NA, changes) # Replace blanks with NA
