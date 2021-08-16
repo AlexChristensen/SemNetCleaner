@@ -14,6 +14,7 @@ textcleaner(
   keepStrings = FALSE,
   allowPunctuations = c("-", "all"),
   allowNumbers = FALSE,
+  lowercase = TRUE,
   continue = NULL
 )
 }
@@ -72,6 +73,11 @@ Set to \code{"all"} to keep all punctuation characters}
 \item{allowNumbers}{Boolean.
 Defaults to \code{FALSE}.
 Set to \code{TRUE} to keep numbers in text}
+
+\item{lowercase}{Boolean.
+Should words be converted to lowercase?
+Defaults to \code{TRUE}.
+Set to \code{FALSE} to keep words as they are}
 
 \item{continue}{List.
 A result previously unfinished that still needs to be completed.

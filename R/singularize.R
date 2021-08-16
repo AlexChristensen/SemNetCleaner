@@ -10,6 +10,10 @@
 #' @param word Character.
 #' A word
 #' 
+#' @param dictionary Boolean.
+#' Should dictionary be used to verify word exists?
+#' Default to \code{TRUE}
+#' 
 #' @return Returns the word in singular form, unless a singular form
 #' could not be found (then the original word is returned)
 #' 
@@ -57,7 +61,7 @@
 #' 
 #' @export
 #Singularize
-# Updated 02.01.2021
+# Updated 16.08.2021
 singularize <- function(word, dictionary = TRUE)
 {
     #check for multiple words

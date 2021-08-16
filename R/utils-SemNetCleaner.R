@@ -394,7 +394,7 @@ error.fun <- function(result, SUB_FUN, FUN)
 #' @noRd
 # QWERTY Keyboard
 # Updated 10.04.2020
-ql.dist <- function (wordA, wordB)
+ql.dist <- function (wordA, wordB, allowPunctuations)
 {
   characters <- paste("([", paste(allowPunctuations, collapse = ""), "])|[[:punct:]]", sep = "", collapse = "")
   data <- apply(data, 2, function(y) gsub(characters, "\\1", y))
