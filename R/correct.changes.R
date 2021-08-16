@@ -86,25 +86,6 @@
 correct.changes <- function(textcleaner.obj)
 {
   
-  # Set up message to user
-  cat(colortext("\nYou will now have a chance to correct the changes that", defaults = "message"))
-  cat(colortext("\nwere made during the automated spell-checking process.", defaults = "message"))
-  cat(colortext("\nA spreadsheet will open allowing you to manually correct", defaults = "message"))
-  cat(colortext("\nthese changes.\n\n", defaults = "message"))
-  
-  readline("Press ENTER to continue...")
-  
-  cat(colortext("\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
-  cat(colortext("\nrow number provided in the output object `$spellcheck$correspondence`", defaults = "message"))
-  cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
-  
-  cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
-  cat(colortext(paste("\nand columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
-                      "are the automated spell-check responses."), defaults = "message"))
-  cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
-  
-  readline("Press ENTER to continue...")
-
   # Check if textcleaner object is input
   if(!class(textcleaner.obj) == "textcleaner")
   {stop("A 'textcleaner' class object was not input in the 'textcleaner.obj' argument")}
@@ -126,6 +107,25 @@ correct.changes <- function(textcleaner.obj)
   
   if(OS == "linux"){
     
+    # Set up message to user
+    cat(colortext("\nYou will now have a chance to correct the changes that", defaults = "message"))
+    cat(colortext("\nwere made during the automated spell-checking process.", defaults = "message"))
+    cat(colortext("\nA spreadsheet will open allowing you to manually correct", defaults = "message"))
+    cat(colortext("\nthese changes.\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
+    cat(colortext("\nrow number provided in the output object `$spellcheck$correspondence`", defaults = "message"))
+    cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
+    
+    cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
+    cat(colortext(paste("\nand columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
+                        "are the automated spell-check responses."), defaults = "message"))
+    cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
     cat(colortext(paste("\nYou should change columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
                         "by manually typing responses."), defaults = "message"))
     cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
@@ -135,7 +135,27 @@ correct.changes <- function(textcleaner.obj)
     readline("Press ENTER to proceed with spell-check.")
     
     changes <- edit(automated)
+    
   }else{
+    
+    # Set up message to user
+    cat(colortext("\nYou will now have a chance to correct the changes that", defaults = "message"))
+    cat(colortext("\nwere made during the automated spell-checking process.", defaults = "message"))
+    cat(colortext("\nA spreadsheet will open allowing you to manually correct", defaults = "message"))
+    cat(colortext("\nthese changes.\n\n", defaults = "message"))
+    
+    readline("Press ENTER to continue...")
+    
+    cat(colortext("\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
+    cat(colortext("\nrow number provided in the output object `$spellcheck$correspondence`", defaults = "message"))
+    cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
+    
+    cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
+    cat(colortext(paste("\nand columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
+                        "are the automated spell-check responses."), defaults = "message"))
+    cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
+    
+    readline("Press ENTER to continue...")
     
     cat(colortext(paste("\nYou should change columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
                         "by manually typing responses."), defaults = "message"))
