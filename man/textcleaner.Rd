@@ -161,7 +161,6 @@ if(interactive())
 Hornik, K., & Murdoch, D. (2010).
 Watch Your Spelling!.
 \emph{The R Journal}, \emph{3}, 22-28.
-doi:\href{https://doi.org/10.32614/RJ-2011-014}{10.32614/RJ-2011-014}
 }
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>
