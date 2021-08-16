@@ -104,14 +104,6 @@ correct.changes <- function(textcleaner.obj)
   cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
   
   readline("Press ENTER to continue...")
-    
-  cat(colortext(paste("\nYou should change columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
-                      "by manually typing responses."), defaults = "message"))
-  cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
-  cat(colortext('\nyou can exit this process by clicking the "X" in the top right', defaults = "message"))
-  cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
-  
-  readline("Press ENTER to proceed with spell-check.")
 
   # Check if textcleaner object is input
   if(!class(textcleaner.obj) == "textcleaner")
@@ -133,8 +125,26 @@ correct.changes <- function(textcleaner.obj)
   OS <- system.check()$OS
   
   if(OS == "linux"){
+    
+    cat(colortext(paste("\nYou should change columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
+                        "by manually typing responses."), defaults = "message"))
+    cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
+    cat(colortext('\nyou can exit this process by clicking the "X" in the top right', defaults = "message"))
+    cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
+    
+    readline("Press ENTER to proceed with spell-check.")
+    
     changes <- edit(automated)
   }else{
+    
+    cat(colortext(paste("\nYou should change columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
+                        "by manually typing responses."), defaults = "message"))
+    cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
+    cat(colortext('\nyou can exit this process by clicking the "Done" in the top right', defaults = "message"))
+    cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
+    
+    readline("Press ENTER to proceed with spell-check.")
+    
     assign("automated", automated, envir = globalenv())
     changes <- SemNetCleanerEdit() # Make changes
     automated <- as.matrix(automated) # Convert back to matrix
