@@ -164,8 +164,7 @@ correct.changes <- function(textcleaner.obj)
     cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
     
     readline("Press ENTER to proceed with spell-check.")
-    
-    assign("automated", automated, envir = globalenv())
+  
     changes <- SemNetCleanerEdit() # Make changes
     automated <- as.matrix(automated) # Convert back to matrix
     changes <- as.matrix(changes) # Convert changes to matrix
