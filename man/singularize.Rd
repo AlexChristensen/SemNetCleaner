@@ -9,6 +9,10 @@ singularize(word, dictionary = TRUE)
 \arguments{
 \item{word}{Character.
 A word}
+
+\item{dictionary}{Boolean.
+Should dictionary be used to verify word exists?
+Default to \code{TRUE}}
 }
 \value{
 Returns the word in singular form, unless a singular form
