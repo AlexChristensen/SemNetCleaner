@@ -10,7 +10,10 @@ server <- function(input, output) {
   
   # Get 'automated' variable
   automated = reactive({
-    as.data.frame(get("automated", envir = globalenv()))
+    #as.data.frame(get("automated", envir = environment()))
+    DIR <- tempdir()
+    PATH <- paste(DIR, "automated.csv", sep = "\\")
+    read.data(file = PATH)
   })
   
   # Call GUI

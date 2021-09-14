@@ -76,7 +76,7 @@
 #' 
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
-#' @importFrom utils edit
+#' @importFrom utils edit write.csv
 #' 
 #' @export
 #' 
@@ -100,6 +100,11 @@ correct.changes <- function(textcleaner.obj)
   if(is.vector(automated)){
     automated <- t(as.matrix(automated))
   }
+  
+  # Write temporary file
+  DIR <- tempdir()
+  PATH <- paste(DIR, "automated.csv", sep = "\\")
+  write.csv(automated, file = PATH, row.names = FALSE)
   
   # Get changes
   ## Check operating system
@@ -164,7 +169,7 @@ correct.changes <- function(textcleaner.obj)
     cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
     
     readline("Press ENTER to proceed with spell-check.")
-  
+    
     changes <- SemNetCleanerEdit() # Make changes
     automated <- as.matrix(automated) # Convert back to matrix
     changes <- as.matrix(changes) # Convert changes to matrix
