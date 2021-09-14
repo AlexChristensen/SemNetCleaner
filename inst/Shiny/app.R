@@ -10,7 +10,7 @@ server <- function(input, output) {
   
   # Get 'automated' variable
   automated = reactive({
-    as.data.frame(get("automated", envir = .GlobalEnv))
+    as.data.frame(get("automated", envir = globalenv()))
   })
   
   # Call GUI

@@ -1,3 +1,8 @@
+Changes in version 1.3.4
+
+o FIX: error in getting "automated" data from `textcleaner` into Shiny GUI
+
+
 Changes in version 1.3.3
 
 o FIX: `edit` error on Macs, switched to `editData`, and added *editData* dependency
