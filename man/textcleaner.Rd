@@ -6,6 +6,7 @@
 \usage{
 textcleaner(
   data = NULL,
+  type = c("fluency", "free"),
   miss = 99,
   partBY = c("row", "col"),
   dictionary = NULL,
@@ -24,6 +25,18 @@ A dataset of text data.
 Participant IDs will be automatically identified if they are included.
 If no IDs are provided, then their order in the corresponding
 row (or column is used). A message will notify the user how IDs were assigned}
+
+\item{type}{Character vector.
+Type of task to be preprocessed.
+\itemize{
+
+\item{\code{"fluency"}}
+{Verbal fluency data (e.g., categories, phonological, synonyms)}
+
+\item{\code{"free"}}
+{Free association data (e.g., cue terms or words)}
+
+}}
 
 \item{miss}{Numeric or character.
 Value for missing data.

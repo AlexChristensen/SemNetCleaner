@@ -4,10 +4,22 @@
 \alias{correct.changes}
 \title{Correct Changes from \code{\link[SemNetCleaner]{textcleaner}}}
 \usage{
-correct.changes(textcleaner.obj)
+correct.changes(textcleaner.obj, type = c("fluency", "free"))
 }
 \arguments{
 \item{textcleaner.obj}{Object from \code{\link[SemNetCleaner]{textcleaner}}}
+
+\item{type}{Character vector.
+Type of task to be preprocessed.
+\itemize{
+
+\item{\code{"fluency"}}
+{Verbal fluency data (e.g., categories, phonological, synonyms)}
+
+\item{\code{"free"}}
+{Free association data (e.g., cue terms or words)}
+
+}}
 }
 \value{
 This function returns the corrected lists from \code{\link[SemNetCleaner]{textcleaner}}s:

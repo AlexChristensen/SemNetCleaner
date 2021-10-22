@@ -5,6 +5,18 @@
 #' 
 #' @param textcleaner.obj Object from \code{\link[SemNetCleaner]{textcleaner}}
 #' 
+#' @param type Character vector.
+#' Type of task to be preprocessed.
+#' \itemize{
+#' 
+#' \item{\code{"fluency"}}
+#' {Verbal fluency data (e.g., categories, phonological, synonyms)}
+#' 
+#' \item{\code{"free"}}
+#' {Free association data (e.g., cue terms or words)}
+#' 
+#' }
+#' 
 #' @return This function returns the corrected lists from \code{\link[SemNetCleaner]{textcleaner}}s:
 #' 
 #' \item{binary}{A matrix of responses where each row represents a participant
@@ -83,12 +95,23 @@
 # Correct changes----
 # Updated 15.08.2021
 # Major update: 19.04.2020
-correct.changes <- function(textcleaner.obj)
+correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
 {
   
   # Check if textcleaner object is input
   if(!class(textcleaner.obj) == "textcleaner")
   {stop("A 'textcleaner' class object was not input in the 'textcleaner.obj' argument")}
+  
+  # Check for type
+  if(missing(type)){
+    
+    if("binary" %in% names(textcleaner.obj$responses)){
+      type <- "fluency"
+    }else{
+      type <- "free"
+    }
+    
+  }else{type <- match.arg(type)}
   
   # Store textcleaner object as result list
   res <- textcleaner.obj
@@ -270,57 +293,160 @@ correct.changes <- function(textcleaner.obj)
     res$spellcheck$automated <- changes
     
     # Get spell-corrected data (error catch)
-    corrected <- try(
-      correct.data(original, corr.mat),
-      silent = TRUE
-    )
-    
-    if(any(class(corrected) == "try-error"))
-    {return(error.fun(corrected, "correct.data", "correct.changes"))}
-    
-    ## Collect behavioral data
-    behavioral <- corrected$behavioral
-    
-    ## Make sure to replace faux "NA" with real NA
-    corrected$corrected[which(corrected$corrected == "NA")] <- NA
-    
-    ## Cleaned responses (no instrusions or perseverations)
-    cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
-    
-    ## Check if cleaned.list is a list
-    if(!is.list(cleaned.list)){
-      cleaned.list <- apply(cleaned.list, 1, as.list)
+    if(type == "fluency"){
+      
+      # Fluency data correction
+      corrected <- try(
+        correct.data(original, corr.mat),
+        silent = TRUE
+      )
+      
+      if(any(class(corrected) == "try-error"))
+      {return(error.fun(corrected, "correct.data", "correct.changes"))}
+      
+      ## Collect behavioral data
+      behavioral <- corrected$behavioral
+      
+      ## Make sure to replace faux "NA" with real NA
+      corrected$corrected[which(corrected$corrected == "NA")] <- NA
+      
+      ## Cleaned responses (no instrusions or perseverations)
+      cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
+      
+      ## Check if cleaned.list is a list
+      if(!is.list(cleaned.list)){
+        cleaned.list <- apply(cleaned.list, 1, as.list)
+      }
+      
+      max.resp <- max(unlist(lapply(cleaned.list, length)))
+      
+      cleaned.matrix <- t(sapply(
+        lapply(cleaned.list, function(x, max.resp){
+          c(x, rep(NA, max.resp - length(x)))
+        }, max.resp = max.resp)
+        ,rbind))
+      
+      colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
+                                                             digits = nchar(ncol(cleaned.matrix)) - 1,
+                                                             flag = "0"), sep = "")
+      
+      res$responses$clean <- cleaned.matrix
+      
+      # Convert to binary response matrix (error catch)
+      res$responses$binary <- try(
+        resp2bin(corrected$corrected),
+        silent = TRUE
+      )
+      
+      if(any(class(res$responses$binary) == "try-error"))
+      {return(error.fun(res$responses$binary, "resp2bin", "correct.changes"))}
+      
+      behavioral <- cbind(behavioral, rowSums(res$responses$binary))
+      colnames(behavioral)[3] <- "Appropriate"
+      res$behavioral <- as.data.frame(behavioral)
+      
+      #make 'textcleaner' class
+      class(res) <- "textcleaner"
+      
+    }else if(type == "free"){
+      
+      # Free association data correction
+      corrected <- try(
+        correct.data.free(original, corr.mat, unique(original[,"ID"])),
+        silent = TRUE
+      )
+      
+      if(any(class(corrected) == "try-error"))
+      {
+        error.fun(corrected, "correct.data.free", "textcleaner")
+        
+        return(spell.check)
+      }
+      
+      ## Collect behavioral data
+      behavioral <- as.data.frame(corrected$behavioral)
+      corrected$corrected <- as.data.frame(corrected$corrected)
+      
+      ## Make sure to replace faux "NA" with real NA
+      corrected$corrected$Response[which(corrected$corrected$Response == "NA")] <- NA
+      
+      ## Cleaned responses (no instrusions or perseverations)
+      cleaned.list <- na.omit(corrected$corrected)
+      
+      ## Create frequency matrix
+      ### Unique responses and cues
+      unique.responses <- unique(cleaned.list$Response)
+      unique.cues <- unique(cleaned.list$Cue)
+      
+      ### Initialize cleaned matrix
+      cleaned.matrix <- matrix(
+        0, nrow = length(unique.responses), ncol = length(unique.cues) 
+      )
+      row.names(cleaned.matrix) <- unique.responses
+      colnames(cleaned.matrix) <- unique.cues
+      
+      # Loop through for frequencies
+      for(i in 1:length(unique.cues)){
+        
+        frequency <- table(cleaned.list$Response[cleaned.list$Cue == unique.cues[i]])
+        
+        cleaned.matrix[names(frequency),i] <- frequency
+        
+      }
+      
+      res$responses$clean <- cleaned.matrix
+      
+      # Convert to binary response matrix (error catch)
+      # res$responses$binary <- try(
+      #   resp2bin(corrected$corrected),
+      #   silent = TRUE
+      # )
+      # 
+      # if(any(class(res$responses$binary) == "try-error"))
+      # {
+      #   error.fun(corrected, "resp2bin", "textcleaner")
+      #   
+      #   return(spell.check)
+      # }
+      
+      # Compute totals
+      ## Initialize vector and list
+      total.vector <- vector(length = length(ids))
+      #total.list <- vector("list", length(ids))
+      names(total.vector) <- ids
+      #names(total.list) <- ids
+      
+      ## Loop through for totals
+      for(i in 1:length(ids)){
+        
+        # Target participant
+        target.p <- cleaned.list[cleaned.list$ID == ids[i],]
+        
+        # Total overall
+        total.vector[i] <- nrow(target.p)
+        
+        # # Target cue
+        # target.c <- unique(target.p$Cue)
+        # total.individual <- vector(length = length(target.c))
+        # names(total.individual) <- target.c
+        # 
+        # for(j in 1:length(target.c)){
+        #   total.individual[j] <- sum(target.p$Cue == target.c[j])
+        # }
+        # 
+        # # Total individual
+        # total.list[[i]] <- total.individual
+        
+      }
+      
+      behavioral <- cbind(behavioral, total.vector)
+      colnames(behavioral)[3] <- "Appropriate"
+      res$behavioral <- as.data.frame(behavioral)
+      
+      # Make 'textcleaner' class
+      class(res) <- "textcleaner"
+      
     }
-    
-    max.resp <- max(unlist(lapply(cleaned.list, length)))
-    
-    cleaned.matrix <- t(sapply(
-      lapply(cleaned.list, function(x, max.resp){
-        c(x, rep(NA, max.resp - length(x)))
-      }, max.resp = max.resp)
-      ,rbind))
-    
-    colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
-                                                           digits = nchar(ncol(cleaned.matrix)) - 1,
-                                                           flag = "0"), sep = "")
-    
-    res$responses$clean <- cleaned.matrix
-    
-    # Convert to binary response matrix (error catch)
-    res$responses$binary <- try(
-      resp2bin(corrected$corrected),
-      silent = TRUE
-    )
-    
-    if(any(class(res$responses$binary) == "try-error"))
-    {return(error.fun(res$responses$binary, "resp2bin", "correct.changes"))}
-    
-    behavioral <- cbind(behavioral, rowSums(res$responses$binary))
-    colnames(behavioral)[3] <- "Appropriate"
-    res$behavioral <- as.data.frame(behavioral)
-    
-    #make 'textcleaner' class
-    class(res) <- "textcleaner"
     
     return(res)
     

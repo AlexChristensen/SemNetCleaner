@@ -9,6 +9,18 @@
 #' If no IDs are provided, then their order in the corresponding
 #' row (or column is used). A message will notify the user how IDs were assigned
 #' 
+#' @param type Character vector.
+#' Type of task to be preprocessed.
+#' \itemize{
+#' 
+#' \item{\code{"fluency"}}
+#' {Verbal fluency data (e.g., categories, phonological, synonyms)}
+#' 
+#' \item{\code{"free"}}
+#' {Free association data (e.g., cue terms or words)}
+#' 
+#' }
+#' 
 #' @param miss Numeric or character.
 #' Value for missing data.
 #' Defaults to \code{99}
@@ -146,26 +158,34 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 05.01.2021
+# Updated 21.10.2021
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
-textcleaner <- function(data = NULL, miss = 99,
-                        partBY = c("row","col"),
-                        dictionary = NULL, spelling = c("UK", "US"),
-                        add.path = NULL, keepStrings = FALSE,
-                        allowPunctuations = c("-", "all"),
-                        allowNumbers = FALSE, lowercase = TRUE,
-                        continue = NULL#, walkthrough = NULL
-                        )
+# Added type of task: 21.10.2021
+textcleaner <- function(
+  data = NULL, type = c("fluency", "free"),
+  miss = 99, partBY = c("row","col"),
+  dictionary = NULL, spelling = c("UK", "US"),
+  add.path = NULL, keepStrings = FALSE,
+  allowPunctuations = c("-", "all"),
+  allowNumbers = FALSE, lowercase = TRUE,
+  continue = NULL
+)
 {
+  # Check for type
+  if(missing(type)){
+    warning("'type' argument is missing. Assuming 'type = \"fluency\"' for verbal fluency")
+    type <- "fluency"
+  }else{
+    type <- match.arg(type)
+  }
   
   # Warning for keepStrings
-  if(keepStrings){
-    warning("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
+  if(isTRUE(keepStrings)){
+    message("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
     message("\nPlease send issues to:")
     message("\nhttps://github.com/AlexChristensen/SemNetCleaner/issues")
   }
-  
   
   # Check for missing arguments
   if(is.null(continue)){
@@ -188,248 +208,34 @@ textcleaner <- function(data = NULL, miss = 99,
     
   }
   
-  # Check if user is continuing from a previous point
-  if(is.null(continue))
-  {
-    ## Make sure data is not tibble
-    data <- as.matrix(data)
+  # Check for type
+  if(type == "fluency"){
     
-    ## Make participants by row
-    if(partBY=="col")
-    {
-      ### Transpose data
-      data <- t(data)
-      
-      ### Let user know
-      message("\nParticipants were made to go across the rows")
-    }
-    
-    ## Change row names to IDs (error catch)
-    id.res <- try(
-      obtain.id(data),
-      silent = TRUE
+    ## Divert to fluency textcleaner
+    res <- textcleaner.fluency(
+      data = data, miss = miss, partBY = partBY,
+      dictionary = dictionary, spelling = spelling,
+      add.path = add.path, keepStrings = keepStrings,
+      allowPunctuations = allowPunctuations,
+      allowNumbers = allowNumbers, lowercase = lowercase,
+      continue = continue
     )
     
-    if(any(class(id.res) == "try-error"))
-    {return(error.fun(id.res, "obtain.id", "textcleaner"))}
     
-    data <- id.res$data
-    ids <- id.res$ids
-    row.names(data) <- ids
+  }else if(type == "free"){
     
-    ## Convert missing data to "" (returns data as matrix; error catch)
-    data <- try(
-      convert.miss(data, miss),
-      silent = TRUE
-    )
-      
-    if(any(class(data) == "try-error"))
-    {return(error.fun(data, "convert.miss", "textcleaner"))}
-    
-    ## Prepare for spellcheck.dictionary (returns data as data frame)
-    ### Removes punctuations and digits
-    ### Removes white spaces
-    ### Makes all responses lower case
-    data <- try(
-      prep.spellcheck.dictionary(data, allowPunctuations, allowNumbers, lowercase),
-      silent = TRUE
-    )
-    
-    if(any(class(data) == "try-error"))
-    {return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))}
-    
-    ## Obtain unique responses for efficient spell-checking
-    uniq.resp <- na.omit(unique(unlist(data)))
-    
-    # Sort out dictionaries
-    if(is.null(dictionary))
-    {dictionary <- "general"}
-    
-    # Perform spell-check
-    spell.check <- try(
-      spellcheck.dictionary(uniq.resp = uniq.resp,
-                            dictionary = dictionary,
-                            spelling = spelling,
-                            add.path = add.path,
-                            keepStrings = keepStrings,
-                            data = data#, walkthrough = walkthrough
-                            ),
-      silent <- TRUE
-    )
-    
-  }else if(length(continue) != 3) # Continue spell-check
-  {spell.check <- spellcheck.dictionary(continue = continue)
-  }else{spell.check <- continue}
-  
-  # Check if spell-check was stopped (either error or user stop)
-  if(spell.check$stop)
-  {return(spell.check)}
-  
-  # Let the user know that their data is being prepared
-  message("\nPreparing your data...")
-  
-  # Initialize results to return
-  res <- list()
-  
-  # Specify variables from spellcheck.dictionary returns
-  
-  ## Return dictionary if user decided to
-  if("dictionary" %in% names(spell.check))
-  {res$dictionary <- spell.check$dictionary}
-  
-  ## Re-assign data and ids variables in case of user stoppage or error
-  data <- spell.check$data
-  ids <- row.names(spell.check$data)
-  res$responses$original <- data
-  
-  ## Assign spell-checking objects
-  original <- spell.check$from
-  checked <- spell.check$to
-  
-  # Create correspondence matrix (error catch)
-  corr.mat <- try(
-    correspondence.matrix(original, checked),
-    silent = TRUE
-  )
-  
-  if(any(class(corr.mat) == "try-error"))
-  {
-    error.fun(corr.mat, "correspondence.matrix", "textcleaner")
-    
-    return(spell.check)
-  }
-    
-  row.names(corr.mat) <- formatC(1:nrow(corr.mat), digits = 2, flag = 0)
-  res$spellcheck$correspondence <- corr.mat
-  res$spellcheck$automated <- corr.mat[spell.check$auto,]
-  res$spellcheck$manual <- corr.mat[spell.check$manual,]
-  
-  # Get spell-corrected data (error catch)
-  corrected <- try(
-    correct.data(data, corr.mat),
-    silent = TRUE
-  )
-  
-  if(any(class(corrected) == "try-error"))
-  {
-    error.fun(corrected, "correct.data", "textcleaner")
-    
-    return(spell.check)
-  }
-  
-  ## Collect behavioral data
-  behavioral <- corrected$behavioral
-  
-  ## Make sure to replace faux "NA" with real NA
-  corrected$corrected[which(corrected$corrected == "NA")] <- NA
-  
-  ## Cleaned responses (no instrusions or perseverations)
-  cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
-  
-  max.resp <- max(unlist(lapply(cleaned.list, length)))
-  
-  cleaned.matrix <- t(sapply(
-    lapply(cleaned.list, function(x, max.resp){
-      c(x, rep(NA, max.resp - length(x)))
-    }, max.resp = max.resp)
-    ,rbind))
-  
-  colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
-                                                         digits = nchar(ncol(cleaned.matrix)) - 1,
-                                                         flag = "0"), sep = "")
-  
-  res$responses$clean <- cleaned.matrix
-  
-  # Convert to binary response matrix (error catch)
-  res$responses$binary <- try(
-    resp2bin(corrected$corrected),
-    silent = TRUE
-  )
-  
-  if(any(class(res$responses$binary) == "try-error"))
-  {
-    error.fun(corrected, "resp2bin", "textcleaner")
-    
-    return(spell.check)
-  }
-  
-  behavioral <- cbind(behavioral, rowSums(res$responses$binary))
-  colnames(behavioral)[3] <- "Appropriate"
-  res$behavioral <- as.data.frame(behavioral)
-
-  # Make 'textcleaner' class
-  class(res) <- "textcleaner"
-  
-  # Correct auto-corrections
-  ## Check if there were auto-corrections
-  if(length(res$spellcheck$automated) != 0){
-    
-    res.check <- try(correct.changes(res), silent = TRUE)
-    
-    if(any(class(res.check) == "try-error"))
-    {
-      error.fun(res, "correct.changes", "textcleaner")
-      
-      return(res)
-    }else{res <- res.check}
-    
-  }else{
-    
-    message("\nNo auto-corrections were made. Skipping automated spell-check verification.")
-    
-  }
-  
-  # Let user know spell-check is complete
-  Sys.sleep(1)
-  message("\nPreprocessing complete.\n")
-  Sys.sleep(2)
-  
-  # Let user know where to send their dictionaries and monikers
-  if("dictionary" %in% names(res)){
-    
-    dictionary.output <- paste(
-      textsymbol("bullet"),
-      "Dictionary output: `OBJECT_NAME$dictionary`",
-      sep = " "
+    ## Divert to free textcleaner
+    res <- textcleaner.fluency(
+      data = data, miss = miss,
+      dictionary = dictionary, spelling = spelling,
+      add.path = add.path, keepStrings = keepStrings,
+      allowPunctuations = allowPunctuations,
+      allowNumbers = allowNumbers, lowercase = lowercase,
+      continue = continue
     )
     
   }
-  
-  moniker.output <- paste(
-    textsymbol("bullet"),
-    "Moniker output: `OBJECT_NAME$moniker`",
-    sep = " "
-  )
-  
-  ## Save moniker object (doubles up but makes it easy for the user)
-  res$moniker <- res$spellcheck$manual
-  
-  cat(
     
-    colortext(
-      
-      paste(
-        paste(
-          "Consider submitting your",
-          ifelse("dictionary" %in% names(res), " dictionary and", ""),
-          " spelling corrections (i.e., monikers) to:\n\n",
-          sep = ""
-        ),
-        "https://github.com/AlexChristensen/SemNetDictionaries/issues/new/choose\n\n",
-        ifelse("dictionary" %in% names(res), paste(dictionary.output, "\n\n"), ""),
-        #dictionary.output,
-        moniker.output, "\n\n"
-      ),
-      
-      defaults = "message"
-      
-    )
-  
-  )
-  
-  Sys.sleep(2)
-  
-
   return(res)
 }
 #----
