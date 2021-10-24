@@ -742,12 +742,12 @@ textcleaner.fluency <- function(
       silent <- TRUE
     )
     
-  }else if(length(continue) != 3) # Continue spell-check
+  }else if(length(continue) != 7) # Continue spell-check
   {spell.check <- spellcheck.dictionary(continue = continue)
   }else{spell.check <- continue}
   
   # Check if spell-check was stopped (either error or user stop)
-  if(spell.check$stop)
+  if(isTRUE(spell.check$stop))
   {return(spell.check)}
   
   # Let the user know that their data is being prepared
@@ -1016,7 +1016,7 @@ textcleaner.free <- function(
       silent <- TRUE
     )
     
-  }else if(length(continue) != 3) # Continue spell-check
+  }else if(length(continue) != 7) # Continue spell-check
   {spell.check <- spellcheck.dictionary(continue = continue)
   }else{spell.check <- continue}
   

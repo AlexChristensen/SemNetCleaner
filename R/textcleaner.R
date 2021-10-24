@@ -220,6 +220,11 @@ textcleaner <- function(
     
   }
   
+  # Check if input is continue
+  if(!is.null(continue)){
+    type <- continue$type
+  }
+  
   # Check for type
   if(type == "fluency"){
     
