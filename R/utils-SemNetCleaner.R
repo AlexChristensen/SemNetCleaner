@@ -1020,7 +1020,7 @@ textcleaner.free <- function(
     spell.check <- try(
       spellcheck.dictionary.free(
         uniq.resp = uniq.resp,
-        dictionary = dictionary,
+        dictionary = "general",
         spelling = spelling,
         add.path = add.path,
         keepStrings = keepStrings,
