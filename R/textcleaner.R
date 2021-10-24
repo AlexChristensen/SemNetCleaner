@@ -237,7 +237,7 @@ textcleaner <- function(
   }else if(type == "free"){
     
     ## Divert to free textcleaner
-    res <- textcleaner.fluency(
+    res <- textcleaner.free(
       data = data, miss = miss,
       dictionary = dictionary, spelling = spelling,
       add.path = add.path, keepStrings = keepStrings,
