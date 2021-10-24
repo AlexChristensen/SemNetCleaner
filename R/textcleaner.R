@@ -239,7 +239,7 @@ textcleaner <- function(
     ## Divert to free textcleaner
     res <- textcleaner.free(
       data = data, miss = miss,
-      dictionary = dictionary, spelling = spelling,
+      spelling = spelling,
       add.path = add.path, keepStrings = keepStrings,
       allowPunctuations = allowPunctuations,
       allowNumbers = allowNumbers, lowercase = lowercase,
