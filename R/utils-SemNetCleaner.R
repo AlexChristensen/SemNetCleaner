@@ -650,12 +650,6 @@ textcleaner.fluency <- function(
   continue = NULL
 )
 {
-  # Warning for keepStrings
-  if(isTRUE(keepStrings)){
-    message("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
-    message("\nPlease send issues to:")
-    message("\nhttps://github.com/AlexChristensen/SemNetCleaner/issues")
-  }
   
   # Check for missing arguments
   if(is.null(continue)){
@@ -942,13 +936,6 @@ textcleaner.free <- function(
   continue = NULL
 )
 {
-  # Warning for keepStrings
-  if(isTRUE(keepStrings)){
-    message("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
-    message("\nPlease send issues to:")
-    message("\nhttps://github.com/AlexChristensen/SemNetCleaner/issues")
-  }
-  
   # Check for missing arguments
   if(is.null(continue)){
     
