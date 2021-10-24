@@ -1007,6 +1007,7 @@ textcleaner.free <- function(
     spell.check <- try(
       spellcheck.dictionary.free(
         uniq.resp = uniq.resp,
+        dictionary = "general",
         spelling = spelling,
         add.path = add.path,
         keepStrings = keepStrings,
@@ -4039,8 +4040,8 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
       {category <- "synonym"
       }else if("animals" %in% target)
       {category <- "animals"
-      }else{category <- "general"}
-    }else{category <- "general"}
+      }else{category <- "define"}
+    }else{category <- "define"}
     
     # Load dictionaries
     ## Full dictionary
@@ -4881,7 +4882,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
 # MANUAL spell-check
 # Updated 04.01.2021
 spellcheck.dictionary.free <- function (
-  uniq.resp = NULL, spelling = NULL,
+  uniq.resp = NULL, dictionary = "general", spelling = NULL,
   add.path = NULL, keepStrings = NULL,
   data = NULL, continue = NULL
 )
@@ -4925,7 +4926,7 @@ spellcheck.dictionary.free <- function (
     # Load dictionaries
     ## Full dictionary
     full.dictionary <- SemNetDictionaries::load.dictionaries("general")
-    category <- "general"
+    category <- "define"
     
     ## English conversion
     message(paste("\nConverting dictionary to '", spelling, "' spelling...", sep = ""), appendLF = FALSE)
@@ -4939,7 +4940,7 @@ spellcheck.dictionary.free <- function (
     initial <- try(
       auto.spellcheck(check = from[hunspell.ind],
                       full.dict = full.dictionary,
-                      dictionary = "general",
+                      dictionary = dictionary,
                       spelling = spelling,
                       keepStrings = keepStrings),
       silent = TRUE
