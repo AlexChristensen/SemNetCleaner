@@ -935,7 +935,7 @@ textcleaner.fluency <- function(
 # Added type of task: 21.10.2021
 textcleaner.free <- function(
   data = NULL, miss = 99,
-  spelling = c("UK", "US"), dictionary,
+  spelling = c("UK", "US"),
   add.path = NULL, keepStrings = FALSE,
   allowPunctuations = c("-", "all"),
   allowNumbers = FALSE, lowercase = TRUE,
@@ -1014,13 +1014,12 @@ textcleaner.free <- function(
     {return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))}
     
     ## Obtain unique responses for efficient spell-checking
-    uniq.resp <- na.omit(unique(unlist(data$Response)))
+    uniq.resp <- na.omit(unique(unlist(data[,"Response"])))
     
     # Perform spell-check
     spell.check <- try(
       spellcheck.dictionary.free(
         uniq.resp = uniq.resp,
-        dictionary = ifelse(is.null(dictionary), "general", dictionary),
         spelling = spelling,
         add.path = add.path,
         keepStrings = keepStrings,
@@ -4953,7 +4952,7 @@ spellcheck.dictionary.free <- function (
     initial <- try(
       auto.spellcheck(check = from[hunspell.ind],
                       full.dict = full.dictionary,
-                      dictionary = dictionary,
+                      dictionary = "general",
                       spelling = spelling,
                       keepStrings = keepStrings),
       silent = TRUE
