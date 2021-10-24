@@ -171,6 +171,10 @@ if(interactive())
 
 }
 \references{
+Christensen, A. P., & Kenett, Y. N. (in press).
+Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks.
+\emph{Psychological Methods}.
+  
 Hornik, K., & Murdoch, D. (2010).
 Watch Your Spelling!.
 \emph{The R Journal}, \emph{3}, 22-28.
