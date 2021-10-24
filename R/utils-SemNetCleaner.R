@@ -4120,6 +4120,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
   }else{
     
     # Return analysis to previous state
+    type <- continue$type
     dictionary <- continue$dictionary
     full.dictionary <- continue$full.dictionary
     orig.dictionary <- continue$orig.dictionary
@@ -4271,6 +4272,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           res <- list()
           
           # Collect necessary objects
+          res$type <- "fluency"
           res$dictionary <- dictionary
           res$full.dictionary <- full.dictionary
           res$orig.dictionary <- orig.dictionary
@@ -4307,6 +4309,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
           res <- list()
           
           # Collect necessary objects
+          res$type <- "fluency"
           res$dictionary <- dictionary
           res$full.dictionary <- full.dictionary
           res$orig.dictionary <- orig.dictionary
@@ -4503,6 +4506,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         res <- list()
         
         # Collect necessary objects
+        res$type <- "fluency"
         res$dictionary <- dictionary
         res$full.dictionary <- full.dictionary
         res$orig.dictionary <- orig.dictionary
@@ -4541,6 +4545,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
         res <- list()
         
         # Collect necessary objects
+        res$type <- "fluency"
         res$dictionary <- dictionary
         res$full.dictionary <- full.dictionary
         res$orig.dictionary <- orig.dictionary
@@ -4800,6 +4805,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
   final.res$manual <- initial$manual
   final.res$auto <- initial$auto
   final.res$data <- data
+  final.res$type <- "fluency"
   final.res$stop <- FALSE
   
   class(final.res) <- "textcleaner"
@@ -4990,6 +4996,7 @@ spellcheck.dictionary.free <- function (
   }else{
     
     # Return analysis to previous state
+    type <- continue$type
     dictionary <- continue$dictionary
     full.dictionary <- continue$full.dictionary
     orig.dictionary <- continue$orig.dictionary
@@ -5141,6 +5148,7 @@ spellcheck.dictionary.free <- function (
           res <- list()
           
           # Collect necessary objects
+          res$type <- "free"
           res$dictionary <- dictionary
           res$full.dictionary <- full.dictionary
           res$orig.dictionary <- orig.dictionary
@@ -5179,6 +5187,7 @@ spellcheck.dictionary.free <- function (
           res <- list()
           
           # Collect necessary objects
+          res$type <- "free"
           res$dictionary <- dictionary
           res$full.dictionary <- full.dictionary
           res$orig.dictionary <- orig.dictionary
@@ -5375,6 +5384,7 @@ spellcheck.dictionary.free <- function (
         res <- list()
         
         # Collect necessary objects
+        res$type <- "free"
         res$dictionary <- dictionary
         res$full.dictionary <- full.dictionary
         res$orig.dictionary <- orig.dictionary
@@ -5413,6 +5423,7 @@ spellcheck.dictionary.free <- function (
         res <- list()
         
         # Collect necessary objects
+        res$type <- "free"
         res$dictionary <- dictionary
         res$full.dictionary <- full.dictionary
         res$orig.dictionary <- orig.dictionary
@@ -5672,6 +5683,7 @@ spellcheck.dictionary.free <- function (
   final.res$manual <- hunspell.ind[initial$manual]
   final.res$auto <- hunspell.ind[initial$auto]
   final.res$data <- data
+  final.res$type <- "free"
   final.res$stop <- FALSE
   
   class(final.res) <- "textcleaner"
