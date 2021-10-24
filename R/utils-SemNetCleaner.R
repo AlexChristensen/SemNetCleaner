@@ -935,7 +935,7 @@ textcleaner.fluency <- function(
 # Added type of task: 21.10.2021
 textcleaner.free <- function(
   data = NULL, miss = 99,
-  spelling = c("UK", "US"),
+  spelling = c("UK", "US"), dictionary,
   add.path = NULL, keepStrings = FALSE,
   allowPunctuations = c("-", "all"),
   allowNumbers = FALSE, lowercase = TRUE,
@@ -1020,7 +1020,7 @@ textcleaner.free <- function(
     spell.check <- try(
       spellcheck.dictionary.free(
         uniq.resp = uniq.resp,
-        dictionary = "general",
+        dictionary = ifelse(is.null(dictionary), "general", dictionary),
         spelling = spelling,
         add.path = add.path,
         keepStrings = keepStrings,
