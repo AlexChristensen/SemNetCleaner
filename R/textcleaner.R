@@ -147,7 +147,11 @@
 #'     clean <- textcleaner(open.animals[,-c(1,2)], partBY = "row", dictionary = "animals")
 #' }
 #' 
-#' @references 
+#' @references
+#' Christensen, A. P., & Kenett, Y. N. (in press).
+#' Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks.
+#' \emph{Psychological Methods}.
+#'   
 #' Hornik, K., & Murdoch, D. (2010).
 #' Watch Your Spelling!.
 #' \emph{The R Journal}, \emph{3}, 22-28.
@@ -158,7 +162,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 21.10.2021
+# Updated 24.10.2021
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
@@ -180,12 +184,20 @@ textcleaner <- function(
     type <- match.arg(type)
   }
   
-  # Warning for keepStrings
-  if(isTRUE(keepStrings)){
-    message("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
-    message("\nPlease send issues to:")
-    message("\nhttps://github.com/AlexChristensen/SemNetCleaner/issues")
+  # Keep strings
+  if(type == "free"){
+    if(missing(keepStrings)){
+      keepStrings <- TRUE
+      warning("'keepStrings' is set to TRUE for free association tasks by default. Set argument to change this behavior.")
+    }
   }
+  
+  # Warning for keepStrings
+  # if(isTRUE(keepStrings)){
+  #   message("Keeping strings intact is a new feature. There may be bugs or unexpected behavior.")
+  #   message("\nPlease send issues to:")
+  #   message("\nhttps://github.com/AlexChristensen/SemNetCleaner/issues")
+  # }
   
   # Check for missing arguments
   if(is.null(continue)){
