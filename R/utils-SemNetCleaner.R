@@ -1025,7 +1025,7 @@ textcleaner.free <- function(
   {return(spell.check)}
   
   # Re-obtain IDs
-  ids <- spell.check$data[,"ID"]
+  ids <- unique(spell.check$data[,"ID"])
   
   # Let the user know that their data is being prepared
   message("\nPreparing your data...")
