@@ -93,7 +93,7 @@
 #' @export
 #' 
 # Correct changes----
-# Updated 15.08.2021
+# Updated 23.11.2021
 # Major update: 19.04.2020
 correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
 {
@@ -372,6 +372,9 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
       
       ## Cleaned responses (no instrusions or perseverations)
       cleaned.list <- na.omit(corrected$corrected)
+      
+      ## Cleaned data
+      res$resposnes$data <- corrected$corrected
       
       ## Create frequency matrix
       ### Unique responses and cues

@@ -923,7 +923,7 @@ textcleaner.fluency <- function(
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
-# Updated 21.10.2021
+# Updated 23.11.2021
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
@@ -1101,6 +1101,9 @@ textcleaner.free <- function(
   
   ## Cleaned responses (no instrusions or perseverations)
   cleaned.list <- na.omit(corrected$corrected)
+  
+  ## Cleaned data
+  res$resposnes$data <- corrected$corrected
   
   ## Create frequency matrix
   ### Unique responses and cues
@@ -5864,49 +5867,103 @@ correct.data.free <- function (data, corr.mat, ids)
       target.c <- target.p[ind.c,]
       
       # Ensure matrix
-      if(!is.matrix(target.c)){
+      if(!is.data.frame(target.c) & !is.matrix(target.c)){
         target.c <- t(as.matrix(target.c))
       }
       
       # Match responses to correspondence matrix
       ind <- match(target.c[,"Response"], corr.mat[,"from"])
-    
+      
       # Obtain correspondence
       corr <- corr.mat[ind,-1]
       
       # Ensure it's a matrix
       if(!is.matrix(corr))
-      {corr <- as.matrix(corr)}
+      {corr <- t(as.matrix(corr))}
       
-      # Convert responses in their correct order back into data
-      correct.ord <- as.vector(t(corr))
+      # Remove NA columns
+      na.cols <- apply(corr, 2, function(x){all(is.na(x))})
       
-      if(length(correct.ord) > 0)
-      {
+      if(any(na.cols)){
+        corr <- corr[,!na.cols]
+      }
+      
+      # Check for matrix
+      if(!is.matrix(corr)){
+        
+        # Convert responses in their correct order back into data
+        correct.ord <- as.vector(t(corr))
+        
+        if(length(correct.ord) > 0)
+        {
+          # Compute number of intrusions
+          behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + sum(is.na(correct.ord))
+          
+          # Compute number of perseverations
+          behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + (length(correct.ord[-which(is.na(correct.ord))]) - length(unique(correct.ord[-which(is.na(correct.ord))])))
+          
+          # Insert into corrected matrix
+          correct.mat[ind.p[ind.c],"Response"] <- correct.ord
+          
+        }else{
+          
+          # Compute number of intrusions
+          behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + 0
+          
+          # Compute number of perseverations
+          behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + 0
+          
+        }
+        
+      }else{
+        
+        # Create correct order
+        correct.ord <- as.vector(t(corr[,1]))
+        
         # Compute number of intrusions
         behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + sum(is.na(correct.ord))
         
         # Compute number of perseverations
         behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + (length(correct.ord[-which(is.na(correct.ord))]) - length(unique(correct.ord[-which(is.na(correct.ord))])))
         
+        # Reorganize for rows to add
+        add_responses <- unname(unlist(apply(corr, 1, function(x){na.omit(x)})))
+        
         # Insert into corrected matrix
         correct.mat[ind.p[ind.c],"Response"] <- correct.ord
         
-      }else{
+        # Identify row to add after
+        addHere <- min(ind.p[ind.c]) - 1
         
-        # Compute number of intrusions
-        behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + 0
+        indCheck <- seq(17504, 17514, 1)
         
-        # Compute number of perseverations
-        behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + 0
+        check <- correct.mat[indCheck,]
         
+        # Remove rows
+        correct.mat <- correct.mat[-ind.p[ind.c],]
+        
+        # Set position
+        minPosition <- min(ind.p[ind.c])
+        maxPosition <- minPosition + length(add_responses) - 1
+        position <- seq(minPosition, maxPosition, 1)
+      
+        # Create space
+        correct.mat[seq(addHere + length(add_responses), nrow(correct.mat) + length(add_responses)),] <- correct.mat[seq(addHere, nrow(correct.mat)), ]
+        
+        # Insert values
+        correct.mat[position, ] <- cbind(
+          rep(ids[i], length(add_responses)),
+          rep(cues[j], length(add_responses)),
+          add_responses
+        )
+      
       }
       
     }
-      
+    
   }
   
-  # Remove columns that are all NA
+  # Remove rows that are all NA
   correct.mat <- na.omit(correct.mat)
   
   # Initialize result list
