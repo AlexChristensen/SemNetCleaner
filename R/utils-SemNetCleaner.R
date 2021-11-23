@@ -1041,7 +1041,7 @@ textcleaner.free <- function(
   
   ## Re-assign data and ids variables in case of user stoppage or error
   data <- spell.check$data
-  res$responses$original <- data
+  res$data$original <- data
   
   ## Assign spell-checking objects
   original <- spell.check$from
@@ -1125,7 +1125,7 @@ textcleaner.free <- function(
   cleaned.list <- na.omit(corrected$corrected)
   
   ## Cleaned data
-  res$resposnes$data <- corrected$corrected
+  res$data$clean <- corrected$corrected
   
   ## Create frequency matrix
   ### Unique responses and cues
