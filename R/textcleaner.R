@@ -171,7 +171,7 @@ textcleaner <- function(
   miss = 99, partBY = c("row","col"),
   dictionary = NULL, spelling = c("UK", "US"),
   add.path = NULL, keepStrings = FALSE,
-  allowPunctuations = c("-", "all"),
+  allowPunctuations,
   allowNumbers = FALSE, lowercase = TRUE,
   continue = NULL
 )

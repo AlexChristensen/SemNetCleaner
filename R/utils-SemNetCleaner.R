@@ -931,7 +931,7 @@ textcleaner.free <- function(
   data = NULL, miss = 99,
   spelling = c("UK", "US"),
   add.path = NULL, keepStrings = FALSE,
-  allowPunctuations = c("-", "all"),
+  allowPunctuations,
   allowNumbers = FALSE, lowercase = TRUE,
   continue = NULL
 )
@@ -4970,6 +4970,7 @@ spellcheck.dictionary.free <- function (
     ind <- hunspell.ind[initial$manual]
     
     # Current responses (after auto-correction phase)
+    auto.ind <- hunspell.ind[initial$auto]
     to[hunspell.ind] <- initial$to
     
     # Create duplicate current responses (for GO BACK response option)
@@ -5014,6 +5015,7 @@ spellcheck.dictionary.free <- function (
     initial <- continue$initial
     initial.to <- continue$initial.to
     ind <- continue$ind
+    auto.ind <- continue$auto.ind
     changes <- continue$changes
     main.count <- continue$main.count
     go.back.count <- continue$go.back.count
@@ -5166,6 +5168,7 @@ spellcheck.dictionary.free <- function (
           res$initial <- initial
           res$initial.to <- initial.to
           res$ind <- ind
+          res$auto.ind <- auto.ind
           res$changes <- changes
           res$main.count <- main.count
           res$go.back.count <- go.back.count
@@ -5205,6 +5208,7 @@ spellcheck.dictionary.free <- function (
           res$initial <- initial
           res$initial.to <- initial.to
           res$ind <- ind
+          res$auto.ind <- auto.ind
           res$changes <- changes
           res$main.count <- main.count
           res$go.back.count <- go.back.count
@@ -5402,6 +5406,7 @@ spellcheck.dictionary.free <- function (
         res$initial <- initial
         res$initial.to <- initial.to
         res$ind <- ind
+        res$auto.ind <- auto.ind
         res$changes <- changes
         res$main.count <- main.count
         res$go.back.count <- go.back.count
@@ -5441,6 +5446,7 @@ spellcheck.dictionary.free <- function (
         res$initial <- initial
         res$initial.to <- initial.to
         res$ind <- ind
+        res$auto.ind <- auto.ind
         res$changes <- changes
         res$main.count <- main.count
         res$go.back.count <- go.back.count
@@ -5687,8 +5693,8 @@ spellcheck.dictionary.free <- function (
   # (initialized before asking to save dictionary)
   final.res$from <- from
   final.res$to <- to
-  final.res$manual <- initial$manual
-  final.res$auto <- initial$auto
+  final.res$manual <- ind
+  final.res$auto <- auto.ind
   final.res$data <- data
   final.res$type <- "free"
   final.res$stop <- FALSE
