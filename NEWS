@@ -6,6 +6,8 @@ o ADD: `textcleaner` functionality for free association response tasks (*hunspel
 
 o FIX: `singularize` handling of words ending in "es"
 
+o REMOVE: dependency *miniUI* and *editData*
+
 
 Changes in version 1.3.4
 

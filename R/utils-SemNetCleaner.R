@@ -2470,7 +2470,12 @@ textcleaner_help <- function(check, context, original, possible)
   readline("Press ENTER to get back to manual spell-check...")
 }
 
-#' Taken from editData version 0.2.1
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#### editData package functions ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# TAKEN FROM editData VERSION 0.1.8 on December 11th, 2021
+# Enables manual entry with double mouse click
 #' 
 #' @noRd
 # Edit Data
