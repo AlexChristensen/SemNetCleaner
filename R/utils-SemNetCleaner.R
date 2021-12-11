@@ -1199,9 +1199,7 @@ textcleaner.free <- function(
   class(res) <- "textcleaner"
   
   # Let user know spell-check is complete
-  Sys.sleep(1)
   message("\nPreprocessing complete.\n")
-  Sys.sleep(2)
   
   # Let user know where to send their dictionaries and monikers
   if("dictionary" %in% names(res)){
@@ -1247,9 +1245,6 @@ textcleaner.free <- function(
   # )
   
   class(res) <- c("textcleaner", "free")
-  
-  Sys.sleep(2)
-  
   
   return(res)
 }
@@ -5915,7 +5910,23 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
   }
   
   # Get differences
-  #differences <- automated[,-1] != changes[,-1]
+  ## Difference in columns
+  colDiff <- ncol(changes) - ncol(automated)
+  if(colDiff != 0){
+    
+    # Loop through adding NA columns
+    for(i in 1:colDiff){
+      automated <- cbind(automated, NA)
+    }
+    
+    # Rename columns
+    colnames(automated)[-1] <- paste("to", 1:(ncol(automated) - 1), sep = "_")
+    
+    # Ensure matrix
+    automated <- as.matrix(automated)
+    
+  }
+  ## Obtain differences
   differences <- automated != changes
   
   ## Ensure matrix
@@ -5958,7 +5969,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     ## Original is used (rather than corrected) to run through same preprocessing
     ## as in textcleaner (far more efficient than actually changing through each
     ## object in the results list)
-    original <- as.matrix(res$responses$original)
+    original <- as.matrix(res$data$original)
     
     # Create new correspondence matrix
     correspondence <- res$spellcheck$correspondence
@@ -6359,7 +6370,19 @@ correct.data.free <- function (data, corr.mat, ids)
       na.cols <- apply(corr, 2, function(x){all(is.na(x))})
       
       if(any(na.cols)){
+        
+        # Remove NA columns
         corr <- corr[,!na.cols]
+        
+        # Check for matrix
+        if(!is.matrix(corr)){
+          
+          # Check for length change
+          if(length(ind) != length(corr))
+          {corr <- t(as.matrix(corr))}
+          
+        }
+        
       }
       
       # Check for matrix
@@ -6408,10 +6431,6 @@ correct.data.free <- function (data, corr.mat, ids)
         
         # Identify row to add after
         addHere <- min(ind.p[ind.c]) - 1
-        
-        indCheck <- seq(17504, 17514, 1)
-        
-        check <- correct.mat[indCheck,]
         
         # Remove rows
         correct.mat <- correct.mat[-ind.p[ind.c],]
