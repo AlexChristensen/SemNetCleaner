@@ -5695,8 +5695,8 @@ spellcheck.dictionary.free <- function (
   # (initialized before asking to save dictionary)
   final.res$from <- from
   final.res$to <- to
-  final.res$manual <- hunspell.ind[initial$manual]
-  final.res$auto <- hunspell.ind[initial$auto]
+  final.res$manual <- initial$manual
+  final.res$auto <- initial$auto
   final.res$data <- data
   final.res$type <- "free"
   final.res$stop <- FALSE
