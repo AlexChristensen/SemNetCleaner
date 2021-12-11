@@ -91,7 +91,7 @@ server <- function(input, output, session) {
     newData <- reactiveData()
     newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
     reactiveData(newData)
-    replaceData(proxy, reactiveData(), resetPaging = TRUE)
+    replaceData(proxy, reactiveData(), resetPaging = FALSE)
     output$x = render_dt({
       reactiveData()
     }, list(
