@@ -25,15 +25,15 @@ ui = fluidPage(
     )
   ),
   
-  actionButton(
-    inputId = "addColumn", "Add Column"
-  ),
+  #actionButton(
+  #  inputId = "addColumn", "Add Column"
+  #),
   
   dt_output("Double-click to edit table cells", id = "x"),
   
-  actionButton(
-    inputId = "addColumn2", "Add Column"
-  ),
+  #actionButton(
+  #  inputId = "addColumn2", "Add Column"
+  #),
   
   fluidRow(
     column(
@@ -84,32 +84,33 @@ server <- function(input, output, session) {
   })
   
   # Add a column (top button)
-  observeEvent(input$addColumn,{
-    newData <- reactiveData()
-    newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
-    reactiveData(newData)
-    replaceData(proxy, reactiveData(), resetPaging = FALSE)
-    output$x = render_dt({
-      reactiveData()
-    }, list(
-      target = "cell",
-      disable = list(columns = 1)
-    ))
-  })
+  # observeEvent(input$addColumn,{
+  #   newData <- reactiveData()
+  #   newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
+  #   reactiveData(newData)
+  #   replaceData(proxy, reactiveData(), resetPaging = FALSE)
+  #   output$x = render_dt({
+  #     reactiveData()
+  #   }, list(
+  #     target = "cell",
+  #     disable = list(columns = 1),
+  #     scrollX = TRUE
+  #   ))
+  # })
   
   # Add a column (bottom button)
-  observeEvent(input$addColumn2,{
-    newData <- reactiveData()
-    newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
-    reactiveData(newData)
-    replaceData(proxy, reactiveData(), resetPaging = FALSE)
-    output$x = render_dt({
-      reactiveData()
-    }, list(
-      target = "cell",
-      disable = list(columns = 1)
-    ))
-  })
+  # observeEvent(input$addColumn2,{
+  #   newData <- reactiveData()
+  #   newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
+  #   reactiveData(newData)
+  #   replaceData(proxy, reactiveData(), resetPaging = FALSE)
+  #   output$x = render_dt({
+  #     reactiveData()
+  #   }, list(
+  #     target = "cell",
+  #     disable = list(columns = 1)
+  #   ))
+  # })
   
   # Check for 'finish' button press (top button)
   observeEvent(input$done, {

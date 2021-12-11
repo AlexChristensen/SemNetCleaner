@@ -5834,6 +5834,19 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     automated <- t(as.matrix(automated))
   }
   
+  # Add columns for smoother Shiny experience
+  for(i in 1:10){
+    
+    # Make all NA
+    automated <- cbind(automated, NA)
+    
+    # Rename columns
+    colnames(automated)[-1] <- paste("to", 1:(ncol(automated) - 1), sep = "_")
+    
+    # Ensure matrix
+    automated <- as.matrix(automated)
+  }
+  
   # Write temporary file
   DIR <- tempdir()
   PATH <- paste(DIR, "automated.csv", sep = "\\")
