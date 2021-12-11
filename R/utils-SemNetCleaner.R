@@ -1033,10 +1033,6 @@ textcleaner.free <- function(
   # Initialize results to return
   res <- list()
   
-  # Specify variables from spellcheck.dictionary returns
-  
-  stop("dictionary")
-  
   ## Return dictionary if user decided to
   if("dictionary" %in% names(spell.check))
   {res$dictionary <- spell.check$dictionary}
@@ -1048,8 +1044,6 @@ textcleaner.free <- function(
   ## Assign spell-checking objects
   original <- spell.check$from
   checked <- spell.check$to
-  
-  stop("correspondence")
   
   # Create correspondence matrix (error catch)
   corr.mat <- try(
@@ -1083,8 +1077,6 @@ textcleaner.free <- function(
   res$spellcheck$correspondence <- corr.mat
   res$spellcheck$automated <- corr.mat[spell.check$auto,]
   res$spellcheck$manual <- corr.mat[spell.check$manual,]
-  
-  stop("correct")
   
   # Correct auto-corrections
   ## Check if there were auto-corrections
