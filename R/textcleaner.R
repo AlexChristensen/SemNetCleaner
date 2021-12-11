@@ -176,6 +176,11 @@ textcleaner <- function(
   continue = NULL
 )
 {
+  # Check if input is continue
+  if(!is.null(continue)){
+    type <- continue$type
+  }
+  
   # Check for type
   if(missing(type)){
     warning("'type' argument is missing. Assuming 'type = \"fluency\"' for verbal fluency")
@@ -218,11 +223,6 @@ textcleaner <- function(
       allowPunctuations <- match.arg(allowPunctuations, several.ok = TRUE)
     }
     
-  }
-  
-  # Check if input is continue
-  if(!is.null(continue)){
-    type <- continue$type
   }
   
   # Check for type
