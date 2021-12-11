@@ -32,14 +32,14 @@ ui = fluidPage(
   dt_output("Double-click to edit table cells", id = "x"),
   
   actionButton(
-    inputId = "addColumn", "Add Column"
+    inputId = "addColumn2", "Add Column"
   ),
   
   fluidRow(
     column(
       12,
       actionButton(
-        inputId = "done", "Done"
+        inputId = "done2", "Done"
       ), align = "right"
     )
   ),
@@ -63,9 +63,6 @@ server <- function(input, output, session) {
     reactiveData(data())
   })
   
-  # Set number of items that appear on each page
-  options(DT.options = list(pageLength = 25))
-  
   # Setup table
   output$x = render_dt({
       reactiveData()
@@ -86,7 +83,7 @@ server <- function(input, output, session) {
     replaceData(proxy, reactiveData(), resetPaging = FALSE)
   })
   
-  # Add a column
+  # Add a column (top button)
   observeEvent(input$addColumn,{
     newData <- reactiveData()
     newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
@@ -100,8 +97,27 @@ server <- function(input, output, session) {
     ))
   })
   
-  # Check for 'finish' button press
+  # Add a column (bottom button)
+  observeEvent(input$addColumn2,{
+    newData <- reactiveData()
+    newData[[paste("to", ncol(newData), sep = "_")]] <- vector("character", length = nrow(newData))
+    reactiveData(newData)
+    replaceData(proxy, reactiveData(), resetPaging = FALSE)
+    output$x = render_dt({
+      reactiveData()
+    }, list(
+      target = "cell",
+      disable = list(columns = 1)
+    ))
+  })
+  
+  # Check for 'finish' button press (top button)
   observeEvent(input$done, {
+    stopApp(reactiveData())
+  })
+  
+  # Check for 'finish' button press (bottom button)
+  observeEvent(input$done2, {
     stopApp(reactiveData())
   })
   
