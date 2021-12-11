@@ -5835,10 +5835,16 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
   }
   
   # Add two columns to automated
+  previous_ncol <- ncol(automated)
   automated <- cbind(
     automated,
     vector("character", nrow(automated)),
     vector("character", nrow(automated))
+  )
+  colnames(automated)[c(
+    previous_ncol + 1, previous_ncol + 2
+  )] <- paste(
+    "to", c(previous_ncol, previous_ncol + 1), sep = "_"
   )
   
   # Write temporary file
@@ -5865,13 +5871,13 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
     
     cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
-    cat(colortext(paste("\nand columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated)),
+    cat(colortext(paste("\nand columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 1),
                         "are the automated spell-check responses."), defaults = "message"))
     cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
     
     readline("Press ENTER to continue...")
     
-    cat(colortext(paste("\nYou should change columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated)),
+    cat(colortext(paste("\nYou should change columns 3 through", 3 + (ncol(textcleaner.obj$spellcheck$automated) - 1),
                         "by manually typing responses."), defaults = "message"))
     cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
     cat(colortext('\nyou can exit this process by clicking the "X" in the top right', defaults = "message"))
@@ -5896,13 +5902,13 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
     
     cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
-    cat(colortext(paste("\nand columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated)),
+    cat(colortext(paste("\nand columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 1),
                         "are the automated spell-check responses."), defaults = "message"))
     cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
     
     readline("Press ENTER to continue...")
     
-    cat(colortext(paste("\nYou should change columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated)),
+    cat(colortext(paste("\nYou should change columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 1),
                         "by manually typing responses."), defaults = "message"))
     cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
     cat(colortext('\nyou can exit this process by clicking the "Done" in the top right', defaults = "message"))
