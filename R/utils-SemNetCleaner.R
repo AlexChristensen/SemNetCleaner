@@ -5834,8 +5834,17 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     automated <- t(as.matrix(automated))
   }
   
+  # Get number of columns to add
+  from_vector <- automated[,"from"]
+  
+  # Split string
+  from_split <- strsplit(from_vector, split = " ")
+  
+  # Max lengths
+  max_length <- max(unlist(lapply(from_split, length)), na.rm = TRUE)
+  
   # Add columns for smoother Shiny experience
-  for(i in 1:10){
+  for(i in 1:max_length){
     
     # Make all NA
     automated <- cbind(automated, NA)
