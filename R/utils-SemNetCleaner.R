@@ -5883,7 +5883,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     cat(colortext('\nyou can exit this process by clicking the "X" in the top right', defaults = "message"))
     cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
     
-    readline("Press ENTER to proceed with spell-check.")
+    readline("Press ENTER to continue with spell-check.")
     
     changes <- edit(automated)
     
@@ -5891,30 +5891,11 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     
     # Set up message to user
     cat(colortext("\nYou will now have a chance to correct the changes that", defaults = "message"))
-    cat(colortext("\nwere made during the automated spell-checking process.", defaults = "message"))
+    cat(colortext("\nwere made during the AUTOMATED spell-checking process.", defaults = "message"))
     cat(colortext("\nA spreadsheet will open allowing you to manually correct", defaults = "message"))
     cat(colortext("\nthese changes.\n\n", defaults = "message"))
     
-    readline("Press ENTER to continue...")
-    
-    cat(colortext("\nThe first column of the spreadsheet corresponds to the", defaults = "message"))
-    cat(colortext("\nrow number provided in the output object `$spellcheck$correspondence`", defaults = "message"))
-    cat(colortext("\n(see ?textcleaner for more information about this output).", defaults = "message"))
-    
-    cat(colortext("\n\nThe second column is the original response the participant provided", defaults = "message"))
-    cat(colortext(paste("\nand columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
-                        "are the automated spell-check responses."), defaults = "message"))
-    cat(colortext('\nThese columns will have names formatted with "to_#".\n\n', defaults = "message"))
-    
-    readline("Press ENTER to continue...")
-    
-    cat(colortext(paste("\nYou should change columns 2 through", 2 + (ncol(textcleaner.obj$spellcheck$automated) - 2),
-                        "by manually typing responses."), defaults = "message"))
-    cat(colortext('\nFor inappropriate responses, "NA" should be typed. When finished,', defaults = "message"))
-    cat(colortext('\nyou can exit this process by clicking the "Done" in the top right', defaults = "message"))
-    cat(colortext('\ncorner of the spreadsheet.\n\n', defaults = "message"))
-    
-    readline("Press ENTER to proceed with spell-check.")
+    readline("Press ENTER to continue with spell-check.")
     
     changes <- SemNetCleanerEdit() # Make changes
     automated <- as.matrix(automated) # Convert back to matrix
@@ -5922,23 +5903,29 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     changes <- ifelse(changes == "", NA, changes) # Replace blanks with NA
   }
   
-  # Get differences
-  ## Difference in columns
-  colDiff <- ncol(changes) - ncol(automated)
-  if(colDiff != 0){
-    
-    # Loop through adding NA columns
-    for(i in 1:colDiff){
-      automated <- cbind(automated, NA)
-    }
-    
-    # Rename columns
-    colnames(automated)[-1] <- paste("to", 1:(ncol(automated) - 1), sep = "_")
-    
-    # Ensure matrix
-    automated <- as.matrix(automated)
-    
-  }
+  
+  # Start "add column" configuration (not functional)
+  
+  # # Get differences
+  # ## Difference in columns
+  # colDiff <- ncol(changes) - ncol(automated)
+  # if(colDiff != 0){
+  #   
+  #   # Loop through adding NA columns
+  #   for(i in 1:colDiff){
+  #     automated <- cbind(automated, NA)
+  #   }
+  #   
+  #   # Rename columns
+  #   colnames(automated)[-1] <- paste("to", 1:(ncol(automated) - 1), sep = "_")
+  #   
+  #   # Ensure matrix
+  #   automated <- as.matrix(automated)
+  #   
+  # }
+  
+  # End "add column" configuration
+  
   ## Obtain differences
   differences <- automated != changes
   
