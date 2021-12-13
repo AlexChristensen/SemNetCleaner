@@ -1027,9 +1027,6 @@ textcleaner.free <- function(
   # Re-obtain IDs
   ids <- unique(spell.check$data[,"ID"])
   
-  # Let the user know that their data is being prepared
-  message("\nPreparing your data...")
-  
   # Initialize results to return
   res <- list()
   
@@ -5912,6 +5909,8 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     changes <- ifelse(changes == "", NA, changes) # Replace blanks with NA
   }
   
+  # Let the user know that their data is being prepared
+  message("\nPreparing your data...")
   
   # Start "add column" configuration (not functional)
   
