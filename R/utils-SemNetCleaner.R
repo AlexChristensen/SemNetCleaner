@@ -2474,10 +2474,10 @@ textcleaner_help <- function(check, context, original, possible)
 #' 
 #' @noRd
 # Edit Data
-# Updated 15.08.2021
-SemNetCleanerEdit <- function()
+# Updated 12.12.2021
+AutomatedEdit <- function()
 {
-  shiny::runApp(appDir = system.file("Shiny", package="SemNetCleaner"))
+  shiny::runApp(appDir = system.file("Automated", package="SemNetCleaner"))
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -5906,7 +5906,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     
     readline("Press ENTER to continue with spell-check.")
     
-    changes <- SemNetCleanerEdit() # Make changes
+    changes <- AutomatedEdit() # Make changes
     automated <- as.matrix(automated) # Convert back to matrix
     changes <- as.matrix(changes) # Convert changes to matrix
     changes <- ifelse(changes == "", NA, changes) # Replace blanks with NA
