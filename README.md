@@ -8,7 +8,7 @@ devtools::install_github("AlexChristensen/SemNetCleaner")
 # How To Use
 See our tutorial: https://psyarxiv.com/eht87/
 
-Christensen, A. P., & Kenett, Y. N. (under review). Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing    semantic networks. *PsyArXiv*. doi:10.31234/osf.io/eht87. OSF:10.17605/OSF.IO/HQXTC
+Christensen, A. P., & Kenett, Y. N. (in press). Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks. *Psychological Methods*. doi:10.31234/osf.io/eht87. OSF:10.17605/OSF.IO/HQXTC
 
 # SemNetCleaner
 Implements several functions that automatize the cleaning, de-pluralizing, binarizing, de-stringing, converging,
