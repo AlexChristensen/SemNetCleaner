@@ -726,7 +726,7 @@ textcleaner.fluency <- function(
     
     # Sort out dictionaries
     if(is.null(dictionary))
-    {dictionary <- "general"}
+    {dictionary <- "coca"}
     
     # Perform spell-check
     spell.check <- try(
@@ -787,6 +787,25 @@ textcleaner.fluency <- function(
   res$spellcheck$automated <- corr.mat[spell.check$auto,]
   res$spellcheck$manual <- corr.mat[spell.check$manual,]
   
+  # Correct auto-corrections
+  ## Check if there were auto-corrections
+  if(length(res$spellcheck$automated) != 0){
+    
+    res.check <- try(correct.changes(res), silent = TRUE)
+    
+    if(any(class(res.check) == "try-error"))
+    {
+      error.fun(res, "correct.changes", "textcleaner")
+      
+      return(res)
+    }else{res <- res.check}
+    
+  }else{
+    
+    message("\nNo auto-corrections were made. Skipping automated spell-check verification.")
+    
+  }
+  
   # Get spell-corrected data (error catch)
   corrected <- try(
     correct.data(data, corr.mat),
@@ -842,25 +861,6 @@ textcleaner.fluency <- function(
   
   # Make 'textcleaner' class
   class(res) <- "textcleaner"
-  
-  # Correct auto-corrections
-  ## Check if there were auto-corrections
-  if(length(res$spellcheck$automated) != 0){
-    
-    res.check <- try(correct.changes(res), silent = TRUE)
-    
-    if(any(class(res.check) == "try-error"))
-    {
-      error.fun(res, "correct.changes", "textcleaner")
-      
-      return(res)
-    }else{res <- res.check}
-    
-  }else{
-    
-    message("\nNo auto-corrections were made. Skipping automated spell-check verification.")
-    
-  }
   
   # Let user know spell-check is complete
   Sys.sleep(1)
@@ -2646,7 +2646,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   ## Correct common misspellings and monikers ##
   #--------------------------------------------#
   
-  if(all(dictionary == "general" | dictionary == "hunspell")){
+  if(all(dictionary == "general") | all(dictionary == "hunspell")){
     
     mons2 <- sing
     
@@ -2713,13 +2713,6 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
         
         ## Check for pluralized monikers
         mons2 <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x, dictionary = FALSE), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
-        
-        for(i in 1:length(mons)){
-          
-          check <- moniker(singularize(mons[[i]], dictionary = FALSE), monik, spelling)
-          
-        }
-        
         
         ## Identify responses found in dictionary
         ## Check if all are spelled correctly or incorrectly
@@ -2820,24 +2813,6 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   )
   
   parallel::stopCluster(cl)
-  
-  ind.check <- vector("list", length(mons2))
-  
-  pb <- txtProgressBar(max = length(mons2), style = 3)
-  
-  for(i in 1:length(mons2)){
-    
-    ind.check[[i]] <- ind.word.check(
-      mons2[[i]], full.dict, dictionary, spelling
-    )
-    
-    setTxtProgressBar(pb, i)
-    
-  }
-  
-  close(pb)
-  
-  
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly
@@ -3008,7 +2983,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   res <- list()
   
   res$manual <- as.numeric(names(multi.word))
-  res$auto <- setdiff(as.numeric(names(check)), res$manual)
+  res$auto <- setdiff(as.numeric(full.names), res$manual)
   res$to <- orig
   
   return(res)
@@ -5994,7 +5969,11 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     ## Original is used (rather than corrected) to run through same preprocessing
     ## as in textcleaner (far more efficient than actually changing through each
     ## object in the results list)
-    original <- as.matrix(res$data$original)
+    if(type == "free"){
+      original <- as.matrix(res$data$original)
+    }else{
+      original <- as.matrix(res$responses$original)
+    }
     
     # Create new correspondence matrix
     correspondence <- res$spellcheck$correspondence
@@ -6043,164 +6022,60 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     ## Update with changes made by user
     res$spellcheck$automated <- changes
     
-    # Get spell-corrected data (error catch)
-    if(type == "fluency"){
-      
-      # Fluency data correction
-      corrected <- try(
-        correct.data(original, corr.mat),
-        silent = TRUE
-      )
-      
-      if(any(class(corrected) == "try-error"))
-      {return(error.fun(corrected, "correct.data", "correct.changes"))}
-      
-      ## Collect behavioral data
-      behavioral <- corrected$behavioral
-      
-      ## Make sure to replace faux "NA" with real NA
-      corrected$corrected[which(corrected$corrected == "NA")] <- NA
-      
-      ## Cleaned responses (no instrusions or perseverations)
-      cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
-      
-      ## Check if cleaned.list is a list
-      if(!is.list(cleaned.list)){
-        cleaned.list <- apply(cleaned.list, 1, as.list)
-      }
-      
-      max.resp <- max(unlist(lapply(cleaned.list, length)))
-      
-      cleaned.matrix <- t(sapply(
-        lapply(cleaned.list, function(x, max.resp){
-          c(x, rep(NA, max.resp - length(x)))
-        }, max.resp = max.resp)
-        ,rbind))
-      
-      colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
-                                                             digits = nchar(ncol(cleaned.matrix)) - 1,
-                                                             flag = "0"), sep = "")
-      
-      res$responses$clean <- cleaned.matrix
-      
-      # Convert to binary response matrix (error catch)
-      res$responses$binary <- try(
-        resp2bin(corrected$corrected),
-        silent = TRUE
-      )
-      
-      if(any(class(res$responses$binary) == "try-error"))
-      {return(error.fun(res$responses$binary, "resp2bin", "correct.changes"))}
-      
-      behavioral <- cbind(behavioral, rowSums(res$responses$binary))
-      colnames(behavioral)[3] <- "Appropriate"
-      res$behavioral <- as.data.frame(behavioral)
-      
-      #make 'textcleaner' class
-      class(res) <- "textcleaner"
-      
-    }
-    
-    ## MOVED CORRECT.CHANGES UP IN TEXTCLEANER
-    # else if(type == "free"){
+    # # Get spell-corrected data (error catch)
+    # if(type == "fluency"){
     #   
-    #   # Free association data correction
+    #   # Fluency data correction
     #   corrected <- try(
-    #     correct.data.free(original, corr.mat, unique(original[,"ID"])),
+    #     correct.data(original, corr.mat),
     #     silent = TRUE
     #   )
     #   
     #   if(any(class(corrected) == "try-error"))
-    #   {
-    #     error.fun(corrected, "correct.data.free", "textcleaner")
-    #     
-    #     return(spell.check)
-    #   }
+    #   {return(error.fun(corrected, "correct.data", "correct.changes"))}
     #   
     #   ## Collect behavioral data
-    #   behavioral <- as.data.frame(corrected$behavioral)
-    #   corrected$corrected <- as.data.frame(corrected$corrected)
+    #   behavioral <- corrected$behavioral
     #   
     #   ## Make sure to replace faux "NA" with real NA
-    #   corrected$corrected$Response[which(corrected$corrected$Response == "NA")] <- NA
+    #   corrected$corrected[which(corrected$corrected == "NA")] <- NA
     #   
     #   ## Cleaned responses (no instrusions or perseverations)
-    #   cleaned.list <- na.omit(corrected$corrected)
+    #   cleaned.list <- apply(corrected$corrected, 1, function(x){unique(na.omit(x))})
     #   
-    #   ## Cleaned data
-    #   res$resposnes$data <- corrected$corrected
-    #   
-    #   ## Create frequency matrix
-    #   ### Unique responses and cues
-    #   unique.responses <- unique(cleaned.list$Response)
-    #   unique.cues <- unique(cleaned.list$Cue)
-    #   
-    #   ### Initialize cleaned matrix
-    #   cleaned.matrix <- matrix(
-    #     0, nrow = length(unique.responses), ncol = length(unique.cues) 
-    #   )
-    #   row.names(cleaned.matrix) <- unique.responses
-    #   colnames(cleaned.matrix) <- unique.cues
-    #   
-    #   # Loop through for frequencies
-    #   for(i in 1:length(unique.cues)){
-    #     
-    #     frequency <- table(cleaned.list$Response[cleaned.list$Cue == unique.cues[i]])
-    #     
-    #     cleaned.matrix[names(frequency),i] <- frequency
-    #     
+    #   ## Check if cleaned.list is a list
+    #   if(!is.list(cleaned.list)){
+    #     cleaned.list <- apply(cleaned.list, 1, as.list)
     #   }
+    #   
+    #   max.resp <- max(unlist(lapply(cleaned.list, length)))
+    #   
+    #   cleaned.matrix <- t(sapply(
+    #     lapply(cleaned.list, function(x, max.resp){
+    #       c(x, rep(NA, max.resp - length(x)))
+    #     }, max.resp = max.resp)
+    #     ,rbind))
+    #   
+    #   colnames(cleaned.matrix) <- paste("Response_", formatC(1:ncol(cleaned.matrix),
+    #                                                          digits = nchar(ncol(cleaned.matrix)) - 1,
+    #                                                          flag = "0"), sep = "")
     #   
     #   res$responses$clean <- cleaned.matrix
     #   
     #   # Convert to binary response matrix (error catch)
-    #   # res$responses$binary <- try(
-    #   #   resp2bin(corrected$corrected),
-    #   #   silent = TRUE
-    #   # )
-    #   # 
-    #   # if(any(class(res$responses$binary) == "try-error"))
-    #   # {
-    #   #   error.fun(corrected, "resp2bin", "textcleaner")
-    #   #   
-    #   #   return(spell.check)
-    #   # }
+    #   res$responses$binary <- try(
+    #     resp2bin(corrected$corrected),
+    #     silent = TRUE
+    #   )
     #   
-    #   # Compute totals
-    #   ## Initialize vector and list
-    #   total.vector <- vector(length = length(ids))
-    #   #total.list <- vector("list", length(ids))
-    #   names(total.vector) <- ids
-    #   #names(total.list) <- ids
+    #   if(any(class(res$responses$binary) == "try-error"))
+    #   {return(error.fun(res$responses$binary, "resp2bin", "correct.changes"))}
     #   
-    #   ## Loop through for totals
-    #   for(i in 1:length(ids)){
-    #     
-    #     # Target participant
-    #     target.p <- cleaned.list[cleaned.list$ID == ids[i],]
-    #     
-    #     # Total overall
-    #     total.vector[i] <- nrow(target.p)
-    #     
-    #     # # Target cue
-    #     # target.c <- unique(target.p$Cue)
-    #     # total.individual <- vector(length = length(target.c))
-    #     # names(total.individual) <- target.c
-    #     # 
-    #     # for(j in 1:length(target.c)){
-    #     #   total.individual[j] <- sum(target.p$Cue == target.c[j])
-    #     # }
-    #     # 
-    #     # # Total individual
-    #     # total.list[[i]] <- total.individual
-    #     
-    #   }
-    #   
-    #   behavioral <- cbind(behavioral, total.vector)
+    #   behavioral <- cbind(behavioral, rowSums(res$responses$binary))
     #   colnames(behavioral)[3] <- "Appropriate"
     #   res$behavioral <- as.data.frame(behavioral)
     #   
-    #   # Make 'textcleaner' class
+    #   #make 'textcleaner' class
     #   class(res) <- "textcleaner"
     #   
     # }
