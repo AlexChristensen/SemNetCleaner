@@ -13,7 +13,7 @@ textcleaner(
   spelling = c("UK", "US"),
   add.path = NULL,
   keepStrings = FALSE,
-  allowPunctuations = c("-", "all"),
+  allowPunctuations,
   allowNumbers = FALSE,
   lowercase = TRUE,
   continue = NULL
