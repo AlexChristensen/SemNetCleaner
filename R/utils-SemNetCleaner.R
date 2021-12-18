@@ -926,17 +926,17 @@ textcleaner.fluency <- function(
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
 
-data = response_matrix
-type = "free"
-dictionary = "coca"
-spelling = "US"
-miss = 99
-add.path = NULL
-keepStrings = FALSE
-allowPunctuations = "-"
-allowNumbers = FALSE
-lowercase = TRUE
-continue = NULL
+# data = response_matrix
+# type = "free"
+# dictionary = "coca"
+# spelling = "US"
+# miss = 99
+# add.path = NULL
+# keepStrings = FALSE
+# allowPunctuations = "-"
+# allowNumbers = FALSE
+# lowercase = TRUE
+# continue = NULL
 
 
 
