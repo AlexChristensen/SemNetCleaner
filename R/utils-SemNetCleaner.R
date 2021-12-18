@@ -671,8 +671,8 @@ textcleaner.fluency <- function(
   }
   
   # Check if user is continuing from a previous point
-  if(is.null(continue))
-  {
+  if(is.null(continue)){
+    
     ## Make sure data is not tibble
     data <- as.matrix(data)
     
@@ -740,8 +740,8 @@ textcleaner.fluency <- function(
       silent <- TRUE
     )
     
-  }else if(length(continue) != 7) # Continue spell-check
-  {spell.check <- spellcheck.dictionary(continue = continue)
+  }else if(length(continue) != 7){ # Continue spell-check
+    spell.check <- spellcheck.dictionary(continue = continue)
   }else{spell.check <- continue}
   
   # Check if spell-check was stopped (either error or user stop)
@@ -757,8 +757,9 @@ textcleaner.fluency <- function(
   # Specify variables from spellcheck.dictionary returns
   
   ## Return dictionary if user decided to
-  if("dictionary" %in% names(spell.check))
-  {res$dictionary <- spell.check$dictionary}
+  if("dictionary" %in% names(spell.check)){
+    res$dictionary <- spell.check$dictionary
+  }
   
   ## Re-assign data and ids variables in case of user stoppage or error
   data <- spell.check$data
@@ -775,8 +776,8 @@ textcleaner.fluency <- function(
     silent = TRUE
   )
   
-  if(any(class(corr.mat) == "try-error"))
-  {
+  if(any(class(corr.mat) == "try-error")){
+    
     error.fun(corr.mat, "correspondence.matrix", "textcleaner")
     
     return(spell.check)
@@ -937,8 +938,6 @@ textcleaner.fluency <- function(
 # allowNumbers = FALSE
 # lowercase = TRUE
 # continue = NULL
-
-
 
 textcleaner.free <- function(
   data = NULL, miss = 99,
@@ -5927,7 +5926,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
   # End "add column" configuration
   
   ## Obtain differences
-  differences <- automated != changes
+  differences <- automated != as.matrix(changes) # ensure matrix for changes
   
   ## Ensure matrix
   if(!is.matrix(differences)){
@@ -5999,7 +5998,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     }
     
     # Update correspondence matrix
-    correspondence[row.names(res$spellcheck$automated),] <- changes
+    correspondence[row.names(res$spellcheck$automated),] <- as.matrix(changes)
     res$spellcheck$correspondence <- correspondence
     
     # Create 'from' list
