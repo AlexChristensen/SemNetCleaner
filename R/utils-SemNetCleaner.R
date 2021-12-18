@@ -666,8 +666,6 @@ textcleaner.fluency <- function(
     ## Allow punctuations
     if(missing(allowPunctuations)){
       allowPunctuations <- "-"
-    }else{
-      allowPunctuations <- match.arg(allowPunctuations, several.ok = TRUE)
     }
     
   }
@@ -928,17 +926,17 @@ textcleaner.fluency <- function(
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
 
-# data = response_matrix
-# type = "free"
-# dictionary = "general"
-# spelling = "US"
-# miss = 99
-# add.path = NULL
-# keepStrings = FALSE
-# allowPunctuations = "-"
-# allowNumbers = FALSE
-# lowercase = TRUE
-# continue = NULL
+data = response_matrix
+type = "free"
+dictionary = "coca"
+spelling = "US"
+miss = 99
+add.path = NULL
+keepStrings = FALSE
+allowPunctuations = "-"
+allowNumbers = FALSE
+lowercase = TRUE
+continue = NULL
 
 
 
@@ -946,7 +944,7 @@ textcleaner.free <- function(
   data = NULL, miss = 99,
   spelling = c("UK", "US"),
   add.path = NULL, keepStrings = FALSE,
-  allowPunctuations,
+  allowPunctuations, dictionary,
   allowNumbers = FALSE, lowercase = TRUE,
   continue = NULL
 )
@@ -966,8 +964,6 @@ textcleaner.free <- function(
     ## Allow punctuations
     if(missing(allowPunctuations)){
       allowPunctuations <- "-"
-    }else{
-      allowPunctuations <- match.arg(allowPunctuations, several.ok = TRUE)
     }
     
   }
@@ -1022,7 +1018,7 @@ textcleaner.free <- function(
     spell.check <- try(
       spellcheck.dictionary.free(
         uniq.resp = uniq.resp,
-        dictionary = "general",
+        dictionary = dictionary,
         spelling = spelling,
         add.path = add.path,
         keepStrings = keepStrings,
@@ -1617,7 +1613,7 @@ ind.word.check <- function (string, full.dict, dictionary, spelling)
   resp <- paste(unlist(guesses), collapse = " ")
   
   # Re-check for misnomers
-  # Check if any dictionaries were improted from SemNetDictionaries
+  # Check if any dictionaries were imported from SemNetDictionaries
   if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
   {resp <- moniker(word = resp, misnom = SemNetDictionaries::load.monikers(dictionary), spelling = spelling)}
   
@@ -2585,9 +2581,6 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
     auto.spell <- names(check)
   }
   
-  # Add artificial pause for smoother feel
-  Sys.sleep(0.50)
-  
   # Let user know
   message(paste("done.\n(", length(check), " of ", length(orig), " unique responses still need to be corrected)", sep = ""))
   
@@ -2600,7 +2593,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   
   # Index pluralized responses
   ## Singularize responses
-  sing <- lapply(check, singularize)
+  sing <- lapply(check, singularize, dictionary = FALSE)
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly
@@ -2646,9 +2639,6 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
     sing <- orig[-as.numeric(names.ind)]
   }
   
-  # Add artificial pause for smoother feel
-  Sys.sleep(0.50)
-  
   # Let user know
   message(paste("done.\n(", length(sing), " unique responses still need to be corrected)", sep = ""))
   
@@ -2656,7 +2646,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   ## Correct common misspellings and monikers ##
   #--------------------------------------------#
   
-  if(all(dictionary == "general")){
+  if(all(dictionary == "general" | dictionary == "hunspell")){
     
     mons2 <- sing
     
@@ -2724,6 +2714,13 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
         ## Check for pluralized monikers
         mons2 <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x, dictionary = FALSE), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
         
+        for(i in 1:length(mons)){
+          
+          check <- moniker(singularize(mons[[i]], dictionary = FALSE), monik, spelling)
+          
+        }
+        
+        
         ## Identify responses found in dictionary
         ## Check if all are spelled correctly or incorrectly
         targets <- match(unlist(mons2),full.dict)
@@ -2770,11 +2767,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
         }
         
       }
-      
-      
-      # Add artificial pause for smoother feel
-      Sys.sleep(0.50)
-      
+
       # Let user know
       message("done.")
       
@@ -2827,6 +2820,24 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   )
   
   parallel::stopCluster(cl)
+  
+  ind.check <- vector("list", length(mons2))
+  
+  pb <- txtProgressBar(max = length(mons2), style = 3)
+  
+  for(i in 1:length(mons2)){
+    
+    ind.check[[i]] <- ind.word.check(
+      mons2[[i]], full.dict, dictionary, spelling
+    )
+    
+    setTxtProgressBar(pb, i)
+    
+  }
+  
+  close(pb)
+  
+  
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly
@@ -4907,7 +4918,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
 # MANUAL spell-check
 # Updated 04.01.2021
 spellcheck.dictionary.free <- function (
-  uniq.resp = NULL, dictionary = "general", spelling = NULL,
+  uniq.resp = NULL, dictionary = "coca", spelling = NULL,
   add.path = NULL, keepStrings = NULL,
   data = NULL, continue = NULL
 )
@@ -4915,6 +4926,17 @@ spellcheck.dictionary.free <- function (
   # Continuation check
   if(is.null(continue))
   {
+
+    # Remove stop words
+    ## stop words
+    stop_words <- SemNetDictionaries::load.dictionaries("stop_words")
+    ## format stop words for gsub
+    stop_format <- paste("\\b", stop_words, "\\b", sep = "", collapse = "|")
+    ## replace
+    uniq.resp <- gsub(stop_format, "", uniq.resp)
+    ## make sure spaces at beginning and end are removed
+    uniq.resp <- trimws(uniq.resp)
+    
     # Initialize 'from' list
     from <- as.list(uniq.resp)
     # Change names of indices
@@ -4928,29 +4950,9 @@ spellcheck.dictionary.free <- function (
     # Initialize 'to' list for changes
     to <- from
     
-    # Perform initial spell-check
-    initial.hunspell <- try(
-      hunspell::hunspell(uniq.resp),
-      silent = TRUE
-    )
-    
-    # Error check
-    if(any(class(initial.hunspell) == "try-error")){
-      error.fun(initial.hunspell, "hunspell", "textcleaner")
-      res <- list()
-      res$stop <- TRUE
-    }
-    
-    # Indices of responses that need manual correction
-    hunspell.ind <- which(
-      unlist(lapply(initial.hunspell, function(x){
-        length(x)
-      })) != 0
-    )
-    
     # Load dictionaries
     ## Full dictionary
-    full.dictionary <- SemNetDictionaries::load.dictionaries("general")
+    full.dictionary <- SemNetDictionaries::load.dictionaries("coca")
     category <- "define"
     
     ## English conversion
@@ -4963,7 +4965,7 @@ spellcheck.dictionary.free <- function (
     
     # Perform initial spell-check
     initial <- try(
-      auto.spellcheck(check = from[hunspell.ind],
+      auto.spellcheck(check = from,
                       full.dict = full.dictionary,
                       dictionary = dictionary,
                       spelling = spelling,

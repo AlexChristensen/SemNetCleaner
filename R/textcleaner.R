@@ -191,10 +191,16 @@ textcleaner <- function(
   
   # Keep strings
   if(type == "free"){
+    
     if(missing(keepStrings)){
       keepStrings <- TRUE
       warning("'keepStrings' is set to TRUE for free association tasks by default. Set argument to change this behavior.")
     }
+    
+    if(missing(dictionary)){
+      dictionary <- "coca"
+    }
+    
   }
   
   # Warning for keepStrings
@@ -219,8 +225,6 @@ textcleaner <- function(
     ## Allow punctuations
     if(missing(allowPunctuations)){
       allowPunctuations <- "-"
-    }else{
-      allowPunctuations <- match.arg(allowPunctuations, several.ok = TRUE)
     }
     
   }
@@ -246,7 +250,7 @@ textcleaner <- function(
       data = data, miss = miss,
       spelling = spelling,
       add.path = add.path, keepStrings = keepStrings,
-      allowPunctuations = allowPunctuations,
+      allowPunctuations = allowPunctuations, dictionary = dictionary,
       allowNumbers = allowNumbers, lowercase = lowercase,
       continue = continue
     )

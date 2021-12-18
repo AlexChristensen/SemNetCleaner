@@ -46,7 +46,7 @@
 #' 
 #' @export
 # Best Guess----
-# Updated 12.12.2021
+# Updated 12.16.2021
 best.guess <- function (word, full.dictionary, dictionary = NULL, tolerance = 1)
 {
     # Remove extra characters for spell-check
@@ -56,10 +56,10 @@ best.guess <- function (word, full.dictionary, dictionary = NULL, tolerance = 1)
     {
         #grab Damerau-Levenshtein distances
         guess <- as.vector(stringdist::stringdist(word, full.dictionary, method = "dl",
-                                                  weight = c(d = .33, # deletion
-                                                             i = .33, # insertion
-                                                             s = .50, # substitution
-                                                             t = .50 # transposition
+                                                  weight = c(d = 1, # deletion
+                                                             i = 1, # insertion
+                                                             s = 1, # substitution
+                                                             t = 1 # transposition
                                                              )))
 
         #compute minimum distance
@@ -76,10 +76,10 @@ best.guess <- function (word, full.dictionary, dictionary = NULL, tolerance = 1)
         
         #plural distances
         plur.dist <- stringdist::stringdist(word, plur.var, method = "dl",
-                                            weight = c(d = .33, # deletion
-                                                       i = .33, # insertion
-                                                       s = .50, # substitution
-                                                       t = .50 # transposition
+                                            weight = c(d = 1, # deletion
+                                                       i = 1, # insertion
+                                                       s = 1, # substitution
+                                                       t = 1 # transposition
                                             ))
         
         if(any(plur.dist<target.dist))
@@ -113,8 +113,8 @@ best.guess <- function (word, full.dictionary, dictionary = NULL, tolerance = 1)
                     guess.monix <- as.vector(stringdist::stringdist(word, monik, method = "dl",
                                                                     weight = c(d = 1, # deletion
                                                                                i = 1, # insertion
-                                                                               s = .75, # substitution
-                                                                               t = .5 # transposition
+                                                                               s = 1, # substitution
+                                                                               t = 1 # transposition
                                                                                )))
                     
                     #compute minimum distance

@@ -53,13 +53,14 @@
 #' 
 #' @export
 #Pluralarize
+# Updated 12.16.2021
 pluralize <- function (word)
 {
     #original word
     orig.word <- word
     
     #general dictionary to check against
-    checker <- SemNetDictionaries::general.dictionary
+    checker <- SemNetDictionaries::coca.dictionary
     
     #changed
     chn <- FALSE

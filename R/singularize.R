@@ -61,7 +61,7 @@
 #' 
 #' @export
 #Singularize
-# Updated 28.10.2021
+# Updated 12.16.2021
 singularize <- function(word, dictionary = TRUE)
 {
     #check for multiple words
@@ -77,7 +77,7 @@ singularize <- function(word, dictionary = TRUE)
     orig.word <- word
     
     #general dictionary to check against
-    checker <- SemNetDictionaries::general.dictionary
+    checker <- SemNetDictionaries::coca.dictionary
     
     #changed
     chn <- FALSE
