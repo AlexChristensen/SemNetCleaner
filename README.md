@@ -1,4 +1,4 @@
-### CRAN 1.3.2 | GitHub 1.3.2
+### CRAN 1.3.4 | GitHub 1.3.5
 
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)[![Downloads Total](https://cranlogs.r-pkg.org/badges/grand-total/SemNetCleaner?color=brightgreen)](https://cran.r-project.org/package=SemNetCleaner) [![Downloads per month](http://cranlogs.r-pkg.org/badges/SemNetCleaner?color=brightgreen)](https://cran.r-project.org/package=SemNetCleaner) 
 
@@ -8,7 +8,7 @@ devtools::install_github("AlexChristensen/SemNetCleaner")
 # How To Use
 See our tutorial: https://psyarxiv.com/eht87/
 
-Christensen, A. P., & Kenett, Y. N. (under review). Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing    semantic networks. *PsyArXiv*. doi:10.31234/osf.io/eht87. OSF:10.17605/OSF.IO/HQXTC
+Christensen, A. P., & Kenett, Y. N. (in press). Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks. *Psychological Methods*. doi:10.31234/osf.io/eht87. OSF:10.17605/OSF.IO/HQXTC
 
 # SemNetCleaner
 Implements several functions that automatize the cleaning, de-pluralizing, binarizing, de-stringing, converging,
