@@ -748,9 +748,6 @@ textcleaner.fluency <- function(
   if(isTRUE(spell.check$stop))
   {return(spell.check)}
   
-  # Let the user know that their data is being prepared
-  message("\nPreparing your data...")
-  
   # Initialize results to return
   res <- list()
   
