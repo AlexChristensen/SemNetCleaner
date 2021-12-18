@@ -197,17 +197,18 @@ server <- function(input, output, session) {
   
   # Check for 'finish' button press (top button)
   observeEvent(input$done, {
-    stopApp(reactiveData())
+    stopApp(as.matrix(reactiveData()))
   })
   
   # Check for 'finish' button press (bottom button)
   observeEvent(input$done2, {
-    stopApp(reactiveData())
+    stopApp(as.matrix(reactiveData()))
   })
   
   # Check for close out
   onStop(function(x){
-    changes <<- as.matrix(isolate(reactiveData()))
+    changes <<- isolate(reactiveData())
+    changes <<- as.matrix(changes)
     return(changes)
   })
   
