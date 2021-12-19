@@ -6067,7 +6067,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     
     # Remove changes so they are not added
     # to the user's environment
-    rm(changes)
+    rm(changes, envir = .GlobalEnv)
     
     return(res)
     
