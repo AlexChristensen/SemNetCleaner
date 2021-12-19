@@ -207,9 +207,7 @@ server <- function(input, output, session) {
   
   # Check for close out
   onStop(function(x){
-    changes <<- isolate(reactiveData())
-    changes <<- as.matrix(changes)
-    return(changes)
+    changes <<- as.matrix(isolate(reactiveData()))
   })
   
 }

@@ -789,7 +789,7 @@ textcleaner.fluency <- function(
   ## Check if there were auto-corrections
   if(length(res$spellcheck$automated) != 0){
     
-    res.check <- try(correct.changes(res), silent = TRUE)
+    res.check <- try(correct.changes(res, type = "fluency"), silent = TRUE)
     
     if(any(class(res.check) == "try-error"))
     {
@@ -1086,7 +1086,7 @@ textcleaner.free <- function(
   ## Check if there were auto-corrections
   if(length(res$spellcheck$automated) != 0){
     
-    res <- try(correct.changes(res), silent = TRUE)
+    res <- try(correct.changes(res, type = "free"), silent = TRUE)
     
     if(any(class(res) == "try-error"))
     {
@@ -5797,17 +5797,6 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
   # if(!class(textcleaner.obj) == "textcleaner")
   # {stop("A 'textcleaner' class object was not input in the 'textcleaner.obj' argument")}
   
-  # Check for type
-  if(missing(type)){
-    
-    if("binary" %in% names(textcleaner.obj$responses)){
-      type <- "fluency"
-    }else{
-      type <- "free"
-    }
-    
-  }else{type <- match.arg(type)}
-  
   # Store textcleaner object as result list
   res <- textcleaner.obj
   
@@ -5975,8 +5964,8 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     correspondence <- res$spellcheck$correspondence
     
     # Get number of columns between correspondence and changes matrices to match
-    if(ncol(correspondence) > ncol(changes))
-    {
+    if(ncol(correspondence) > ncol(changes)){
+      
       ## Difference in number of columns
       diff <- ncol(correspondence) - ncol(changes)
       
@@ -5984,8 +5973,8 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
       for(i in 1:diff)
       {changes <- as.matrix(cbind(changes, rep(NA, nrow(changes))))}
       
-    }else if(ncol(correspondence) < ncol(changes))
-    {
+    }else if(ncol(correspondence) < ncol(changes)){
+      
       ## Difference in number of columns
       diff <- ncol(changes) - ncol(correspondence)
       
@@ -5995,7 +5984,7 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     }
     
     # Update correspondence matrix
-    correspondence[row.names(res$spellcheck$automated),] <- as.matrix(changes)
+    correspondence[row.names(res$spellcheck$automated),] <- changes
     res$spellcheck$correspondence <- correspondence
     
     # Create 'from' list
