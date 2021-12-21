@@ -28,7 +28,7 @@
 #' 
 #' @export
 #QWERTY Distance----
-#Updated 14.02.2020
+#Updated 21.12.2021
 qwerty.dist <- function(wordA, wordB)
 {
   # Remove diacritic characters
@@ -49,10 +49,28 @@ qwerty.dist <- function(wordA, wordB)
     
     #Compile qwerty locations
     keyb <- sweep(m, 2, c(1, -1), "*")
+    keyb <- keyb[-which(duplicated(row.names(keyb))),]
+    keyb["m","x"] <- 6
     
-    #Add [space]
-    keyb <- rbind(keyb,c(4,-3),c(9,1),c(10,-1))
-    row.names(keyb)[28:30] <- c(" ","-","'")
+    #Add keys
+    keyb <- rbind(
+      keyb,
+      c(4,-3), # space
+      c(9,1), # hyphen
+      c(9,1), # underscore
+      c(10,-1), # apostrophe
+      c(10,-1), # quote
+      c(7,-2), # comma
+      c(8,-2), # period
+      c(9,-2), # slash
+      c(9,-2) # question mark
+    )
+    row.names(keyb)[27:nrow(keyb)] <- c(
+      " ", "-", "_",
+      "'", '"',
+      ",", ".",
+      "/", "?"
+    )
     
     #Initialize targets matrix
     A <- matrix(0,nrow=nchar(wordA),ncol=2)
