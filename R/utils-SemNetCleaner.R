@@ -926,7 +926,7 @@ textcleaner.fluency <- function(
 
 # data = response_matrix
 # type = "free"
-# dictionary = "coca"
+# dictionary = "cocaspell"
 # spelling = "US"
 # miss = 99
 # add.path = NULL
@@ -965,8 +965,8 @@ textcleaner.free <- function(
   }
   
   # Check if user is continuing from a previous point
-  if(is.null(continue))
-  {
+  if(is.null(continue)){
+    
     ## Make sure data is not tibble
     data <- as.matrix(data)
     
@@ -976,8 +976,9 @@ textcleaner.free <- function(
       silent = TRUE
     )
     
-    if(any(class(id.res) == "try-error"))
-    {return(error.fun(id.res, "obtain.id", "textcleaner"))}
+    if(any(class(id.res) == "try-error")){
+      return(error.fun(id.res, "obtain.id", "textcleaner"))
+    }
     
     data <- id.res$data
     ids <- id.res$ids
@@ -988,8 +989,9 @@ textcleaner.free <- function(
       silent = TRUE
     )
     
-    if(any(class(data) == "try-error"))
-    {return(error.fun(data, "convert.miss", "textcleaner"))}
+    if(any(class(data) == "try-error")){
+      return(error.fun(data, "convert.miss", "textcleaner"))
+    }
     
     ## Prepare for spellcheck.dictionary (returns data as data frame)
     ### Removes punctuations and digits
@@ -1004,8 +1006,9 @@ textcleaner.free <- function(
       silent = TRUE
     )
     
-    if(any(class(data) == "try-error"))
-    {return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))}
+    if(any(class(data) == "try-error")){
+      return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))
+    }
     
     ## Obtain unique responses for efficient spell-checking
     uniq.resp <- na.omit(unique(unlist(data[,"Response"])))
@@ -1023,13 +1026,16 @@ textcleaner.free <- function(
       silent <- TRUE
     )
     
-  }else if(length(continue) != 8) # Continue spell-check
-  {spell.check <- spellcheck.dictionary.free(continue = continue)
-  }else{spell.check <- continue}
+  }else if(length(continue) != 8){ # Continue spell-check
+    spell.check <- spellcheck.dictionary.free(continue = continue)
+  }else{
+    spell.check <- continue
+  }
   
   # Check if spell-check was stopped (either error or user stop)
-  if(spell.check$stop)
-  {return(spell.check)}
+  if(spell.check$stop){
+    return(spell.check)
+  }
   
   # Re-obtain IDs
   ids <- unique(spell.check$data[,"ID"])
@@ -2785,16 +2791,16 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   cl <- parallel::makeCluster(ncores)
   
   # Functions
-  funcs <- c(
-    "bad.response", "best.guess",
-    "moniker"
-  )
-  
-  # Export functions
-  parallel::clusterExport(
-    cl = cl, funcs,
-    envir = as.environment(asNamespace("SemNetCleaner"))
-  )
+  # funcs <- c(
+  #   "bad.response", "best.guess",
+  #   "moniker"
+  # )
+  # 
+  # # Export functions
+  # parallel::clusterExport(
+  #   cl = cl, funcs,
+  #   envir = as.environment(asNamespace("SemNetCleaner"))
+  # )
   
   # Spell-check each individual word within the list (including multiple word responses)
   ind.check <- unlist(
@@ -2885,17 +2891,17 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   # Set up clusters
   cl <- parallel::makeCluster(ncores)
   
-  # Functions
-  funcs <- c(
-    "bad.response", "best.guess",
-    "moniker"
-  )
-  
-  # Export functions
-  parallel::clusterExport(
-    cl = cl, funcs,
-    envir = as.environment(asNamespace("SemNetCleaner"))
-  )
+  # # Functions
+  # funcs <- c(
+  #   "bad.response", "best.guess",
+  #   "moniker"
+  # )
+  # 
+  # # Export functions
+  # parallel::clusterExport(
+  #   cl = cl, funcs,
+  #   envir = as.environment(asNamespace("SemNetCleaner"))
+  # )
   
   # Spell-check each individual word within the list (including multiple word responses)
   multi.word <- pbapply::pblapply(
@@ -4889,14 +4895,13 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
 # MANUAL spell-check
 # Updated 04.01.2021
 spellcheck.dictionary.free <- function (
-  uniq.resp = NULL, dictionary = "coca", spelling = NULL,
+  uniq.resp = NULL, dictionary = "cocaspell", spelling = NULL,
   add.path = NULL, keepStrings = NULL,
   data = NULL, continue = NULL
 )
 {
   # Continuation check
-  if(is.null(continue))
-  {
+  if(is.null(continue)){
 
     # Remove stop words
     ## stop words
@@ -4907,6 +4912,8 @@ spellcheck.dictionary.free <- function (
     uniq.resp <- gsub(stop_format, "", uniq.resp)
     ## make sure spaces at beginning and end are removed
     uniq.resp <- trimws(uniq.resp)
+    ## remove bad words
+    uniq.resp <- na.omit(bad.response(uniq.resp))
     
     # Initialize 'from' list
     from <- as.list(uniq.resp)
@@ -4923,7 +4930,7 @@ spellcheck.dictionary.free <- function (
     
     # Load dictionaries
     ## Full dictionary
-    full.dictionary <- SemNetDictionaries::load.dictionaries("coca")
+    full.dictionary <- SemNetDictionaries::load.dictionaries("cocaspell")
     category <- "define"
     
     ## English conversion
