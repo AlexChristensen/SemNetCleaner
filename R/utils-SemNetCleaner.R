@@ -4958,12 +4958,9 @@ spellcheck.dictionary.free <- function (
       res$stop <- TRUE
     }
     
-    # Indices of responses that need manual correction
-    ind <- hunspell.ind[initial$manual]
-    
     # Current responses (after auto-correction phase)
-    auto.ind <- hunspell.ind[initial$auto]
-    to[hunspell.ind] <- initial$to
+    auto.ind <- initial$auto
+    to <- initial$to
     
     # Create duplicate current responses (for GO BACK response option)
     initial.to <- to
