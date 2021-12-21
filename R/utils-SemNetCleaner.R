@@ -2791,16 +2791,16 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   cl <- parallel::makeCluster(ncores)
   
   # Functions
-  # funcs <- c(
-  #   "bad.response", "best.guess",
-  #   "moniker"
-  # )
-  # 
-  # # Export functions
-  # parallel::clusterExport(
-  #   cl = cl, funcs,
-  #   envir = as.environment(asNamespace("SemNetCleaner"))
-  # )
+  funcs <- c(
+    "bad.response", "best.guess",
+    "moniker"
+  )
+
+  # Export functions
+  parallel::clusterExport(
+    cl = cl, funcs,
+    envir = as.environment(asNamespace("SemNetCleaner"))
+  )
   
   # Spell-check each individual word within the list (including multiple word responses)
   ind.check <- unlist(
@@ -2815,6 +2815,16 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   )
   
   parallel::stopCluster(cl)
+  
+  for(i in 883:length(mons2)){
+    some <- ind.word.check(
+      mons2[[i]], full.dict,
+      dictionary, spelling
+    )
+  }
+  
+  
+  
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly

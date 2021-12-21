@@ -82,27 +82,24 @@ best.guess <- function (word, full.dictionary, dictionary = NULL, tolerance = 1)
                                                        t = 1 # transposition
                                             ))
         
-        if(any(plur.dist<target.dist))
-        {
+        if(any(plur.dist<target.dist)){
             #update target distances
             target.dist[plur.dist<target.dist] <- plur.dist[plur.dist<target.dist]
         }
         
         #determine if auto-correction is possible
-        if(length(which(target.dist<=tolerance))==1)
-        {
+        if(length(which(target.dist<=tolerance))==1){
             #suggest option as best guess
             bestguess <- full.dictionary[target[which(target.dist<=tolerance)]]
             
-        }else if(length(target.dist) != 1)
-        {
+        }else if(length(target.dist) != 1){
             # check monikers, phoenetic and qwerty distance
             
             # check for monikers
-            if(!is.null(dictionary))
-            {
-                if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")]))
-                {
+            if(!is.null(dictionary)){
+                
+                if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")])){
+                    
                     # Monikers
                     monix <- dictionary[which(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")])]
                     
