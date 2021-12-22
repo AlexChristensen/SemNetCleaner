@@ -5037,8 +5037,7 @@ spellcheck.dictionary.free <- function (
   }
   
   # Loop through for manual spell-check
-  while(main.count != (length(ind) + 1))
-  {
+  while(main.count != (length(ind) + 1)){
     
     # Set up target index
     i <- ind[main.count]
@@ -5595,8 +5594,8 @@ spellcheck.dictionary.free <- function (
   final.res <- list()
   
   # Update dictionary
-  if(length(orig.dictionary) != length(full.dictionary))
-  {
+  if(length(orig.dictionary) != length(full.dictionary)){
+    
     # Places to save
     ## Choices
     choices <- c("In my results",
@@ -5667,11 +5666,50 @@ spellcheck.dictionary.free <- function (
       ### Target dictionaries
       target <- dictionary[na.omit(match(SemNetDictionaries::dictionaries(TRUE), dictionary))]
       
+      ### Obtain monikers
+      target.moniker <- SemNetDictionaries::load.monikers(target)
+      
       ### Check for monikers
-      for(i in 1:length(to))
-        for(j in 1:length(to[[i]])){
-          to[[i]][j] <- unlist(moniker(to[[i]][j], SemNetDictionaries::load.monikers(target), spelling = spelling))
-        }
+      # Message for large number of responses remaining
+      message("\nUsing parallel processing to speed up moniker check...")
+      
+      # Number of cores
+      ncores <- parallel::detectCores() / 2
+      
+      # Set up clusters
+      cl <- parallel::makeCluster(ncores)
+      
+      # # Functions
+      # funcs <- c(
+      #   "moniker"
+      # )
+      # 
+      # # Export functions
+      # parallel::clusterExport(
+      #   cl = cl, funcs,
+      #   envir = as.environment(asNamespace("SemNetCleaner"))
+      # )
+      
+      # Spell-check each individual word within the list (including multiple word responses)
+      replace_to <- pbapply::pblapply(
+        seq_along(to),
+        function(i, to, target.moniker, spelling){
+          unlist(lapply(to[[i]], function(x){
+            unlist(moniker(
+              x,
+              target.moniker,
+              spelling = spelling
+            ))
+          }))
+        },
+        to = to, target.moniker = target.moniker, spelling = spelling,
+        cl = cl
+      )
+      
+      parallel::stopCluster(cl)
+      
+      # Replace to list
+      to <- replace_to
       
       ### Let user know
       message("done")
