@@ -5710,9 +5710,7 @@ spellcheck.dictionary.free <- function (
       
       # Replace to list
       to <- replace_to
-      
-      ### Let user know
-      message("done")
+  
     }
     
   }
