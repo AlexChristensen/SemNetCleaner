@@ -2523,7 +2523,7 @@ AutomatedEdit <- function()
 #' 
 #' @noRd
 # Automated Spell-check
-# Updated 02.01.2020
+# Updated 22.12.2021
 auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
 {
   # Change names of indices
@@ -2790,7 +2790,7 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   # Set up clusters
   cl <- parallel::makeCluster(ncores)
   
-  # Functions
+  # # Functions
   # funcs <- c(
   #   "bad.response", "best.guess",
   #   "moniker"
@@ -4959,6 +4959,7 @@ spellcheck.dictionary.free <- function (
     }
     
     # Current responses (after auto-correction phase)
+    ind <- initial$manual
     auto.ind <- initial$auto
     to <- initial$to
     
