@@ -924,7 +924,8 @@ textcleaner.fluency <- function(
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
 
-# data = response_matrix
+# twenty <- max(match(paste(1:20), response_matrix[,"ID"]))
+# data = response_matrix[1:twenty,]
 # type = "free"
 # dictionary = "cocaspell"
 # spelling = "US"
@@ -1044,8 +1045,9 @@ textcleaner.free <- function(
   res <- list()
   
   ## Return dictionary if user decided to
-  if("dictionary" %in% names(spell.check))
-  {res$dictionary <- spell.check$dictionary}
+  if("dictionary" %in% names(spell.check)){
+    res$dictionary <- spell.check$dictionary
+  }
   
   ## Re-assign data and ids variables in case of user stoppage or error
   data <- spell.check$data
@@ -1061,8 +1063,8 @@ textcleaner.free <- function(
     silent = TRUE
   )
   
-  if(any(class(corr.mat) == "try-error"))
-  {
+  if(any(class(corr.mat) == "try-error")){
+    
     error.fun(corr.mat, "correspondence.matrix", "textcleaner")
     
     return(spell.check)
@@ -1116,8 +1118,8 @@ textcleaner.free <- function(
     silent = TRUE
   )
 
-  if(any(class(corrected) == "try-error"))
-  {
+  if(any(class(corrected) == "try-error")){
+    
     error.fun(corrected, "correct.data.free", "textcleaner")
 
     return(spell.check)
@@ -1133,7 +1135,7 @@ textcleaner.free <- function(
   cleaned.list <- na.omit(corrected$corrected)
   
   ## Cleaned data
-  res$data$clean <- corrected$corrected
+  res$data$clean <- cleaned.list
   
   ## Create frequency matrix
   ### Unique responses and cues
@@ -5658,8 +5660,8 @@ spellcheck.dictionary.free <- function (
   if(main.count != 1){
     
     ## Ad hoc check for monikers
-    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")]))
-    {
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")])){
+      
       ### Let user know
       message("\nRunning ad hoc check for common misspellings and monikers...", appendLF = FALSE)
       
@@ -5713,6 +5715,35 @@ spellcheck.dictionary.free <- function (
   
     }
     
+  }
+  
+  # Separate automated indices
+  auto.ind <- na.omit(
+    unlist(
+      lapply(auto.ind, function(i){
+        
+        # Responses
+        from_response <- from[[i]]
+        to_response <- to[[i]]
+        
+        # Check for match
+        if(all(!is.na(match(from_response, to_response)))){
+          return(NA)
+        }else{
+          return(i)
+        }
+        
+      })
+    )
+  )
+  
+  # Separate moniker changes
+  if(main.count != 1){
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)[-which(SemNetDictionaries::dictionaries(TRUE) == "general")])){
+      
+      auto.ind <- auto.ind[!from[auto.ind] %in% target.moniker]
+      
+    }
   }
   
   # Collect results
