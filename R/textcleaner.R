@@ -207,7 +207,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 24.10.2021
+# Updated 21.01.2022
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
@@ -243,7 +243,7 @@ textcleaner <- function(
     }
     
     if(missing(dictionary)){
-      dictionary <- "coca"
+      dictionary <- "cocaspell"
     }
     
   }

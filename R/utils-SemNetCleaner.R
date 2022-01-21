@@ -2792,17 +2792,17 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   # Set up clusters
   cl <- parallel::makeCluster(ncores)
   
-  # # Functions
-  # funcs <- c(
-  #   "bad.response", "best.guess",
-  #   "moniker"
-  # )
-  # 
-  # # Export functions
-  # parallel::clusterExport(
-  #   cl = cl, funcs,
-  #   envir = as.environment(asNamespace("SemNetCleaner"))
-  # )
+  # Functions
+  funcs <- c(
+    "bad.response", "best.guess",
+    "moniker"
+  )
+
+  # Export functions
+  parallel::clusterExport(
+    cl = cl, funcs,
+    envir = as.environment(asNamespace("SemNetCleaner"))
+  )
   
   # Spell-check each individual word within the list (including multiple word responses)
   ind.check <- unlist(
@@ -2893,17 +2893,17 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   # Set up clusters
   cl <- parallel::makeCluster(ncores)
   
-  # # Functions
-  # funcs <- c(
-  #   "bad.response", "best.guess",
-  #   "moniker"
-  # )
-  # 
-  # # Export functions
-  # parallel::clusterExport(
-  #   cl = cl, funcs,
-  #   envir = as.environment(asNamespace("SemNetCleaner"))
-  # )
+  # Functions
+  funcs <- c(
+    "bad.response", "best.guess",
+    "moniker"
+  )
+
+  # Export functions
+  parallel::clusterExport(
+    cl = cl, funcs,
+    envir = as.environment(asNamespace("SemNetCleaner"))
+  )
   
   # Spell-check each individual word within the list (including multiple word responses)
   multi.word <- pbapply::pblapply(
@@ -3195,8 +3195,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
     # Initialize END
     end <- FALSE
     
-    while(ans == 30)
-    {
+    while(ans == 30){
+      
       # Title for spell-check
       if(keepStrings){
         
@@ -3238,6 +3238,9 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       # Check for user stoppage
       if(tolower(ans) == "x" || ans == "")
       {return("STOP")}
+      
+      # Original answer 
+      original_ans <- tolower(ans)
       
       # Check for appropriate answer
       ans <- appropriate.answer(answer = ans, choices = choices, default = default)
@@ -3673,9 +3676,9 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         ## Change responses in context
         context <- rep("NA", length(context))
         
-      }else if(ans == length(choices) + 1) # GO BACK
+      }else if(ans == length(choices) + 1 & original_ans == "b") # GO BACK
       {go.back <- TRUE
-      }else if(ans == length(choices) + 2) # HELP
+      }else if(ans == length(choices) + 2 & original_ans == "h") # HELP
       {
         # Get `textcleaner` documentation
         textcleaner_help(check, context, original, possible)
@@ -5053,8 +5056,8 @@ spellcheck.dictionary.free <- function (
     }
     
     # Branch based on number of words
-    if(length(target) > 1)
-    {
+    if(length(target) > 1){
+      
       # Check punctuation
       target.punct <- gsub("[^[:alnum:][:space:]]", "", target)
       
@@ -5062,9 +5065,11 @@ spellcheck.dictionary.free <- function (
       check.words <- target[which(!target.punct %in% full.dictionary)]
       
       # Initialize multi count
-      if(is.null(continue$multi.count))
-      {multi.count <- 1
-      }else{continue$multi.count <- NULL}
+      if(is.null(continue$multi.count)){
+        multi.count <- 1
+      }else{
+        continue$multi.count <- NULL
+      }
       
       # Check if words have been checked already
       if(length(check.words) == 0){
@@ -5139,8 +5144,8 @@ spellcheck.dictionary.free <- function (
         linebreak()
         
         ## Check for user stoppage or error
-        if("STOP" %in% result)
-        {
+        if("STOP" %in% result){
+          
           # Let user know their data is being saved
           message("\nUser stopped. Saving progress...\n")
           
@@ -5179,8 +5184,8 @@ spellcheck.dictionary.free <- function (
           
           return(res)
           
-        }else if(any(class(result) == "try-error"))
-        {
+        }else if(any(class(result) == "try-error")){
+          
           # Give error
           error.fun(result, "spellcheck.menu", "textcleaner")
           
@@ -5561,8 +5566,8 @@ spellcheck.dictionary.free <- function (
     }
     
     # Update progress bar
-    if(Sys.info()["sysname"] == "Windows")
-    {
+    if(Sys.info()["sysname"] == "Windows"){
+      
       percent <- floor((main.count/length(ind))*100)
       info <- suppressWarnings(sprintf(paste(main.count, "of", length(ind), "responses done"), percent))
       tcltk::setTkProgressBar(pb, main.count, sprintf("Spell-check Progress (%s)", info), info)
