@@ -3075,12 +3075,12 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   bad.index <- which(is.na(bad.uniq.resp))
   
   # Remove single letters
-  rm_letters <- letters[!letters %in% full.dictionary]
+  rm_letters <- letters[!letters %in% full.dict]
   one.index <- which(uniq.resp %in% rm_letters)
   
   # Remove two letters
   two_letters <- apply(expand.grid(letters, letters), 1, paste, collapse = "", sep = "")
-  rm_letters <- two_letters[!two_letters %in% full.dictionary]
+  rm_letters <- two_letters[!two_letters %in% full.dict]
   two.index <- which(uniq.resp %in% rm_letters)
   
   # Concatenate bad indices
