@@ -4946,6 +4946,15 @@ spellcheck.dictionary.free <- function (
     ## Save original dictionary (to compare against later)
     orig.dictionary <- full.dictionary
     
+    # Remove single letters
+    rm_letters <- letters[!letters %in% full.dictionary]
+    uniq.resp <- uniq.resp[!uniq.resp %in% rm_letters]
+    
+    # Remove two letters
+    two_letters <- apply(expand.grid(letters, letters), 1, paste, collapse = "", sep = "")
+    rm_letters <- two_letters[!two_letters %in% full.dictionary]
+    uniq.resp <- uniq.resp[!uniq.resp %in% rm_letters]
+    
     # Perform initial spell-check
     initial <- try(
       auto.spellcheck(check = from,
@@ -5053,6 +5062,7 @@ spellcheck.dictionary.free <- function (
     # Keep strings?
     if(keepStrings){
       target <- unlist(strsplit(target, split = " "))
+      target <- na.omit(ifelse(target == "", NA, target))
     }
     
     # Branch based on number of words
