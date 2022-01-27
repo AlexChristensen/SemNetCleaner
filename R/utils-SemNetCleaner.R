@@ -2793,16 +2793,16 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   cl <- parallel::makeCluster(ncores)
   
   # Functions
-  funcs <- c(
-    "bad.response", "best.guess",
-    "moniker"
-  )
-
-  # Export functions
-  parallel::clusterExport(
-    cl = cl, funcs,
-    envir = as.environment(asNamespace("SemNetCleaner"))
-  )
+  # funcs <- c(
+  #   "bad.response", "best.guess",
+  #   "moniker"
+  # )
+  # 
+  # # Export functions
+  # parallel::clusterExport(
+  #   cl = cl, funcs,
+  #   envir = as.environment(asNamespace("SemNetCleaner"))
+  # )
   
   # Spell-check each individual word within the list (including multiple word responses)
   ind.check <- unlist(
@@ -2894,16 +2894,16 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   cl <- parallel::makeCluster(ncores)
   
   # Functions
-  funcs <- c(
-    "bad.response", "best.guess",
-    "moniker"
-  )
-
-  # Export functions
-  parallel::clusterExport(
-    cl = cl, funcs,
-    envir = as.environment(asNamespace("SemNetCleaner"))
-  )
+  # funcs <- c(
+  #   "bad.response", "best.guess",
+  #   "moniker"
+  # )
+  # 
+  # # Export functions
+  # parallel::clusterExport(
+  #   cl = cl, funcs,
+  #   envir = as.environment(asNamespace("SemNetCleaner"))
+  # )
   
   # Spell-check each individual word within the list (including multiple word responses)
   multi.word <- pbapply::pblapply(
@@ -3302,16 +3302,16 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   cl <- parallel::makeCluster(ncores)
   
   # Functions
-  funcs <- c(
-    "bad.response", "best.guess",
-    "moniker"
-  )
-  
-  # Export functions
-  parallel::clusterExport(
-    cl = cl, funcs,
-    envir = as.environment(asNamespace("SemNetCleaner"))
-  )
+  # funcs <- c(
+  #   "bad.response", "best.guess",
+  #   "moniker"
+  # )
+  # 
+  # # Export functions
+  # parallel::clusterExport(
+  #   cl = cl, funcs,
+  #   envir = as.environment(asNamespace("SemNetCleaner"))
+  # )
   
   # Spell-check each individual word within the list (including multiple word responses)
   ind.check <- unlist(
@@ -3403,16 +3403,16 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   cl <- parallel::makeCluster(ncores)
   
   # Functions
-  funcs <- c(
-    "bad.response", "best.guess",
-    "moniker"
-  )
-  
-  # Export functions
-  parallel::clusterExport(
-    cl = cl, funcs,
-    envir = as.environment(asNamespace("SemNetCleaner"))
-  )
+  # funcs <- c(
+  #   "bad.response", "best.guess",
+  #   "moniker"
+  # )
+  # 
+  # # Export functions
+  # parallel::clusterExport(
+  #   cl = cl, funcs,
+  #   envir = as.environment(asNamespace("SemNetCleaner"))
+  # )
   
   # Spell-check each individual word within the list (including multiple word responses)
   multi.word <- pbapply::pblapply(
