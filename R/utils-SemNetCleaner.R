@@ -6337,7 +6337,7 @@ correct.data.free <- function (data, corr.mat, ids)
       
       # Ensure it's a matrix
       if(!is.matrix(corr)){
-        corr <- matrix(corr, byrow = TRUE)
+        corr <- t(as.matrix(corr))
       }
       
       # Remove NA columns
@@ -6353,7 +6353,7 @@ correct.data.free <- function (data, corr.mat, ids)
           
           # Check for length change
           if(length(ind) != length(corr))
-          {corr <- matrix(corr, byrow = TRUE)}
+          {corr <- t(as.matrix(corr))}
           
         }
         
@@ -6365,8 +6365,8 @@ correct.data.free <- function (data, corr.mat, ids)
         # Convert responses in their correct order back into data
         correct.ord <- as.vector(t(corr))
         
-        if(length(correct.ord) > 0)
-        {
+        if(length(correct.ord) > 0){
+          
           # Compute number of intrusions
           behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + sum(is.na(correct.ord))
           
