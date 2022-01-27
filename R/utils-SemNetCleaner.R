@@ -4920,19 +4920,6 @@ spellcheck.dictionary.free <- function (
     ## remove bad words
     uniq.resp <- na.omit(bad.response(uniq.resp))
     
-    # Initialize 'from' list
-    from <- as.list(uniq.resp)
-    # Change names of indices
-    names(from) <- formatC(
-      1:length(from),
-      width = nchar(as.character(length(from))),
-      format = "d", flag = "0"
-    )
-    ## English conversion
-    #from <- brit.us.conv(from, spelling = spelling, dictionary = FALSE)
-    # Initialize 'to' list for changes
-    to <- from
-    
     # Load dictionaries
     ## Full dictionary
     full.dictionary <- SemNetDictionaries::load.dictionaries("cocaspell")
@@ -4954,6 +4941,19 @@ spellcheck.dictionary.free <- function (
     two_letters <- apply(expand.grid(letters, letters), 1, paste, collapse = "", sep = "")
     rm_letters <- two_letters[!two_letters %in% full.dictionary]
     uniq.resp <- uniq.resp[!uniq.resp %in% rm_letters]
+    
+    # Initialize 'from' list
+    from <- as.list(uniq.resp)
+    # Change names of indices
+    names(from) <- formatC(
+      1:length(from),
+      width = nchar(as.character(length(from))),
+      format = "d", flag = "0"
+    )
+    ## English conversion
+    #from <- brit.us.conv(from, spelling = spelling, dictionary = FALSE)
+    # Initialize 'to' list for changes
+    to <- from
     
     # Perform initial spell-check
     initial <- try(
