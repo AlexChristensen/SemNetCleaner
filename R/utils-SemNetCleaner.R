@@ -1027,7 +1027,7 @@ textcleaner.free <- function(
       silent <- TRUE
     )
     
-  }else if(length(continue) != 8){ # Continue spell-check
+  }else if(length(continue) > 8){ # Continue spell-check
     spell.check <- spellcheck.dictionary.free(continue = continue)
   }else{
     spell.check <- continue
@@ -6011,8 +6011,8 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
   target.changes <- which(apply(differences, 1, function(x){any(x)}))
   
   # If there are no changes, then return original object
-  if(length(target.changes) == 0)
-  {
+  if(length(target.changes) == 0){
+    
     message("\nNo responses changed.")
     
     return(textcleaner.obj)
@@ -6023,8 +6023,8 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     track.changes <- list()
     
     ## Loop through changes
-    for(i in 1:length(target.changes))
-    {
+    for(i in 1:length(target.changes)){
+      
       ## Set up change matrix
       chn.mat <- rbind(automated[target.changes[i],], changes[target.changes[i],])
       colnames(chn.mat)[-1] <- rep("to", ncol(chn.mat)-1)
@@ -6088,8 +6088,9 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
       silent = TRUE
     )
     
-    if(any(class(corr.mat) == "try-error"))
-    {return(error.fun(corr.mat, "correspondence.matrix", "correct.changes"))}
+    if(any(class(corr.mat) == "try-error")){
+      return(error.fun(corr.mat, "correspondence.matrix", "correct.changes"))
+    }
     
     ## Update with changes made by user
     res$spellcheck$automated <- changes
@@ -6335,8 +6336,9 @@ correct.data.free <- function (data, corr.mat, ids)
       corr <- corr.mat[ind,-1]
       
       # Ensure it's a matrix
-      if(!is.matrix(corr))
-      {corr <- t(as.matrix(corr))}
+      if(!is.matrix(corr)){
+        corr <- matrix(corr, byrow = TRUE)
+      }
       
       # Remove NA columns
       na.cols <- apply(corr, 2, function(x){all(is.na(x))})
@@ -6351,7 +6353,7 @@ correct.data.free <- function (data, corr.mat, ids)
           
           # Check for length change
           if(length(ind) != length(corr))
-          {corr <- t(as.matrix(corr))}
+          {corr <- matrix(corr, byrow = TRUE)}
           
         }
         
