@@ -3091,10 +3091,10 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   orig[names(na.index)] <- NA
   
   ## Update correctly spelled indices
-  names.ind <- sort(c(names.ind, names(na.index)))
+  names.ind <- unique(sort(c(names.ind, names(na.index))))
   
   # Remove responses from check
-  check <- check[-na.index]
+  check <- check[setdiff(names(check), names(na.index))]
   auto.spell <- names(check)
   
   #------------------------#
@@ -3299,9 +3299,9 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   ncores <- parallel::detectCores() / 2
   
   # Set up clusters
-  cl <- parallel::makeCluster(ncores)
-  
-  # Functions
+  # cl <- parallel::makeCluster(ncores)
+  # 
+  # # Functions
   # funcs <- c(
   #   "bad.response", "best.guess",
   #   "moniker"
@@ -3400,9 +3400,9 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   ncores <- parallel::detectCores() / 2
   
   # Set up clusters
-  cl <- parallel::makeCluster(ncores)
-  
-  # Functions
+  # cl <- parallel::makeCluster(ncores)
+  # 
+  # # Functions
   # funcs <- c(
   #   "bad.response", "best.guess",
   #   "moniker"
@@ -6204,11 +6204,17 @@ spellcheck.dictionary.free <- function (
         seq_along(to),
         function(i, to, target.moniker, spelling){
           unlist(lapply(to[[i]], function(x){
-            unlist(moniker(
-              x,
-              target.moniker,
-              spelling = spelling
-            ))
+            
+            if(!is.na(x)){
+              
+              unlist(moniker(
+                x,
+                target.moniker,
+                spelling = spelling
+              ))
+              
+            }
+            
           }))
         },
         to = to, target.moniker = target.moniker, spelling = spelling,
