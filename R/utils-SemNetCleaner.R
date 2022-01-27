@@ -3299,8 +3299,8 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   ncores <- parallel::detectCores() / 2
   
   # Set up clusters
-  # cl <- parallel::makeCluster(ncores)
-  # 
+  cl <- parallel::makeCluster(ncores)
+
   # # Functions
   # funcs <- c(
   #   "bad.response", "best.guess",
@@ -3400,8 +3400,8 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   ncores <- parallel::detectCores() / 2
   
   # Set up clusters
-  # cl <- parallel::makeCluster(ncores)
-  # 
+  cl <- parallel::makeCluster(ncores)
+
   # # Functions
   # funcs <- c(
   #   "bad.response", "best.guess",
