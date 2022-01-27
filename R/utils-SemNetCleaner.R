@@ -2993,6 +2993,517 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
   return(res)
 }
 
+# Automated Spell-check
+# Updated 27.01.2022
+auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStrings)
+{
+  # Change names of indices
+  names(check) <- formatC(1:length(check),
+                          width = nchar(as.character(length(check))),
+                          format = "d", flag = "0")
+  
+  # Keep full indices
+  full.names <- names(check)
+  
+  # Save original responses
+  orig <- check
+  
+  #-------------------------------#
+  ## Correctly spelled responses ##
+  #-------------------------------#
+  
+  # Let user know
+  message("\nIdentifying correctly spelled responses...", appendLF = FALSE)
+  
+  # Index correctly and incorrectly spelled responses
+  ## Check if all are spelled correctly or incorrectly
+  targets <- match(unlist(check),full.dict)
+  
+  if(all(is.na(targets))){ # All spelled incorrectly
+    
+    check <- orig
+    auto.spell <- names(check)
+    
+  }else if(all(!is.na(targets))){ # All spelled correctly
+    
+    ind <- 1:length(check)
+    names.ind <- names(check)[ind]
+    
+    # Message
+    message("\n\nAll words passed automated spell-check. Ending spell-check...")
+    
+    # Initialize result list
+    res <- list()
+    
+    res$manual <- as.numeric()
+    auto <- matrix("", nrow = 0, ncol = 2)
+    colnames(auto) <- c("from", "to_1")
+    res$auto <- auto
+    res$to <- orig
+    
+    return(res)
+    
+  }else{
+    
+    ## Get indices
+    ind <- which(!is.na(targets))
+    names.ind <- names(check)[ind]
+    
+    # Remove responses from original
+    check <- orig[-as.numeric(names.ind)]
+    auto.spell <- names(check)
+  }
+  
+  # Let user know
+  message(paste("done.\n(", length(check), " of ", length(orig), " unique responses still need to be corrected)", sep = ""))
+  
+  #---------------------------#
+  ## Short and bad responses ##
+  #---------------------------#
+  
+  # Remove stop words
+  ## stop words
+  stop_words <- SemNetDictionaries::load.dictionaries("stop_words")
+  ## format stop words for gsub
+  stop_format <- paste("\\b", stop_words, "\\b", sep = "", collapse = "|")
+  ## replace
+  uniq.resp <- gsub(stop_format, "", unlist(check))
+  ## make sure spaces at beginning and end are removed
+  uniq.resp <- trimws(uniq.resp)
+  ## remove bad words
+  bad.uniq.resp <- bad.response(uniq.resp)
+  bad.index <- which(is.na(bad.uniq.resp))
+  
+  # Remove single letters
+  rm_letters <- letters[!letters %in% full.dictionary]
+  one.index <- which(uniq.resp %in% rm_letters)
+  
+  # Remove two letters
+  two_letters <- apply(expand.grid(letters, letters), 1, paste, collapse = "", sep = "")
+  rm_letters <- two_letters[!two_letters %in% full.dictionary]
+  two.index <- which(uniq.resp %in% rm_letters)
+  
+  # Concatenate bad indices
+  na.index <- unique(sort(c(bad.index, one.index, two.index)))
+  names(na.index) <- names(uniq.resp)[na.index]
+  
+  ## Update original responses
+  orig[names(na.index)] <- NA
+  
+  ## Update correctly spelled indices
+  names.ind <- sort(c(names.ind, names(na.index)))
+  
+  # Remove responses from check
+  check <- check[-na.index]
+  auto.spell <- names(check)
+  
+  #------------------------#
+  ## Pluralized responses ##
+  #------------------------#
+  
+  # Let user know
+  message("\nSingularizing responses...", appendLF = FALSE)
+  
+  # Index pluralized responses
+  ## Singularize responses
+  sing <- lapply(check, singularize, dictionary = FALSE)
+  
+  ## Identify responses found in dictionary
+  ## Check if all are spelled correctly or incorrectly
+  targets <- match(unlist(sing),full.dict)
+  
+  if(all(is.na(targets))){ # All spelled incorrectly
+    
+    sing <- check
+    auto.spell <- names(sing)
+    
+  }else if(all(!is.na(targets))){ # All spelled correctly
+    
+    ## Get indices
+    ind2 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(sing)[ind2]] <- sing[ind2]
+    
+    # Message
+    message("\n\nAll words passed automated spell-check. Ending spell-check...")
+    
+    # Initialize result list
+    res <- list()
+    
+    res$manual <- as.numeric()
+    res$auto <- setdiff(as.numeric(names(check)), res$manual)
+    res$to <- orig
+    
+    return(res)
+    
+  }else{
+    
+    ## Get indices
+    ind2 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(sing)[ind2]] <- sing[ind2]
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(sing)[ind2]))
+    
+    ## Update singularized responses
+    sing <- orig[-as.numeric(names.ind)]
+  }
+  
+  # Let user know
+  message(paste("done.\n(", length(sing), " unique responses still need to be corrected)", sep = ""))
+  
+  #--------------------------------------------#
+  ## Correct common misspellings and monikers ##
+  #--------------------------------------------#
+  
+  if(all(dictionary == "general") | all(dictionary == "hunspell")){
+    
+    mons2 <- sing
+    
+  }else{
+    
+    # Check if any dictionaries were improted from SemNetDictionaries
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
+    {
+      # Let user know
+      message("\nAuto-correcting common misspellings and monikers...", appendLF = FALSE)
+      
+      # Load moniker
+      monik <- SemNetDictionaries::load.monikers(dictionary)
+      
+      if(length(monik)!=0) # Checks in case of only using general dictionary
+      {
+        ## Check for monikers
+        mons <- unlist(lapply(sing, moniker, monik, spelling = spelling), recursive = FALSE)
+        
+        ## Identify responses found in dictionary
+        ## Check if all are spelled correctly or incorrectly
+        targets <- match(unlist(mons),full.dict)
+        
+        if(all(is.na(targets))){ # All spelled incorrectly
+          
+          mons <- sing
+          auto.spell <- names(mons)
+          
+        }else if(all(!is.na(targets))){ # All spelled correctly
+          
+          ## Get indices
+          ind3 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons)[ind3]] <- mons[ind3]
+          
+          # Message
+          message("\n\nAll words passed automated spell-check. Ending spell-check...")
+          
+          # Initialize result list
+          res <- list()
+          
+          res$manual <- as.numeric()
+          res$auto <- setdiff(as.numeric(names(sing)), res$manual)
+          res$to <- orig
+          
+          return(res)
+          
+        }else{
+          
+          ## Get indices
+          ind3 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons)[ind3]] <- mons[ind3]
+          
+          ## Update correctly spelled indices
+          names.ind <- sort(c(names.ind, names(mons)[ind3]))
+          
+          ## Update singularized responses
+          mons <- orig[-as.numeric(names.ind)]
+          
+        }
+        
+        ## Check for pluralized monikers
+        mons2 <- unlist(lapply(mons, function(x, monik, spelling){moniker(singularize(x, dictionary = FALSE), monik, spelling)}, monik, spelling = spelling), recursive = FALSE)
+        
+        ## Identify responses found in dictionary
+        ## Check if all are spelled correctly or incorrectly
+        targets <- match(unlist(mons2),full.dict)
+        
+        if(all(is.na(targets))){ # All spelled incorrectly
+          
+          mons2 <- mons
+          auto.spell <- names(mons2)
+          
+        }else if(all(!is.na(targets))){ # All spelled correctly
+          
+          ## Get indices
+          ind4 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons2)[ind4]] <- mons2[ind4]
+          
+          # Message
+          message("\n\nAll words passed automated spell-check. Ending spell-check...")
+          
+          # Initialize result list
+          res <- list()
+          
+          res$manual <- as.numeric()
+          res$auto <- setdiff(as.numeric(names(mons2)), res$manual)
+          res$to <- orig
+          
+          return(res)
+          
+        }else{
+          
+          ## Get indices
+          ind4 <- which(!is.na(targets))
+          
+          ## Update original responses
+          orig[names(mons2)[ind4]] <- mons2[ind4]
+          
+          ## Update correctly spelled indices
+          names.ind <- sort(c(names.ind, names(mons2)[ind4]))
+          
+          ## Update singularized responses
+          mons2 <- orig[-as.numeric(names.ind)]
+          
+        }
+        
+      }
+      
+      # Let user know
+      message("done.")
+      
+    }else{
+      
+      mons2 <- sing
+      
+    }
+    
+  }
+  
+  #------------------------------#
+  ## Individualized spell-check ##
+  #------------------------------#
+  
+  # Let user know
+  message(paste("\nAttempting to auto-correct the remaining", length(mons2),"responses individually..."), appendLF = FALSE)
+  
+  # Message for large number of responses remaining
+  message("\nUsing parallel processing to speed up individual word check...")
+  
+  # Number of cores
+  ncores <- parallel::detectCores() / 2
+  
+  # Set up clusters
+  cl <- parallel::makeCluster(ncores)
+  
+  # Functions
+  funcs <- c(
+    "bad.response", "best.guess",
+    "moniker"
+  )
+  
+  # Export functions
+  parallel::clusterExport(
+    cl = cl, funcs,
+    envir = as.environment(asNamespace("SemNetCleaner"))
+  )
+  
+  # Spell-check each individual word within the list (including multiple word responses)
+  ind.check <- unlist(
+    pbapply::pblapply(
+      mons2, ind.word.check,
+      full.dict = full.dict,
+      dictionary = dictionary,
+      spelling = spelling,
+      cl = cl
+    ),
+    recursive = FALSE
+  )
+  
+  parallel::stopCluster(cl)
+  
+  ## Identify responses found in dictionary
+  ## Check if all are spelled correctly or incorrectly
+  targets <- match(unlist(ind.check), full.dict)
+  
+  if(all(is.na(targets))){ # All spelled incorrectly
+    
+    ind.check <- mons2
+    auto.spell <- names(ind.check)
+    
+  }else if(all(!is.na(targets))){ # All spelled correctly
+    
+    ## Get indices
+    ind5 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(ind.check)[ind5]] <- ind.check[ind5]
+    
+    # Message
+    message("\n\nAll words passed automated spell-check. Ending spell-check...")
+    
+    # Initialize result list
+    res <- list()
+    
+    res$manual <- as.numeric()
+    res$auto <- setdiff(as.numeric(names(ind.check)), res$manual)
+    res$to <- orig
+    
+    return(res)
+    
+  }else{
+    
+    ## Get indices
+    ind5 <- which(!is.na(targets))
+    
+    ## Update original responses
+    orig[names(ind.check)[ind5]] <- ind.check[ind5]
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(ind.check)[ind5]))
+    
+    ## Update individually checked responses
+    ind.check <- orig[-as.numeric(names.ind)]
+    
+  }
+  
+  # Let user know
+  message(paste("(", length(ind.check), " unique responses still need to be corrected)", sep = ""))
+  
+  #-------------------------------------------#
+  ## Parse strings with multi-word responses ##
+  #-------------------------------------------#
+  
+  # Let user know
+  message("\nParsing multi-word responses...", appendLF = FALSE)
+  
+  # Multiple word responses greater than in dictionary
+  dict.lens <- unlist(lapply(full.dict, function(x){length(unlist(strsplit(x, " ")))}))
+  
+  # Set multiple word minimum in response to be considered for split
+  multi.min <- ceiling(median(dict.lens) + 2 * sd(dict.lens))
+  
+  # Check for minimum length of 1
+  if(multi.min == 1){
+    multi.min <- 2
+  }
+  
+  # Message for large number of responses remaining
+  message("\nUsing parallel processing to speed up mutiple word check...")
+  
+  # Number of cores
+  ncores <- parallel::detectCores() / 2
+  
+  # Set up clusters
+  cl <- parallel::makeCluster(ncores)
+  
+  # Functions
+  funcs <- c(
+    "bad.response", "best.guess",
+    "moniker"
+  )
+  
+  # Export functions
+  parallel::clusterExport(
+    cl = cl, funcs,
+    envir = as.environment(asNamespace("SemNetCleaner"))
+  )
+  
+  # Spell-check each individual word within the list (including multiple word responses)
+  multi.word <- pbapply::pblapply(
+    ind.check, multiple.words,
+    multi.min = multi.min, full.dict = full.dict,
+    dictionary = dictionary, spelling = spelling,
+    cl = cl
+  )
+  
+  parallel::stopCluster(cl)
+  
+  ## Identify responses found in dictionary
+  ### Check responses that changed
+  changed <- unlist(lapply(multi.word, function(x)
+  {
+    if(any(x$correct))
+    {return(TRUE)
+    }else{return(FALSE)}
+  }))
+  
+  ### Grab changed responses
+  responses <- unlist(multi.word, recursive = FALSE)[grep("response", names(unlist(multi.word, recursive = FALSE)))]
+  
+  ### Update original responses
+  if(!keepStrings){
+    if(length(responses[changed]) != 0){
+      orig[names(multi.word)[changed]] <- responses[changed]
+    }
+  }
+  
+  ### Indices of correctly spelled responses
+  ind6 <- unlist(lapply(multi.word, function(x)
+  {
+    if(all(x$correct))
+    {return(TRUE)
+    }else{return(FALSE)}
+  }))
+  
+  if(length(names(multi.word)[ind6]) != 0){
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(multi.word)[ind6]))
+    
+    ## Update checked responses
+    multi.word <- orig[-as.numeric(names.ind)]
+    
+  }
+  
+  # Search through responses with more than 1 but can be individually split into separate responses
+  multi.word <- lapply(multi.word, response.splitter, full.dict = full.dict)
+  
+  ## Identify responses found in dictionary
+  ### Indices of correctly spelled responses
+  ind7 <- unlist(lapply(multi.word, function(x)
+  {
+    if(all(x %in% full.dict))
+    {return(TRUE)
+    }else{return(FALSE)}
+  }))
+  
+  if(length(multi.word[ind7]) != 0){
+    
+    ### Update original responses
+    orig[names(multi.word)[ind7]] <- multi.word[ind7]
+    
+    ## Update correctly spelled indices
+    names.ind <- sort(c(names.ind, names(multi.word)[ind7]))
+    
+    ## Update checked responses
+    multi.word <- orig[-as.numeric(names.ind)]
+  }
+  
+  # Let user know how many responses need to be spell-checked
+  if(length(multi.word) != 0){
+    message(paste("\nAutomated spell-checking complete.\nAbout ",
+                  length(multi.word),
+                  " responses still need to be manually spell-checked", sep = ""))
+  }else{
+    message("\nAll words passed automaed spell-check. Ending spell-check...")
+  }
+  
+  # Initialize result list
+  res <- list()
+  
+  res$manual <- as.numeric(names(multi.word))
+  res$auto <- setdiff(as.numeric(full.names), res$manual)
+  res$to <- orig
+  
+  return(res)
+}
+
 #' Function to update change list in \code{\link[SemNetCleaner]{spellcheck.menu}}
 #' 
 #' @description Sub-rountine to update change list
@@ -4907,40 +5418,6 @@ spellcheck.dictionary.free <- function (
 {
   # Continuation check
   if(is.null(continue)){
-
-    # Remove stop words
-    ## stop words
-    stop_words <- SemNetDictionaries::load.dictionaries("stop_words")
-    ## format stop words for gsub
-    stop_format <- paste("\\b", stop_words, "\\b", sep = "", collapse = "|")
-    ## replace
-    uniq.resp <- gsub(stop_format, "", uniq.resp)
-    ## make sure spaces at beginning and end are removed
-    uniq.resp <- trimws(uniq.resp)
-    ## remove bad words
-    uniq.resp <- na.omit(bad.response(uniq.resp))
-    
-    # Load dictionaries
-    ## Full dictionary
-    full.dictionary <- SemNetDictionaries::load.dictionaries("cocaspell")
-    category <- "define"
-    
-    ## English conversion
-    message(paste("\nConverting dictionary to '", spelling, "' spelling...", sep = ""), appendLF = FALSE)
-    full.dictionary <- brit.us.conv.vector(full.dictionary, spelling = spelling, dictionary = TRUE)
-    message("done")
-    
-    ## Save original dictionary (to compare against later)
-    orig.dictionary <- full.dictionary
-    
-    # Remove single letters
-    rm_letters <- letters[!letters %in% full.dictionary]
-    uniq.resp <- uniq.resp[!uniq.resp %in% rm_letters]
-    
-    # Remove two letters
-    two_letters <- apply(expand.grid(letters, letters), 1, paste, collapse = "", sep = "")
-    rm_letters <- two_letters[!two_letters %in% full.dictionary]
-    uniq.resp <- uniq.resp[!uniq.resp %in% rm_letters]
     
     # Initialize 'from' list
     from <- as.list(uniq.resp)
@@ -4955,13 +5432,28 @@ spellcheck.dictionary.free <- function (
     # Initialize 'to' list for changes
     to <- from
     
+    # Load dictionaries
+    ## Full dictionary
+    full.dictionary <- SemNetDictionaries::load.dictionaries("cocaspell")
+    category <- "define"
+    
+    ## English conversion
+    message(paste("\nConverting dictionary to '", spelling, "' spelling...", sep = ""), appendLF = FALSE)
+    full.dictionary <- brit.us.conv.vector(full.dictionary, spelling = spelling, dictionary = TRUE)
+    message("done")
+    
+    ## Save original dictionary (to compare against later)
+    orig.dictionary <- full.dictionary
+    
     # Perform initial spell-check
     initial <- try(
-      auto.spellcheck(check = from,
-                      full.dict = full.dictionary,
-                      dictionary = dictionary,
-                      spelling = spelling,
-                      keepStrings = keepStrings),
+      auto.spellcheck.free(
+        check = from,
+        full.dict = full.dictionary,
+        dictionary = dictionary,
+        spelling = spelling,
+        keepStrings = keepStrings
+      ),
       silent = TRUE
     )
     
