@@ -6189,15 +6189,15 @@ spellcheck.dictionary.free <- function (
       cl <- parallel::makeCluster(ncores)
       
       # # Functions
-      funcs <- c(
-        "moniker"
-      )
-
-      # Export functions
-      parallel::clusterExport(
-        cl = cl, funcs,
-        envir = as.environment(asNamespace("SemNetCleaner"))
-      )
+      # funcs <- c(
+      #   "moniker"
+      # )
+      # 
+      # # Export functions
+      # parallel::clusterExport(
+      #   cl = cl, funcs,
+      #   envir = as.environment(asNamespace("SemNetCleaner"))
+      # )
       
       # Spell-check each individual word within the list (including multiple word responses)
       replace_to <- pbapply::pblapply(
