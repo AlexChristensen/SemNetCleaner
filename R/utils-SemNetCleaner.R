@@ -6189,15 +6189,15 @@ spellcheck.dictionary.free <- function (
       cl <- parallel::makeCluster(ncores)
       
       # # Functions
-      # funcs <- c(
-      #   "moniker"
-      # )
-      # 
-      # # Export functions
-      # parallel::clusterExport(
-      #   cl = cl, funcs,
-      #   envir = as.environment(asNamespace("SemNetCleaner"))
-      # )
+      funcs <- c(
+        "moniker"
+      )
+
+      # Export functions
+      parallel::clusterExport(
+        cl = cl, funcs,
+        envir = as.environment(asNamespace("SemNetCleaner"))
+      )
       
       # Spell-check each individual word within the list (including multiple word responses)
       replace_to <- pbapply::pblapply(
@@ -6572,13 +6572,19 @@ correct.changes <- function(textcleaner.obj, type = c("fluency", "free"))
     correspondence[row.names(res$spellcheck$automated),] <- changes
     res$spellcheck$correspondence <- correspondence
     
+    # Remove NA columns
+    na.cols <- apply(correspondence, 2, function(x){
+      all(is.na(x))
+    })
+    correspondence <- correspondence[,!na.cols]
+    
     # Create 'from' list
     from <- as.list(correspondence[,"from"])
     
     # Create 'to' list
     if(any(is.na(correspondence[,grep("to", colnames(correspondence))]))){
-      to <- apply(correspondence[,grep("to", colnames(correspondence))], 1, function(x){unname(na.omit(x))})
-    }else{to <- correspondence[,grep("to", colnames(correspondence))]}
+      to <- apply(as.matrix(correspondence[,grep("to", colnames(correspondence))]), 1, function(x){unname(na.omit(x))})
+    }else{to <- as.matrix(correspondence[,grep("to", colnames(correspondence))])}
     
     # Create correspondence matrix (error catch)
     corr.mat <- try(
@@ -6835,33 +6841,33 @@ correct.data.free <- function (data, corr.mat, ids)
       
       # Ensure it's a matrix
       if(!is.matrix(corr)){
-        corr <- t(as.matrix(corr))
+        corr <- matrix(corr, nrow = length(corr))
       }
       
-      # Remove NA columns
+      # # Remove NA columns
       na.cols <- apply(corr, 2, function(x){all(is.na(x))})
-      
+
       if(any(na.cols)){
-        
+
         # Remove NA columns
         corr <- corr[,!na.cols]
-        
+
         # Check for matrix
         if(!is.matrix(corr)){
-          
+
           # Check for length change
           if(length(ind) != length(corr))
           {corr <- t(as.matrix(corr))}
-          
+
         }
-        
+
       }
       
-      # Check for matrix
-      if(!is.matrix(corr)){
+      # Check for matching lengths
+      if(length(ind) == nrow(corr)){
         
         # Convert responses in their correct order back into data
-        correct.ord <- as.vector(t(corr))
+        correct.ord <- as.vector(corr)
         
         if(length(correct.ord) > 0){
           
@@ -6911,7 +6917,7 @@ correct.data.free <- function (data, corr.mat, ids)
         minPosition <- min(ind.p[ind.c])
         maxPosition <- minPosition + length(add_responses) - 1
         position <- seq(minPosition, maxPosition, 1)
-      
+        
         # Create space
         correct.mat[seq(addHere + length(add_responses), nrow(correct.mat) + length(add_responses)),] <- correct.mat[seq(addHere, nrow(correct.mat)), ]
         
@@ -6921,12 +6927,19 @@ correct.data.free <- function (data, corr.mat, ids)
           rep(cues[j], length(add_responses)),
           add_responses
         )
-      
+        
       }
       
     }
     
   }
+  
+  # Check for "NA" responses
+  correct.mat[,"Response"] <- ifelse(
+    correct.mat[,"Response"] == "NA",
+    NA,
+    correct.mat[,"Response"]
+  )
   
   # Remove rows that are all NA
   correct.mat <- na.omit(correct.mat)
