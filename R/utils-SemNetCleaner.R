@@ -6801,7 +6801,7 @@ correct.data <- function (data, corr.mat)
 #' 
 #' @noRd
 # Spell Corrected Matrix
-# Updated 20.08.2020
+# Updated 28.01.2022
 correct.data.free <- function (data, corr.mat, ids)
 {
   # Correct matrix
@@ -6841,7 +6841,7 @@ correct.data.free <- function (data, corr.mat, ids)
       
       # Ensure it's a matrix
       if(!is.matrix(corr)){
-        corr <- matrix(corr, nrow = length(corr))
+        corr <- matrix(corr, ncol = length(corr))
       }
       
       # # Remove NA columns
@@ -6854,11 +6854,7 @@ correct.data.free <- function (data, corr.mat, ids)
 
         # Check for matrix
         if(!is.matrix(corr)){
-
-          # Check for length change
-          if(length(ind) != length(corr))
-          {corr <- t(as.matrix(corr))}
-
+            corr <- matrix(corr, nrow = length(corr))
         }
 
       }
