@@ -207,7 +207,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 21.01.2022
+# Updated 28.01.2022
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
@@ -228,8 +228,16 @@ textcleaner <- function(
   
   # Check for type
   if(missing(type)){
-    warning("'type' argument is missing. Assuming 'type = \"fluency\"' for verbal fluency")
-    type <- "fluency"
+    
+    type <- ifelse(ncol(data) > 3, "fluency", "free")
+    
+    message(
+      paste(
+        'Assuming semantic task type based on data structure: "',
+        type, '"', sep = ""
+      )
+    )
+    
   }else{
     type <- match.arg(type)
   }
@@ -239,7 +247,7 @@ textcleaner <- function(
     
     if(missing(keepStrings)){
       keepStrings <- TRUE
-      warning("'keepStrings' is set to TRUE for free association tasks by default. Set argument to change this behavior.")
+      message("'keepStrings' is set to TRUE for free association tasks by default. Set argument to change this behavior.")
     }
     
     if(missing(dictionary)){
