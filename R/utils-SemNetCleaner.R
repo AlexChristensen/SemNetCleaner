@@ -5409,7 +5409,7 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
 #' 
 #' @noRd
 # MANUAL spell-check
-# Updated 04.01.2021
+# Updated 14.02.2022
 spellcheck.dictionary.free <- function (
   uniq.resp = NULL, dictionary = "cocaspell", spelling = NULL,
   add.path = NULL, keepStrings = NULL,
@@ -5585,6 +5585,19 @@ spellcheck.dictionary.free <- function (
         
         # Check which words are spelled incorrectly
         check.words <- target[which(!target.punct %in% full.dictionary)]
+        
+        # Check if in previous correction
+        if(length(check.words) == 0){
+          
+          single_string <- paste(target.punct, collapse = " ")
+          
+          if(!single_string %in% unlist(to[1:i])){
+            
+            check.words <- target.punct
+            
+          }
+          
+        }
         
       }
       
