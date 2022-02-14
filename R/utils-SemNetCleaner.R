@@ -5563,6 +5563,12 @@ spellcheck.dictionary.free <- function (
       # Check punctuation
       target.punct <- gsub("[^[:alnum:][:space:]]", "", target)
       
+      # Check "" and update check words
+      if(any(target.punct == "")){
+        target <- target[-which(target.punct == "")]
+        target.punct <- na.omit(ifelse(target.punct == "", NA, target.punct))
+      }
+      
       # Check which words are spelled incorrectly
       check.words <- target[which(!target.punct %in% full.dictionary)]
       
