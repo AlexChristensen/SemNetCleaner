@@ -5593,7 +5593,7 @@ spellcheck.dictionary.free <- function (
           
           if(!single_string %in% unlist(to[1:i])){
             
-            check.words <- target.punct
+            check.words <- target
             
           }
           
