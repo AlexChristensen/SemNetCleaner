@@ -5567,10 +5567,26 @@ spellcheck.dictionary.free <- function (
       if(any(target.punct == "")){
         target <- target[-which(target.punct == "")]
         target.punct <- na.omit(ifelse(target.punct == "", NA, target.punct))
+        
+        # Check which words are spelled incorrectly
+        check.words <- target[which(!target.punct %in% full.dictionary)]
+        
+        # Check for no check words
+        if(length(check.words) == 0){
+          
+          # Combine into single word
+          target <- paste(target, collapse = " ")
+          
+          # Re-check
+          check.words <- target[!target %in% full.dictionary]
+        }
+        
+      }else{
+        
+        # Check which words are spelled incorrectly
+        check.words <- target[which(!target.punct %in% full.dictionary)]
+        
       }
-      
-      # Check which words are spelled incorrectly
-      check.words <- target[which(!target.punct %in% full.dictionary)]
       
       # Initialize multi count
       if(is.null(continue$multi.count)){
@@ -5581,6 +5597,9 @@ spellcheck.dictionary.free <- function (
       
       # Check if words have been checked already
       if(length(check.words) == 0){
+        
+        # Initialize results
+        result <- list()
         
         # Increase go back count
         result$go.back.count <- go.back.count + 1
