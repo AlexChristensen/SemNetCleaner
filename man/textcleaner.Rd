@@ -21,10 +21,55 @@ textcleaner(
 }
 \arguments{
 \item{data}{Matrix or data frame.
-A dataset of text data.
-Participant IDs will be automatically identified if they are included.
-If no IDs are provided, then their order in the corresponding
-row (or column is used). A message will notify the user how IDs were assigned}
+
+For \code{task = "fluency"}, data are expected to
+follow wide formatting (IDs are the row names
+and are \strong{not} a column in the matrix
+or data frame):
+
+\tabular{cccc}{
+
+\code{row.names} \tab Response 1 \tab Response 2 \tab Response n \cr
+ID_1 \tab 1 \tab 2 \tab n \cr
+ID_2 \tab 1 \tab 2 \tab n \cr
+ID_n \tab 1 \tab 2 \tab n 
+}
+
+For \code{task = "free"}, data are expected to
+follow long formatting:
+
+\tabular{ccc}{
+
+ID \tab Cue \tab Response \cr
+1 \tab 1 \tab 1 \cr
+1 \tab 1 \tab 2 \cr
+1 \tab 1 \tab n \cr
+1 \tab 2 \tab 1 \cr
+1 \tab 2 \tab 2 \cr
+1 \tab 2 \tab n \cr
+1 \tab n \tab 1 \cr
+1 \tab n \tab 2 \cr
+1 \tab n \tab n \cr
+2 \tab 1 \tab 1 \cr
+2 \tab 1 \tab 2 \cr
+2 \tab 1 \tab n \cr
+2 \tab 2 \tab 1 \cr
+2 \tab 2 \tab 2 \cr
+2 \tab 2 \tab n \cr
+2 \tab n \tab 1 \cr
+2 \tab n \tab 2 \cr
+2 \tab n \tab n \cr
+n \tab 1 \tab 1 \cr
+n \tab 1 \tab 2 \cr
+n \tab 1 \tab n \cr
+n \tab 2 \tab 1 \cr
+n \tab 2 \tab 2 \cr
+n \tab 2 \tab n \cr
+n \tab n \tab 1 \cr
+n \tab n \tab 2 \cr
+n \tab n \tab n
+
+}}
 
 \item{type}{Character vector.
 Type of task to be preprocessed.

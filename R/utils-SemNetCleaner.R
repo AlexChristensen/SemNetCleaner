@@ -3663,7 +3663,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
   # Check if word is already in dictionary (due to dictionary updates)
   ## Check for multiple words
   if(!is.null(context)){
-    dict.check <- context[check]
+    dict.check <- unique(context[check])
   }else{dict.check <- check}
   
   ## Check dictionary
@@ -5665,7 +5665,7 @@ spellcheck.dictionary.free <- function (
         result <- try(
           spellcheck.menu(check = which(check.words[multi.count] == target),
                           context = target,
-                          possible = best.guess(target[which(check.words[multi.count] == target)],
+                          possible = best.guess(unique(target[which(check.words[multi.count] == target)]),
                                                 full.dictionary = full.dictionary,
                                                 dictionary = dictionary),
                           original = ifelse(keepStrings,
@@ -5787,8 +5787,7 @@ spellcheck.dictionary.free <- function (
         }
         
         ## Change with GO BACK option
-        if(result$go.back)
-        {
+        if(result$go.back){
           
           ## Check if it is the first response of multiple
           ## response check
@@ -5874,7 +5873,7 @@ spellcheck.dictionary.free <- function (
           prev.target <- target
           
           ## Update changes
-          target <- result$target
+          target[multi.count] <- result$target
           changes <- result$changes
           full.dictionary <- result$full.dictionary
           
