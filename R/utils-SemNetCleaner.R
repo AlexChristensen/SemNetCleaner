@@ -5873,7 +5873,7 @@ spellcheck.dictionary.free <- function (
           prev.target <- target
           
           ## Update changes
-          target[multi.count] <- result$target
+          target[multi.count] <- unique(result$target)
           changes <- result$changes
           full.dictionary <- result$full.dictionary
           
