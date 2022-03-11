@@ -3747,8 +3747,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       ans <- readline(prompt = "Selection (accepts lowercase): ")
       
       # Check for user stoppage
-      if(tolower(ans) == "x" || ans == "")
-      {return("STOP")}
+      if(tolower(ans) == "x" || ans == ""){return("STOP")}
       
       # Original answer 
       original_ans <- tolower(ans)
@@ -3767,8 +3766,7 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
       }
         
       # Answer options
-      if(ans == 1) # SKIP WORD
-      {
+      if(ans == 1){ # SKIP WORD
         
         ## Check for strings
         if(keepStrings){
@@ -3812,8 +3810,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
           
         }
         
-      }else if(ans == 2) # ADD WORD TO DICTIONARY
-      {
+      }else if(ans == 2){ # ADD WORD TO DICTIONARY
+        
         ## Add response to dictionary
         full.dictionary <- SemNetDictionaries::append.dictionary(context[check],
                                                                  full.dictionary,
@@ -3857,8 +3855,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
           
         }
         
-      }else if(ans == 3) # TYPE MY OWN WORD
-      {
+      }else if(ans == 3){ # TYPE MY OWN WORD{
+        
         message("\nType '30' (no quotations) to go back to the other response options\n")
         
         tmo <- readline(prompt = "Use commas for multiple words (dog, fish, etc.): ")
@@ -3966,8 +3964,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
           
         }else{ans <- 30}
         
-      }else if(ans == 4) # GOOGLE WORD
-      {
+      }else if(ans == 4){ # GOOGLE WORD
+        
         # Use 'searcher' package
         searcher::search_site(paste(category, " '", context[check], "'", sep = "", collpase = ""),
                               site = "google", rlang = FALSE)
@@ -3975,8 +3973,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         # Renew prompt
         ans <- 30
         
-      }else if(ans == 5) # BAD WORD
-      {
+      }else if(ans == 5){ # BAD WORD
+        
         ## Set up change matrix
         change.mat <- t(as.matrix(c(context[check], NA)))
         colnames(change.mat) <- c("from", paste("to", 1:(ncol(change.mat)-1), sep = "_"))
@@ -4033,8 +4031,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         context.change[[check]] <- "NA"
         context <- unlist(context.change)
         
-      }else if(ans == 6) # KEEP ORIGINAL
-      {
+      }else if(ans == 6){ # KEEP ORIGINAL
+        
         ## Message user
         message(paste("\nString was REVERTED TO ORIGINAL:", paste("'", original, "'", sep = "")))
         
@@ -4078,8 +4076,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
           }
         }
         
-      }else if(ans == 7) # KEEP AUTO-CORRECT
-      {
+      }else if(ans == 7){ # KEEP AUTO-CORRECT
+        
         ## Message user
         message(paste("\nString was KEPT AS AUTO-CORRECT:", paste("'", context, "'", sep = "", collapse = " ")))
         
@@ -4089,8 +4087,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         ## Update END
         end <- TRUE
         
-      }else if(ans == 8) # TYPE MY OWN STRING
-      {
+      }else if(ans == 8){ # TYPE MY OWN STRING
+        
         message("\nType '30' (no quotations) to go back to the other response options\n")
         
         ams <- readline(prompt = "Use commas for multiple words (dog, fish, etc.): ")
@@ -4161,8 +4159,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
           
         }else{ans <- 30}
         
-      }else if(ans == 9) # GOOGLE STRING
-      {
+      }else if(ans == 9){ # GOOGLE STRING
+        
         # Use 'searcher' package
         searcher::search_site(paste(category, " '", original, "'", sep = "", collpase = ""),
                               site = "google", rlang = FALSE)
@@ -4170,8 +4168,8 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         # Renew prompt
         ans <- 30
         
-      }else if(ans == 10) # BAD STRING
-      {
+      }else if(ans == 10){ # BAD STRING
+        
         ## Set up change matrix
         change.mat <- cbind(context, rep(NA, length(context)))
         colnames(change.mat) <- c("from", paste("to", 1:(ncol(change.mat)-1), sep = "_"))
@@ -4187,10 +4185,10 @@ spellcheck.menu <- function (check, context = NULL, possible, original,
         ## Change responses in context
         context <- rep("NA", length(context))
         
-      }else if(ans == length(choices) + 1 & original_ans == "b") # GO BACK
-      {go.back <- TRUE
-      }else if(ans == length(choices) + 2 & original_ans == "h") # HELP
-      {
+      }else if(ans == length(choices) + 1 & original_ans == "b"){ # GO BACK
+        go.back <- TRUE
+      }else if(ans == length(choices) + 2 & original_ans == "h"){ # HELP
+        
         # Get `textcleaner` documentation
         textcleaner_help(check, context, original, possible)
         
@@ -5873,7 +5871,11 @@ spellcheck.dictionary.free <- function (
           prev.target <- target
           
           ## Update changes
-          target[multi.count] <- unique(result$target)
+          if(length(result$target) == 1){
+            target[multi.count] <- result$target 
+          }else{
+            target <- result$target
+          }
           changes <- result$changes
           full.dictionary <- result$full.dictionary
           
