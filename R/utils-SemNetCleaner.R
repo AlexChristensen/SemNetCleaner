@@ -2,6 +2,65 @@
 #### MULTIPLE FUNCTIONS ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
+#' Obtains minimum and maximum of number sequences in a single vector
+#' @noRd
+#
+# Minimums and maximums of a sequence
+# Updated 06.04.2022
+seq_min_max <- function(sequence)
+{
+  # Determine sequences
+  ## Obtain differences between values
+  value_differences <- diff(sequence)
+  
+  ## Identify differences equal to one
+  if(all(value_differences == 1)){
+    
+    # Obtain minimum and maximum
+    minimum <- min(sequence, na.rm = TRUE)
+    maximum <- max(sequence, na.rm = TRUE)
+    
+  }else{
+    
+    ## Determine breaks in sequences
+    breaks <- which(value_differences != 1)
+    
+    ## Add end of sequence
+    breaks <- c(breaks, length(sequence))
+    
+    ## Set up start of breaks
+    starts <- (breaks + 1) - c(breaks[1], diff(breaks))
+    
+    ## Obtain sequences
+    split_sequences <- lapply(1:length(breaks), function(i){
+      return(sequence[starts[i]:breaks[i]])
+    })
+    
+    ## Obtain lengths
+    lengths <- unlist(lapply(split_sequences, length))
+    
+    ## Obtain minimums
+    minimum <- unlist(lapply(split_sequences, min, na.rm = TRUE))
+    
+    ## Obtain maximums
+    maximum <- unlist(lapply(split_sequences, max, na.rm = TRUE))
+    
+  }
+  
+  # Return list
+  res <- list()
+  res$min <- minimum
+  res$max <- maximum
+  if(exists("breaks", envir = environment())){
+    res$breaks  <- breaks
+    res$starts <- starts
+    res$lengths <- lengths
+  }
+  
+  return(res)
+  
+}
+
 # Line break function
 linebreak <- function(breaks = "\n"){cat(breaks, colortext(paste(rep("-", getOption("width")), collapse = ""), defaults = "message"), "\n")}
 
@@ -6840,7 +6899,7 @@ correct.data <- function (data, corr.mat)
 #' 
 #' @noRd
 # Spell Corrected Matrix
-# Updated 28.01.2022
+# Updated 06.04.2022
 correct.data.free <- function (data, corr.mat, ids)
 {
   # Correct matrix
@@ -6855,8 +6914,8 @@ correct.data.free <- function (data, corr.mat, ids)
   for(i in 1:length(ids)){
     
     # Get target participant
-    ind.p <- which(data[,"ID"] == ids[i])
-    target.p <- data[ind.p,]
+    ind.p <- which(correct.mat[,"ID"] == ids[i])
+    target.p <- correct.mat[ind.p,]
     
     # Loop through each cue
     cues <- unique(target.p[,"Cue"])
@@ -6899,7 +6958,7 @@ correct.data.free <- function (data, corr.mat, ids)
       }
       
       # Check for matching lengths
-      if(length(ind) == nrow(corr)){
+      if(length(ind) == nrow(corr) & ncol(corr) == 1){
         
         # Convert responses in their correct order back into data
         correct.ord <- as.vector(corr)
@@ -6942,26 +7001,124 @@ correct.data.free <- function (data, corr.mat, ids)
         # Insert into corrected matrix
         correct.mat[ind.p[ind.c],"Response"] <- correct.ord
         
-        # Identify row to add after
-        addHere <- min(ind.p[ind.c]) - 1
+        # Obtain minimums and maximums of sequence(s)
+        sequences <- seq_min_max(ind.p[ind.c])
         
-        # Remove rows
-        correct.mat <- correct.mat[-ind.p[ind.c],]
-        
-        # Set position
-        minPosition <- min(ind.p[ind.c])
-        maxPosition <- minPosition + length(add_responses) - 1
-        position <- seq(minPosition, maxPosition, 1)
-        
-        # Create space
-        correct.mat[seq(addHere + length(add_responses), nrow(correct.mat) + length(add_responses)),] <- correct.mat[seq(addHere, nrow(correct.mat)), ]
-        
-        # Insert values
-        correct.mat[position, ] <- cbind(
-          rep(ids[i], length(add_responses)),
-          rep(cues[j], length(add_responses)),
-          add_responses
-        )
+        # If more than one sequence
+        if(length(sequences$min) > 1){
+          
+          # Set positions
+          minPosition <- sequences$min
+          maxPosition <- sequences$max
+          
+          # Set starts and lengths
+          startPosition <- sequences$starts
+          lengths <- sequences$lengths
+          
+          # Set length of responses to add for each sequence
+          add_length <- unlist(
+            lapply(1:length(sequences$breaks), function(i){
+              # Obtain additional response lengths to add
+              length(na.omit(as.vector(corr[sequences$starts[i]:sequences$breaks[i],-1])))
+            })
+          )
+          
+          # Increase lengths
+          lengths <- lengths + add_length
+          
+          # Increase start positions
+          startPosition[-1] <- startPosition[-1] + add_length[-length(add_length)]
+          
+          # Obtain additional responses
+          add_list <- lapply(1:length(startPosition), function(i){
+            add_responses[startPosition[i]:(startPosition[i] - 1 + lengths[i])]
+          })
+          
+          # Create cuts
+          cuts <- sort(c(1, minPosition - 1, maxPosition + 1, nrow(correct.mat)))
+          cuts_matrix <- matrix(cuts, ncol = 2, byrow = TRUE)
+          
+          # Cuts list
+          correct.cuts <- lapply(1:nrow(cuts_matrix), function(i){
+            correct.mat[cuts_matrix[i,1]:cuts_matrix[i,2],]
+          })
+          
+          # Initialize cut positions
+          cutsPosition <- seq(1, length(correct.cuts), 2)
+          
+          # Loop through cuts adding in responses
+          for(p in 1:length(cutsPosition)){
+            
+            # Insert responses
+            insert_responses <- add_list[[p]]
+            
+            # Create responses
+            insert_df <- data.frame(
+              ID = rep(ids[i], length(insert_responses)),
+              Cue = rep(cues[j], length(insert_responses)),
+              Response = insert_responses
+            )
+            
+            # Bind with cuts
+            if(p == 1){
+              
+              # Initialize binded cuts
+              binded_cuts <- rbind(
+                correct.cuts[[cutsPosition[p]]],
+                insert_df,
+                correct.cuts[[(cutsPosition[p] + 1)]]
+              )
+              
+            }else if(p == length(cutsPosition)){
+              
+              # Set up last cut addition
+              binded_cuts <- rbind(
+                binded_cuts,
+                insert_df,
+                correct.cuts[[cutsPosition[p]]]
+              )
+            
+            }else{
+              
+              # Sandwich cuts
+              binded_cuts <- rbind(
+                binded_cuts,
+                insert_df,
+                correct.cuts[[(cutsPosition[p] + 1)]]
+              )
+          
+            }
+            
+            
+          }
+          
+          # Update corrected matrix
+          correct.mat <- binded_cuts
+    
+        }else{
+          
+          # Identify row to add after
+          addHere <- min(ind.p[ind.c]) - 1
+          
+          # Remove rows
+          correct.mat <- correct.mat[-ind.p[ind.c],]
+          
+          # Set position
+          minPosition <- min(ind.p[ind.c])
+          maxPosition <- minPosition + length(add_responses) - 1
+          position <- seq(minPosition, maxPosition, 1)
+          
+          # Create space
+          correct.mat[seq(addHere + length(add_responses), nrow(correct.mat) + length(add_responses)),] <- correct.mat[seq(addHere, nrow(correct.mat)), ]
+          
+          # Insert values
+          correct.mat[position, ] <- cbind(
+            rep(ids[i], length(add_responses)),
+            rep(cues[j], length(add_responses)),
+            add_responses
+          )
+          
+        }
         
       }
       
