@@ -6931,194 +6931,141 @@ correct.data.free <- function (data, corr.mat, ids)
         target.c <- t(as.matrix(target.c))
       }
       
-      # Match responses to correspondence matrix
-      ind <- match(target.c[,"Response"], corr.mat[,"from"])
+      # Identify sequences (more than one time point or condition)
+      target_seq <- seq_min_max(as.numeric(row.names(target.c)))
       
-      # Obtain correspondence
-      corr <- corr.mat[ind,-1]
-      
-      # Ensure it's a matrix
-      if(!is.matrix(corr)){
-        corr <- matrix(corr, ncol = length(corr))
-      }
-      
-      # # Remove NA columns
-      na.cols <- apply(corr, 2, function(x){all(is.na(x))})
-
-      if(any(na.cols)){
-
-        # Remove NA columns
-        corr <- corr[,!na.cols]
-
-        # Check for matrix
-        if(!is.matrix(corr)){
-            corr <- matrix(corr, nrow = length(corr))
+      # Loop through sequences
+      for(s in 1:length(target_seq$min)){
+        
+        # Obtain starting and ending points of current sequence
+        if(length(target_seq$min) == 1){
+          start <- 1
+          end <- nrow(target.c)
+        }else{
+          start <- target_seq$starts[s]
+          end <- target_seq$breaks[s]
         }
-
-      }
-      
-      # Check for matching lengths
-      if(length(ind) == nrow(corr) & ncol(corr) == 1){
         
-        # Convert responses in their correct order back into data
-        correct.ord <- as.vector(corr)
+        # Match responses to correspondence matrix
+        ind <- match(
+          target.c[start:end,"Response"],
+          corr.mat[,"from"]
+        )
         
-        if(length(correct.ord) > 0){
+        # Obtain correspondence
+        corr <- corr.mat[ind,-1]
+        
+        # Ensure it's a matrix
+        if(!is.matrix(corr)){
+          corr <- matrix(corr, ncol = length(corr))
+        }
+        
+        # # Remove NA columns
+        na.cols <- apply(corr, 2, function(x){all(is.na(x))})
+        
+        if(any(na.cols)){
+          
+          # Remove NA columns
+          corr <- corr[,!na.cols]
+          
+          # Check for matrix
+          if(!is.matrix(corr)){
+            corr <- matrix(corr, nrow = length(corr))
+          }
+          
+        }
+        
+        # Check for matching lengths
+        if(length(ind) == nrow(corr) & ncol(corr) == 1){
+          
+          # Convert responses in their correct order back into data
+          correct.ord <- as.vector(corr)
+          
+          if(length(correct.ord) > 0){
+            
+            # Compute number of intrusions
+            behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + sum(is.na(correct.ord))
+            
+            # Compute number of perseverations
+            behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + sum(duplicated(correct.ord))
+            
+            # Get duplicates
+            if(any(duplicated(correct.ord))){
+              correct.ord[duplicated(correct.ord)] <- NA
+            }
+            
+            # Target responses
+            target_resps <- ind.p[ind.c][start:end]
+            
+            # Insert into corrected matrix
+            correct.mat[target_resps,"Response"] <- correct.ord
+            
+          }else{
+            
+            # Compute number of intrusions
+            behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + 0
+            
+            # Compute number of perseverations
+            behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + 0
+            
+          }
+          
+        }else{
+          
+          # Create correct order
+          correct.ord <- as.vector(t(corr[,1]))
           
           # Compute number of intrusions
           behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + sum(is.na(correct.ord))
           
           # Compute number of perseverations
-          behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + (length(correct.ord[-which(is.na(correct.ord))]) - length(unique(correct.ord[-which(is.na(correct.ord))])))
+          behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + sum(duplicated(correct.ord))
           
-          # Insert into corrected matrix
-          correct.mat[ind.p[ind.c],"Response"] <- correct.ord
+          # Reorganize for rows to add
+          add_responses <- unname(unlist(apply(corr, 1, function(x){na.omit(x)})))
           
-        }else{
-          
-          # Compute number of intrusions
-          behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + 0
-          
-          # Compute number of perseverations
-          behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + 0
-          
-        }
-        
-      }else{
-        
-        # Create correct order
-        correct.ord <- as.vector(t(corr[,1]))
-        
-        # Compute number of intrusions
-        behav.mat[i,"Intrusions"] <- behav.mat[i,"Intrusions"] + sum(is.na(correct.ord))
-        
-        # Compute number of perseverations
-        behav.mat[i,"Perseverations"] <- behav.mat[i,"Perseverations"] + (length(correct.ord[-which(is.na(correct.ord))]) - length(unique(correct.ord[-which(is.na(correct.ord))])))
-        
-        # Reorganize for rows to add
-        add_responses <- unname(unlist(apply(corr, 1, function(x){na.omit(x)})))
-        
-        # Insert into corrected matrix
-        correct.mat[ind.p[ind.c],"Response"] <- correct.ord
-        
-        # Obtain minimums and maximums of sequence(s)
-        sequences <- seq_min_max(ind.p[ind.c])
-        
-        # If more than one sequence
-        if(length(sequences$min) > 1){
-          
-          # Set positions
-          minPosition <- sequences$min
-          maxPosition <- sequences$max
-          
-          # Set starts and lengths
-          startPosition <- sequences$starts
-          lengths <- sequences$lengths
-          
-          # Set length of responses to add for each sequence
-          add_length <- unlist(
-            lapply(1:length(sequences$breaks), function(i){
-              # Obtain additional response lengths to add
-              length(na.omit(as.vector(corr[sequences$starts[i]:sequences$breaks[i],-1])))
-            })
-          )
-          
-          # Increase lengths
-          lengths <- lengths + add_length
-          
-          # Increase start positions
-          startPosition[-1] <- startPosition[-1] + add_length[-length(add_length)]
-          
-          # Obtain additional responses
-          add_list <- lapply(1:length(startPosition), function(i){
-            add_responses[startPosition[i]:(startPosition[i] - 1 + lengths[i])]
-          })
-          
-          # Create cuts
-          cuts <- sort(c(1, minPosition - 1, maxPosition + 1, nrow(correct.mat)))
-          cuts_matrix <- matrix(cuts, ncol = 2, byrow = TRUE)
-          
-          # Cuts list
-          correct.cuts <- lapply(1:nrow(cuts_matrix), function(i){
-            correct.mat[cuts_matrix[i,1]:cuts_matrix[i,2],]
-          })
-          
-          # Initialize cut positions
-          cutsPosition <- seq(1, length(correct.cuts), 2)
-          
-          # Loop through cuts adding in responses
-          for(p in 1:length(cutsPosition)){
-            
-            # Insert responses
-            insert_responses <- add_list[[p]]
-            
-            # Create responses
-            insert_df <- data.frame(
-              ID = rep(ids[i], length(insert_responses)),
-              Cue = rep(cues[j], length(insert_responses)),
-              Response = insert_responses
-            )
-            
-            # Bind with cuts
-            if(p == 1){
-              
-              # Initialize binded cuts
-              binded_cuts <- rbind(
-                correct.cuts[[cutsPosition[p]]],
-                insert_df,
-                correct.cuts[[(cutsPosition[p] + 1)]]
-              )
-              
-            }else if(p == length(cutsPosition)){
-              
-              # Set up last cut addition
-              binded_cuts <- rbind(
-                binded_cuts,
-                insert_df,
-                correct.cuts[[cutsPosition[p]]]
-              )
-            
-            }else{
-              
-              # Sandwich cuts
-              binded_cuts <- rbind(
-                binded_cuts,
-                insert_df,
-                correct.cuts[[(cutsPosition[p] + 1)]]
-              )
-          
-            }
-            
-            
+          # Get duplicates
+          if(any(duplicated(add_responses))){
+            add_responses[duplicated(add_responses)] <- NA
           }
           
-          # Update corrected matrix
-          correct.mat <- binded_cuts
-    
-        }else{
-          
-          # Identify row to add after
-          addHere <- min(ind.p[ind.c]) - 1
-          
-          # Remove rows
-          correct.mat <- correct.mat[-ind.p[ind.c],]
+          # Target responses
+          target_resps <- ind.p[ind.c][start:end]
           
           # Set position
-          minPosition <- min(ind.p[ind.c])
+          minPosition <- min(target_resps)
           maxPosition <- minPosition + length(add_responses) - 1
           position <- seq(minPosition, maxPosition, 1)
           
-          # Create space
-          correct.mat[seq(addHere + length(add_responses), nrow(correct.mat) + length(add_responses)),] <- correct.mat[seq(addHere, nrow(correct.mat)), ]
+          # Cut data
+          data_top <- correct.mat[1:(minPosition - 1),]
+          data_bottom <- correct.mat[(max(target_resps) + 1):nrow(correct.mat),]
           
-          # Insert values
-          correct.mat[position, ] <- cbind(
-            rep(ids[i], length(add_responses)),
-            rep(cues[j], length(add_responses)),
-            add_responses
+          # Make middle
+          data_middle <- data.frame(
+            ID = rep(ids[i], length(add_responses)),
+            Cue = rep(cues[j], length(add_responses)),
+            Response = add_responses
           )
           
+          # Bind data
+          correct.mat <- rbind(
+            data_top,
+            data_middle,
+            data_bottom
+          )
+          
+          # Rename row names
+          ## Necessary for seq_min_max function
+          row.names(correct.mat) <- 1:nrow(correct.mat)
+          
+          # Update values
+          ## Get target participant
+          ind.p <- which(correct.mat[,"ID"] == ids[i])
+          target.p <- correct.mat[ind.p,]
+          
         }
+        
         
       }
       
