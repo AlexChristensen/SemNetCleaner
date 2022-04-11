@@ -6896,7 +6896,7 @@ correct.data <- function (data, corr.mat)
 #' 
 #' @noRd
 # Spell Corrected Matrix
-# Updated 06.04.2022
+# Updated 10.04.2022
 correct.data.free <- function (data, corr.mat, ids)
 {
   # Correct matrix
