@@ -1187,9 +1187,6 @@ textcleaner.free <- function(
   ## Collect behavioral data
   behavioral <- corrected$behavioral
 
-  ## Make sure to replace faux "NA" with real NA
-  corrected$corrected$Response[which(corrected$corrected$Response == "NA")] <- NA
-  
   ## Cleaned responses (no instrusions or perseverations)
   cleaned.list <- na.omit(corrected$corrected)
   
@@ -7064,6 +7061,18 @@ correct.data.free <- function (data, corr.mat, ids)
           ind.p <- which(correct.mat[,"ID"] == ids[i])
           target.p <- correct.mat[ind.p,]
           
+          ## Get target cue
+          ind.c <- which(target.p[,"Cue"] == cues[j])
+          target.c <- target.p[ind.c,]
+          
+          ## Ensure matrix
+          if(!is.data.frame(target.c) & !is.matrix(target.c)){
+            target.c <- t(as.matrix(target.c))
+          }
+          
+          ## Identify sequences (more than one time point or condition)
+          target_seq <- seq_min_max(as.numeric(row.names(target.c)))
+          
         }
         
         
@@ -7074,11 +7083,15 @@ correct.data.free <- function (data, corr.mat, ids)
   }
   
   # Check for "NA" responses
-  correct.mat[,"Response"] <- ifelse(
-    correct.mat[,"Response"] == "NA",
-    NA,
-    correct.mat[,"Response"]
-  )
+  if(any(correct.mat[,"Response"] == "NA", na.rm = TRUE)){
+    
+    correct.mat[,"Response"] <- ifelse(
+      correct.mat[,"Response"] == "NA",
+      NA,
+      correct.mat[,"Response"]
+    )
+    
+  }
   
   # Remove rows that are all NA
   correct.mat <- na.omit(correct.mat)
