@@ -696,7 +696,7 @@ yes.no.menu <- function (title = NULL)
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
-# Updated 21.10.2021
+# Updated 21.06.2022
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
@@ -706,6 +706,7 @@ textcleaner.fluency <- function(
   add.path = NULL, keepStrings = FALSE,
   allowPunctuations = c("-", "all"),
   allowNumbers = FALSE, lowercase = TRUE,
+  keepLength = NULL,
   continue = NULL
 )
 {
@@ -736,8 +737,8 @@ textcleaner.fluency <- function(
     data <- as.matrix(data)
     
     ## Make participants by row
-    if(partBY=="col")
-    {
+    if(partBY == "col"){
+      
       ### Transpose data
       data <- t(data)
       
@@ -751,8 +752,9 @@ textcleaner.fluency <- function(
       silent = TRUE
     )
     
-    if(any(class(id.res) == "try-error"))
-    {return(error.fun(id.res, "obtain.id", "textcleaner"))}
+    if(any(class(id.res) == "try-error")){
+      return(error.fun(id.res, "obtain.id", "textcleaner"))
+    }
     
     data <- id.res$data
     ids <- id.res$ids
@@ -764,8 +766,9 @@ textcleaner.fluency <- function(
       silent = TRUE
     )
     
-    if(any(class(data) == "try-error"))
-    {return(error.fun(data, "convert.miss", "textcleaner"))}
+    if(any(class(data) == "try-error")){
+      return(error.fun(data, "convert.miss", "textcleaner"))
+    }
     
     ## Prepare for spellcheck.dictionary (returns data as data frame)
     ### Removes punctuations and digits
@@ -777,15 +780,51 @@ textcleaner.fluency <- function(
       silent = TRUE
     )
     
-    if(any(class(data) == "try-error"))
-    {return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))}
+    if(any(class(data) == "try-error")){
+      return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))
+    }
+    
+    ## Remove responses with a certain length
+    if(!is.null(keepLength)){
+      
+      ## Ensure data is a matrix
+      data <- as.matrix(data)
+      
+      ## Length of responses
+      response_lengths <- apply(
+        data, 1:2, length
+      )
+      
+      ## Keep responses less than or equal to keepLength argument
+      remove_responses <- which(response_lengths >= keepLength, arr.ind = TRUE)
+      
+      ## Remove responses
+      if(nrow(remove_responses) != 0){
+        
+        for(i in 1:nrow(remove_responses)){
+          
+          data[
+            remove_responses[i,1],
+            remove_responses[i,2]
+          ] <- NA
+          
+        }
+        
+      }
+      
+      
+    }
+    
+    ## Convert data to data frame
+    data <- as.data.frame(data)
     
     ## Obtain unique responses for efficient spell-checking
     uniq.resp <- na.omit(unique(unlist(data)))
     
     # Sort out dictionaries
-    if(is.null(dictionary))
-    {dictionary <- "coca"}
+    if(is.null(dictionary)){
+      dictionary <- "cocaspell"
+    }
     
     # Perform spell-check
     spell.check <- try(
@@ -978,33 +1017,26 @@ textcleaner.fluency <- function(
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #' 
 #' @noRd
-# Updated 23.11.2021
+# Updated 21.06.2022
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
-
-# twenty <- max(match(paste(1:20), response_matrix[,"ID"]))
-# data = response_matrix[1:twenty,]
-# type = "free"
-# dictionary = "cocaspell"
-# spelling = "US"
-# miss = 99
-# add.path = NULL
-# keepStrings = FALSE
-# allowPunctuations = "-"
-# allowNumbers = FALSE
-# lowercase = TRUE
-# continue = NULL
-
 textcleaner.free <- function(
   data = NULL, miss = 99,
   spelling = c("UK", "US"),
   add.path = NULL, keepStrings = FALSE,
   allowPunctuations, dictionary,
   allowNumbers = FALSE, lowercase = TRUE,
+  keepLength = NULL, keepCue = FALSE,
   continue = NULL
 )
 {
+  
+  # Warning
+  warning(
+    "Free association preprocessing is still in development. Use with caution and independently verify that the results are correct.\n\nPlease send bugs/issues to <https://github.com/AlexChristensen/SemNetCleaner/issues"
+  )
+  
   # Check for missing arguments
   if(is.null(continue)){
     
@@ -1070,6 +1102,32 @@ textcleaner.free <- function(
       return(error.fun(data, "prep.spellcheck.dictionary", "textcleaner"))
     }
     
+    ## Remove responses with a certain length
+    if(!is.null(keepLength)){
+      
+      ## Length of responses
+      response_lengths <- unlist(
+        lapply(strsplit(
+          data[,"Response"], split = " "
+        ), length)
+      )
+      
+      ## Keep responses less than or equal to keepLength argument
+      data <- data[response_lengths <= keepLength,]
+      
+    }
+    
+    ## Remove cue responses
+    if(!isTRUE(keepCue)){
+      
+      ## Cue words
+      cues <- unique(data[,"Cue"])
+      
+      ## Remove cues in responses
+      data <- data[is.na(match(data[,"Response"], cues)),]
+      
+    }
+    
     ## Obtain unique responses for efficient spell-checking
     uniq.resp <- na.omit(unique(unlist(data[,"Response"])))
     
@@ -1081,6 +1139,7 @@ textcleaner.free <- function(
         spelling = spelling,
         add.path = add.path,
         keepStrings = keepStrings,
+        keepLength = keepLength,
         data = data
       ),
       silent <- TRUE
@@ -1689,7 +1748,7 @@ ind.word.check <- function (string, full.dict, dictionary, spelling)
 #' A vector with words to potentially be de-combined
 #' 
 #' @param multi.min Numeric.
-#' Length of multiple word resposnes in the dictionary
+#' Length of multiple word responses in the dictionary
 #' 
 #' @param full.dict Character vector.
 #' Dictionary entries
@@ -1708,24 +1767,47 @@ ind.word.check <- function (string, full.dict, dictionary, spelling)
 #' 
 #' @noRd
 # Multiple words
-# Updated 01.12.2020
-multiple.words <- function (vec, multi.min, full.dict, dictionary, spelling)
+# Updated 21.06.2022
+multiple.words <- function (
+    vec, multi.min, full.dict,
+    dictionary, spelling,
+    keepStrings = FALSE
+)
 {
+  # Original word
+  original_word <- vec
+  
   # Split vector
   spl <- unlist(strsplit(vec, " "))
   
   # Remove bad responses
   spl <- na.omit(bad.response(spl))
   
+  # Try to combine multiple words
+  combined <- paste(spl, sep = "", collapse = "")
+  
+  # Initialize result list
+  res <- list()
+  
+  # Check if combined exists
+  if(combined %in% full.dict){
+    
+    res$response <- combined
+    res$correct <- TRUE
+    
+    return(res)
+    
+  }
+  
   # Check for multiple words
-  if(length(spl) >= multi.min)
-  {
+  if(length(spl) >= multi.min){
+    
     # Identify words not in dictionary
     misspl <- which(!spl %in% full.dict)
     
     # Loop through checking for combination of words
-    for(i in misspl)
-    {
+    for(i in misspl){
+      
       # Individual check
       ind <- FALSE
       
@@ -1736,15 +1818,14 @@ multiple.words <- function (vec, multi.min, full.dict, dictionary, spelling)
       ind.guess <- best.guess(spl[i], full.dictionary = full.dict, dictionary = dictionary)
       
       ## Update based on individual guess
-      if(length(ind.guess) == 1)
-      {
+      if(length(ind.guess) == 1){
         spl[i] <- ind.guess
         ind <- TRUE
       }
       
       ## Check for words before and after word
-      if(i != 1)
-      {
+      if(i != 1){
+        
         ### Check before
         spacing <- c(paste(spl[i-1], spl[i]), paste(spl[i-1], spl[i], sep = ""))
         
@@ -1752,12 +1833,14 @@ multiple.words <- function (vec, multi.min, full.dict, dictionary, spelling)
         spacing <- unique(unlist(lapply(spacing, moniker, dictionary, spelling = spelling)))
         
         ### Check for only one solution
-        if(sum(spacing %in% full.dict) == 1)
-        {multi[1] <- spacing[which(spacing %in% full.dict)]}
+        if(sum(spacing %in% full.dict) == 1){
+          multi[1] <- spacing[which(spacing %in% full.dict)]
+        }
+        
       }
       
-      if(i != length(spl))
-      {
+      if(i != length(spl)){
+        
         ### Check before
         spacing <- c(paste(spl[i], spl[i+1]), paste(spl[i], spl[i+1], sep = ""))
         
@@ -1765,46 +1848,79 @@ multiple.words <- function (vec, multi.min, full.dict, dictionary, spelling)
         spacing <- unique(unlist(lapply(spacing, moniker, dictionary, spelling = spelling)))
         
         ### Check for only one solution
-        if(sum(spacing %in% full.dict) == 1)
-        {multi[2] <- spacing[which(spacing %in% full.dict)]}
+        if(sum(spacing %in% full.dict) == 1){
+          multi[2] <- spacing[which(spacing %in% full.dict)]
+        }
+        
       }
       
       # Verify singular multi-word solution
-      if(multi[1] %in% full.dict && !multi[2] %in% full.dict)
-      {
+      if(multi[1] %in% full.dict && !multi[2] %in% full.dict){
+        
         ## Change response
         spl[i] <- multi[1]
         
         ## Remove previous response
         spl <- spl[-(i-1)]
         
-      }else if(!multi[1] %in% full.dict && multi[2] %in% full.dict)
-      {
+      }else if(!multi[1] %in% full.dict && multi[2] %in% full.dict){
+        
         ## Change response
         spl[i] <- multi[2]
         
         ## Remove previous response
         spl <- spl[-(i+1)]
+        
       }
+      
     }
     
     # Check for common misspellings and monikers
     vec <- unlist(lapply(spl, moniker, misnom = SemNetDictionaries::load.monikers(dictionary), spelling = spelling))
-  }else if(length(spl) > 1)
-  {
+  
+  }else if(length(spl) > 1){
+    
     # Correct if only one best guess exists
     guess <- best.guess(vec, full.dictionary = full.dict, dictionary = dictionary)
     
     if(length(guess) == 1)
     {vec <- guess}
+    
   }
   
-  # Initialize result list
-  res <- list()
-  res$response <- unique(vec)
-  res$correct <- unique(vec) %in% full.dict
+  # Check for keeping strings
+  if(isTRUE(keepStrings)){
+    
+    # Combine words
+    combined_word <- paste(
+      vec, sep = "", collapse = " "
+    )
+    
+    # Check against original word
+    if(
+      original_word == combined_word &
+      !all(unique(vec) %in% full.dict)
+    ){
+      
+        res$response <- original_word
+        res$correct <- FALSE
+      
+    }else{
+      
+      res$response <- combined_word
+      res$correct <- TRUE
+      
+    }
+
+  }else{
+    
+    res$response <- unique(vec)
+    res$correct <- unique(vec) %in% full.dict
+    
+  }
   
   return(res)
+  
 }
 
 #' Response splitter
@@ -3050,8 +3166,11 @@ auto.spellcheck <- function(check, full.dict, dictionary, spelling, keepStrings)
 }
 
 # Automated Spell-check
-# Updated 27.01.2022
-auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStrings)
+# Updated 21.06.2022
+auto.spellcheck.free <- function(
+    check, full.dict, dictionary,
+    spelling, keepStrings, keepLength
+)
 {
   # Change names of indices
   names(check) <- formatC(1:length(check),
@@ -3073,7 +3192,7 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   
   # Index correctly and incorrectly spelled responses
   ## Check if all are spelled correctly or incorrectly
-  targets <- match(unlist(check),full.dict)
+  targets <- match(unlist(check), full.dict)
   
   if(all(is.na(targets))){ # All spelled incorrectly
     
@@ -3166,7 +3285,7 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   
   ## Identify responses found in dictionary
   ## Check if all are spelled correctly or incorrectly
-  targets <- match(unlist(sing),full.dict)
+  targets <- match(unlist(sing), full.dict)
   
   if(all(is.na(targets))){ # All spelled incorrectly
     
@@ -3222,22 +3341,22 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   }else{
     
     # Check if any dictionaries were improted from SemNetDictionaries
-    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE)))
-    {
+    if(any(dictionary %in% SemNetDictionaries::dictionaries(TRUE))){
+      
       # Let user know
       message("\nAuto-correcting common misspellings and monikers...", appendLF = FALSE)
       
       # Load moniker
       monik <- SemNetDictionaries::load.monikers(dictionary)
       
-      if(length(monik)!=0) # Checks in case of only using general dictionary
-      {
+      if(length(monik)!=0){ # Checks in case of only using general dictionary
+        
         ## Check for monikers
         mons <- unlist(lapply(sing, moniker, monik, spelling = spelling), recursive = FALSE)
         
         ## Identify responses found in dictionary
         ## Check if all are spelled correctly or incorrectly
-        targets <- match(unlist(mons),full.dict)
+        targets <- match(unlist(mons), full.dict)
         
         if(all(is.na(targets))){ # All spelled incorrectly
           
@@ -3357,17 +3476,17 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   # Set up clusters
   cl <- parallel::makeCluster(ncores)
 
-  # # Functions
-  # funcs <- c(
-  #   "bad.response", "best.guess",
-  #   "moniker"
-  # )
-  # 
-  # # Export functions
-  # parallel::clusterExport(
-  #   cl = cl, funcs,
-  #   envir = as.environment(asNamespace("SemNetCleaner"))
-  # )
+  # Functions
+  funcs <- c(
+    "bad.response", "best.guess",
+    "moniker"
+  )
+
+  # Export functions
+  parallel::clusterExport(
+    cl = cl, funcs,
+    envir = as.environment(asNamespace("SemNetCleaner"))
+  )
   
   # Spell-check each individual word within the list (including multiple word responses)
   ind.check <- unlist(
@@ -3435,111 +3554,134 @@ auto.spellcheck.free <- function(check, full.dict, dictionary, spelling, keepStr
   ## Parse strings with multi-word responses ##
   #-------------------------------------------#
   
-  # Let user know
-  message("\nParsing multi-word responses...", appendLF = FALSE)
-  
-  # Multiple word responses greater than in dictionary
-  dict.lens <- unlist(lapply(full.dict, function(x){length(unlist(strsplit(x, " ")))}))
-  
-  # Set multiple word minimum in response to be considered for split
-  multi.min <- ceiling(median(dict.lens) + 2 * sd(dict.lens))
-  
-  # Check for minimum length of 1
-  if(multi.min == 1){
-    multi.min <- 2
-  }
-  
-  # Message for large number of responses remaining
-  message("\nUsing parallel processing to speed up mutiple word check...")
-  
-  # Number of cores
-  ncores <- parallel::detectCores() / 2
-  
-  # Set up clusters
-  cl <- parallel::makeCluster(ncores)
-
-  # # Functions
-  # funcs <- c(
-  #   "bad.response", "best.guess",
-  #   "moniker"
-  # )
-  # 
-  # # Export functions
-  # parallel::clusterExport(
-  #   cl = cl, funcs,
-  #   envir = as.environment(asNamespace("SemNetCleaner"))
-  # )
-  
-  # Spell-check each individual word within the list (including multiple word responses)
-  multi.word <- pbapply::pblapply(
-    ind.check, multiple.words,
-    multi.min = multi.min, full.dict = full.dict,
-    dictionary = dictionary, spelling = spelling,
-    cl = cl
-  )
-  
-  parallel::stopCluster(cl)
-  
-  ## Identify responses found in dictionary
-  ### Check responses that changed
-  changed <- unlist(lapply(multi.word, function(x)
-  {
-    if(any(x$correct))
-    {return(TRUE)
-    }else{return(FALSE)}
-  }))
-  
-  ### Grab changed responses
-  responses <- unlist(multi.word, recursive = FALSE)[grep("response", names(unlist(multi.word, recursive = FALSE)))]
-  
-  ### Update original responses
-  if(!keepStrings){
-    if(length(responses[changed]) != 0){
-      orig[names(multi.word)[changed]] <- responses[changed]
+  if(is.null(keepLength) | keepLength > 1){
+    
+    # Let user know
+    message("\nParsing multi-word responses...", appendLF = FALSE)
+    
+    # Multiple word responses greater than in dictionary
+    dict.lens <- unlist(lapply(full.dict, function(x){length(unlist(strsplit(x, " ")))}))
+    
+    # Set multiple word minimum in response to be considered for split
+    multi.min <- ceiling(median(dict.lens) + 2 * sd(dict.lens))
+    
+    # Check for minimum length of 1
+    if(multi.min == 1){
+      multi.min <- 2
     }
-  }
-  
-  ### Indices of correctly spelled responses
-  ind6 <- unlist(lapply(multi.word, function(x)
-  {
-    if(all(x$correct))
-    {return(TRUE)
-    }else{return(FALSE)}
-  }))
-  
-  if(length(names(multi.word)[ind6]) != 0){
     
-    ## Update correctly spelled indices
-    names.ind <- sort(c(names.ind, names(multi.word)[ind6]))
+    # Message for large number of responses remaining
+    message("\nUsing parallel processing to speed up mutiple word check...")
     
-    ## Update checked responses
-    multi.word <- orig[-as.numeric(names.ind)]
+    # Number of cores
+    ncores <- parallel::detectCores() / 2
     
-  }
-  
-  # Search through responses with more than 1 but can be individually split into separate responses
-  multi.word <- lapply(multi.word, response.splitter, full.dict = full.dict)
-  
-  ## Identify responses found in dictionary
-  ### Indices of correctly spelled responses
-  ind7 <- unlist(lapply(multi.word, function(x)
-  {
-    if(all(x %in% full.dict))
-    {return(TRUE)
-    }else{return(FALSE)}
-  }))
-  
-  if(length(multi.word[ind7]) != 0){
+    # Set up clusters
+    cl <- parallel::makeCluster(ncores)
+    
+    # Functions
+    funcs <- c(
+      "bad.response", "best.guess",
+      "moniker"
+    )
+    
+    # Export functions
+    parallel::clusterExport(
+      cl = cl, funcs,
+      envir = as.environment(asNamespace("SemNetCleaner"))
+    )
+    
+    # Spell-check each individual word within the list (including multiple word responses)
+    multi.word <- pbapply::pblapply(
+      ind.check, multiple.words,
+      multi.min = multi.min, full.dict = full.dict,
+      dictionary = dictionary, spelling = spelling,
+      keepStrings = keepStrings,
+      cl = cl
+    )
+    
+    parallel::stopCluster(cl)
+    
+    ## Identify responses found in dictionary
+    ### Check responses that changed
+    changed <- unlist(lapply(multi.word, function(x){
+      
+      if(any(x$correct)){
+        return(TRUE)
+      }else{
+        return(FALSE)
+      }
+      
+    }))
+    
+    ### Grab changed responses
+    responses <- unlist(multi.word, recursive = FALSE)[grep("response", names(unlist(multi.word, recursive = FALSE)))]
     
     ### Update original responses
-    orig[names(multi.word)[ind7]] <- multi.word[ind7]
+    if(!keepStrings){
+      if(length(responses[changed]) != 0){
+        orig[names(multi.word)[changed]] <- responses[changed]
+      }
+    }else{
+      
+      orig[names(changed[which(changed)])] <- 
+        lapply(multi.word[names(changed[which(changed)])], function(x){
+          x$response
+        })
+      
+    }
     
-    ## Update correctly spelled indices
-    names.ind <- sort(c(names.ind, names(multi.word)[ind7]))
+    ### Indices of correctly spelled responses
+    ind6 <- unlist(lapply(multi.word, function(x){
+      if(all(x$correct))
+      {return(TRUE)
+      }else{return(FALSE)}
+    }))
     
-    ## Update checked responses
-    multi.word <- orig[-as.numeric(names.ind)]
+    if(length(names(multi.word)[ind6]) != 0){
+      
+      ## Update correctly spelled indices
+      names.ind <- sort(c(names.ind, names(multi.word)[ind6]))
+      
+      ## Update checked responses
+      multi.word <- orig[-as.numeric(names.ind)]
+      
+    }
+    
+    # Search through responses with more than 1 but can be individually split into separate responses
+    if(!isTRUE(keepStrings)){
+      
+      multi.word <- lapply(multi.word, response.splitter, full.dict = full.dict)
+      
+      ## Identify responses found in dictionary
+      ### Indices of correctly spelled responses
+      ind7 <- unlist(lapply(multi.word, function(x){
+        if(all(x %in% full.dict))
+        {return(TRUE)
+        }else{return(FALSE)}
+      }))
+      
+      if(length(multi.word[ind7]) != 0){
+        
+        ### Update original responses
+        orig[names(multi.word)[ind7]] <- multi.word[ind7]
+        
+        ## Update correctly spelled indices
+        names.ind <- sort(c(names.ind, names(multi.word)[ind7]))
+        
+        ## Update checked responses
+        multi.word <- orig[-as.numeric(names.ind)]
+      }
+      
+    }
+    
+  }else{
+    
+    multi.word <- ind.check
+    
   }
+  
+  
   
   # Let user know how many responses need to be spell-checked
   if(length(multi.word) != 0){
@@ -5466,10 +5608,11 @@ spellcheck.dictionary <- function (uniq.resp = NULL, dictionary = NULL, spelling
 # Updated 14.02.2022
 spellcheck.dictionary.free <- function (
   uniq.resp = NULL, dictionary = "cocaspell", spelling = NULL,
-  add.path = NULL, keepStrings = NULL,
+  add.path = NULL, keepStrings = NULL, keepLength = NULL, keepCue = FALSE,
   data = NULL, continue = NULL
 )
 {
+  
   # Continuation check
   if(is.null(continue)){
     
@@ -5502,11 +5645,12 @@ spellcheck.dictionary.free <- function (
     # Perform initial spell-check
     initial <- try(
       auto.spellcheck.free(
-        check = from,
-        full.dict = full.dictionary,
-        dictionary = dictionary,
-        spelling = spelling,
-        keepStrings = keepStrings
+        check = from
+        , full.dict = full.dictionary
+        , dictionary = dictionary
+        , spelling = spelling
+        , keepStrings = keepStrings
+        , keepLength = keepLength
       ),
       silent = TRUE
     )
@@ -6283,16 +6427,16 @@ spellcheck.dictionary.free <- function (
       # Set up clusters
       cl <- parallel::makeCluster(ncores)
       
-      # # Functions
-      # funcs <- c(
-      #   "moniker"
-      # )
-      # 
-      # # Export functions
-      # parallel::clusterExport(
-      #   cl = cl, funcs,
-      #   envir = as.environment(asNamespace("SemNetCleaner"))
-      # )
+      # Functions
+      funcs <- c(
+        "moniker"
+      )
+
+      # Export functions
+      parallel::clusterExport(
+        cl = cl, funcs,
+        envir = as.environment(asNamespace("SemNetCleaner"))
+      )
       
       # Spell-check each individual word within the list (including multiple word responses)
       replace_to <- pbapply::pblapply(

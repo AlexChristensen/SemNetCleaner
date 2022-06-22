@@ -1,3 +1,8 @@
+Changes in version 1.3.6
+
+o FIX: major fixes to free association preprocessing pipeline
+
+
 Changes in version 1.3.5
 
 o UPDATE: added parallel processing for large spell checks

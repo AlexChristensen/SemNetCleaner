@@ -1,7 +1,8 @@
-#' Pathfinder Network 
+#' Converts \code{\link[SemNetCleaner]{textcleaner}} object
+#' to a SNAFU GUI format
 #' 
-#' @description Estimates a pathfinder network using the MST-Pathfinder
-#' Network method from Quirin et al. (2008; see also Schvaneveldt, 1990)
+#' @description Converts \code{\link[SemNetCleaner]{textcleaner}} object
+#' to a SNAFU GUI format (only works for fluency data)
 #' 
 #' @param ... Matrix or data frame.
 #' A clean response matrices
@@ -49,7 +50,7 @@
 #' 
 #' @export
 # Convert data to SNAFU
-# Updated 24.09.2020
+# Updated 19.06.2022
 convert2snafu <- function (..., category)
 {
   # Data list

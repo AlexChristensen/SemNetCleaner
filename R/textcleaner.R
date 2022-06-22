@@ -120,6 +120,18 @@
 #' Defaults to \code{TRUE}.
 #' Set to \code{FALSE} to keep words as they are
 #' 
+#' @param keepLength Numeric.
+#' Maximum number of words allowed in a response.
+#' Defaults to \code{NULL}.
+#' Set a number to keep responses with words less than
+#' or equal to the number (e.g., \code{3} will keep responses
+#' with three or less words)
+#' 
+#' @param keepCue Boolean.
+#' Should cue words be retained in the responses?
+#' Defaults to \code{FALSE}.
+#' Set to \code{TRUE} to allow cue words to be retained
+#' 
 #' @param continue List.
 #' A result previously unfinished that still needs to be completed.
 #' Allows you to continue to manually spell-check their data
@@ -207,7 +219,7 @@
 #' 
 #' @export
 # Text Cleaner----
-# Updated 28.01.2022
+# Updated 21.06.2022
 # Keep strings update: 06.08.2020
 # Major update: 19.04.2020
 # Added type of task: 21.10.2021
@@ -218,6 +230,7 @@ textcleaner <- function(
   add.path = NULL, keepStrings = FALSE,
   allowPunctuations,
   allowNumbers = FALSE, lowercase = TRUE,
+  keepLength = NULL, keepCue = FALSE,
   continue = NULL
 )
 {
@@ -292,6 +305,7 @@ textcleaner <- function(
       add.path = add.path, keepStrings = keepStrings,
       allowPunctuations = allowPunctuations,
       allowNumbers = allowNumbers, lowercase = lowercase,
+      keepLength = keepLength,
       continue = continue
     )
     
@@ -305,11 +319,12 @@ textcleaner <- function(
       add.path = add.path, keepStrings = keepStrings,
       allowPunctuations = allowPunctuations, dictionary = dictionary,
       allowNumbers = allowNumbers, lowercase = lowercase,
+      keepLength = keepLength, keepCue = keepCue,
       continue = continue
     )
     
   }
-    
+  
   return(res)
 }
 #----

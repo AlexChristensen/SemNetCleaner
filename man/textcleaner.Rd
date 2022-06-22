@@ -16,6 +16,8 @@ textcleaner(
   allowPunctuations,
   allowNumbers = FALSE,
   lowercase = TRUE,
+  keepLength = NULL,
+  keepCue = FALSE,
   continue = NULL
 )
 }
@@ -136,6 +138,18 @@ Set to \code{TRUE} to keep numbers in text}
 Should words be converted to lowercase?
 Defaults to \code{TRUE}.
 Set to \code{FALSE} to keep words as they are}
+
+\item{keepLength}{Numeric.
+Maximum number of words allowed in a response.
+Defaults to \code{NULL}.
+Set a number to keep responses with words less than
+or equal to the number (e.g., \code{3} will keep responses
+with three or less words)}
+
+\item{keepCue}{Boolean.
+Should cue words be retained in the responses?
+Defaults to \code{FALSE}.
+Set to \code{TRUE} to allow cue words to be retained}
 
 \item{continue}{List.
 A result previously unfinished that still needs to be completed.
