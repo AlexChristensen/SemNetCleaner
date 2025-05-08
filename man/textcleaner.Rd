@@ -34,7 +34,7 @@ or data frame):
 \code{row.names} \tab Response 1 \tab Response 2 \tab Response n \cr
 ID_1 \tab 1 \tab 2 \tab n \cr
 ID_2 \tab 1 \tab 2 \tab n \cr
-ID_n \tab 1 \tab 2 \tab n 
+ID_n \tab 1 \tab 2 \tab n
 }
 
 For \code{task = "free"}, data are expected to
@@ -77,11 +77,10 @@ n \tab n \tab n
 Type of task to be preprocessed.
 \itemize{
 
-\item{\code{"fluency"}}
-{Verbal fluency data (e.g., categories, phonological, synonyms)}
+\item \code{"fluency"} --- Verbal fluency data (e.g., categories, phonological,
+synonyms)
 
-\item{\code{"free"}}
-{Free association data (e.g., cue terms or words)}
+\item \code{"free"} --- Free association data (e.g., cue terms or words)
 
 }}
 
@@ -106,11 +105,11 @@ Use \code{dictionaries()} or \code{find.dictionaries()} for more options
 English spelling to be used.
 \itemize{
 
-\item{\code{"UK"}}
-{For British spelling (e.g., colour, grey, programme, theatre)}
+\item \code{"UK"} --- For British spelling (e.g., colour, grey,
+programme, theatre)
 
-\item{\code{"US"}}
-{For American spelling (e.g., color, gray, program, theater)}
+\item \code{"US"} --- For American spelling (e.g., color, gray, program,
+theater)
 
 }}
 
@@ -168,13 +167,13 @@ and a response that a participant has not provided is a '\code{0}'}
 
 \itemize{
 
-\item{\code{clean}}
-{A response matrix that has been spell-checked and de-pluralized with duplicates removed.
-This can be used as a final dataset for analyses (e.g., fluency of responses)}
+\item \code{clean} --- A response matrix that has been spell-checked
+and de-pluralized with duplicates removed.
+This can be used as a final dataset for analyses (e.g., fluency of responses)
 
-\item{\code{original}}
-{The original response matrix that has had white spaces before and
-after words response. Also converts all upper-case letters to lower case}
+\item \code{original} --- The original response matrix that has had
+white spaces before and after words response. Also converts all
+upper-case letters to lower case
 
 }
 
@@ -184,25 +183,24 @@ after words response. Also converts all upper-case letters to lower case}
 
 \itemize{
 
-\item{\code{full}}
-{All responses regardless of spell-checking changes}
+\item \code{full} --- All responses regardless of spell-checking changes
 
-\item{\code{auto}}
-{Only the incorrect responses that were changed during spell-check}
-
-}
+\item \code{auto} --- Only the incorrect responses that were changed
+during spell-check
 
 }
 
-\item{removed}{A list containing two objects: 
+}
+
+\item{removed}{A list containing two objects:
 
 \itemize{
 
-\item{\code{rows}}
-{Identifies removed participants by their row (or column) location in the original data file}
+\item \code{rows} --- Identifies removed participants by their row
+(or column) location in the original data file
 
-\item{\code{ids}}
-{Identifies removed participants by their ID (see argument \code{data})}
+\item \code{ids} --- Identifies removed participants by their ID
+(see argument \code{data})
 
 }
 
@@ -233,7 +231,7 @@ if(interactive())
 Christensen, A. P., & Kenett, Y. N. (in press).
 Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks.
 \emph{Psychological Methods}.
-  
+
 Hornik, K., & Murdoch, D. (2010).
 Watch Your Spelling!.
 \emph{The R Journal}, \emph{3}, 22-28.
