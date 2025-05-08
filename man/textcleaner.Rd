@@ -99,7 +99,7 @@ Dictionary to be used for more efficient text cleaning.
 Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}
 
 Use \code{dictionaries()} or \code{find.dictionaries()} for more options
-(See \code{\link{SemNetDictionaries}} for more details)}
+(See \code{SemNetDictionaries} for more details)}
 
 \item{spelling}{Character vector.
 English spelling to be used.

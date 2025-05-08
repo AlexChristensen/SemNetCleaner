@@ -12,10 +12,10 @@ A word to get best guess spelling options from dictionary}
 
 \item{full.dictionary}{Character vector.
 The dictionary to search for best guesses in.
-See \code{\link{SemNetDictionaries}}}
+See \code{SemNetDictionaries}}
 
 \item{dictionary}{Character.
-A dictionary from \code{\link{SemNetDictionaries}} for monikers (enhances guessing)}
+A dictionary from \code{SemNetDictionaries} for monikers (enhances guessing)}
 
 \item{tolerance}{Numeric.
 The distance tolerance set for automatic spell-correction purposes.
@@ -41,7 +41,7 @@ based on the letters, the ordering of those letters, and the potential
 for letters to be interchanged. The
 \href{https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance}{Damerau-Levenshtein distance}
 is used to guide inferences into what word the participant was trying to spell from a dictionary
-(see \code{\link{SemNetDictionaries}})
+(see \code{SemNetDictionaries})
 }
 \examples{
 # Misspelled "bombay"

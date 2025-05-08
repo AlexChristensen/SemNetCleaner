@@ -16,8 +16,8 @@ could not be found (then the original word is returned)
 \description{
 A function to change words to their plural form.
 The rules for converting words to their plural forms
-are based on the grammar rules found here:
-\href{https://www.grammarly.com/blog/plural-nouns/}{https://www.grammarly.com/blog/plural-nouns/}.
+are based on the grammar rules.
+
 This function handles most special cases and some irregular cases (see examples)
 but caution is necessary. If no plural form is identified, then the original
 word is returned.
