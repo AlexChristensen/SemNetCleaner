@@ -18,13 +18,17 @@ textcleaner(
   lowercase = TRUE,
   keepLength = NULL,
   keepCue = FALSE,
-  continue = NULL
+  continue = NULL,
+  reader = readline,
+  search_fn = searcher::search_site,
+  cores = 1,
+  edit_fn = automated_edit
 )
 }
 \arguments{
 \item{data}{Matrix or data frame.
 
-For \code{task = "fluency"}, data are expected to
+For \code{type = "fluency"}, data are expected to
 follow wide formatting (IDs are the row names
 and are \strong{not} a column in the matrix
 or data frame):
@@ -37,7 +41,7 @@ ID_2 \tab 1 \tab 2 \tab n \cr
 ID_n \tab 1 \tab 2 \tab n
 }
 
-For \code{task = "free"}, data are expected to
+For \code{type = "free"}, data are expected to
 follow long formatting:
 
 \tabular{ccc}{
@@ -153,8 +157,35 @@ Set to \code{TRUE} to allow cue words to be retained}
 \item{continue}{List.
 A result previously unfinished that still needs to be completed.
 Allows you to continue to manually spell-check their data
-after you've closed or errored out.
+after you've closed or errored out. Also accepts a previously
+\strong{completed} result (e.g., a saved return value of this same
+function, or of calling the manual spell-check stage directly) to
+skip straight to finalizing the output without repeating the spell-check.
 Defaults to \code{NULL}}
+
+\item{reader}{Function.
+The input reader used for every interactive prompt in the manual
+spell-check wizard. Defaults to \code{readline}. Exposed so the whole
+wizard can be driven programmatically (e.g. in automated tests) with a
+pre-scripted queue of answers instead of real console input}
+
+\item{search_fn}{Function.
+The function used to open a browser search for the "GOOGLE WORD"/
+"GOOGLE STRING" manual spell-check options. Defaults to
+\code{searcher::search_site}}
+
+\item{cores}{Numeric.
+Number of computer cores to use in parallelized computations (the
+"ad hoc" moniker re-check after manual spell-check). Defaults to \code{1}
+(sequential)}
+
+\item{edit_fn}{Function.
+The spreadsheet-editor function used to review automated spell-check
+changes. Defaults to \code{automated_edit}, a \code{shiny}/\code{DT}-based
+review app (requires those packages to be installed). Pass \code{edit_fn
+= edit} to use base R's lightweight \code{edit()} instead, with no extra
+dependencies. Exposed so this step can be driven programmatically instead
+of opening a real interactive editor}
 }
 \value{
 This function returns a list containing the following objects:

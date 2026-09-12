@@ -10,6 +10,14 @@
 #' @param category Character.
 #' Category of verbal fluency data
 #'
+#' @param path Character.
+#' Directory to save the SNAFU-formatted \code{.csv} file to
+#'
+#' @param reader Function.
+#' The input reader used to prompt for the output file name. Defaults to
+#' \code{readline}. Exposed so this can be driven programmatically (e.g. in
+#' automated tests) instead of real console input
+#'
 #' @return A .csv file formatted for SNAFU
 #'
 #' @details The format of the file has 7 columns:
@@ -38,7 +46,7 @@
 #' @examples
 #' # Convert data to SNAFU
 #' if(interactive())
-#' {convert2snafu(open.clean, category = "animals")}
+#' {convert2snafu(open.clean, category = "animals", path = tempdir())}
 #'
 #' @references
 #' # For SNAFU, see:
@@ -53,93 +61,83 @@
 #'
 #' @export
 # Convert data to SNAFU
-# Updated 19.06.2022
-convert2snafu <- function (..., category)
+# Real bug fixed: `if(length(data.list) == 1){}else{...}` -- the untouched
+# original's single-dataset branch is completely EMPTY, so the function's
+# own documented single-argument use (`convert2snafu(open.clean, category =
+# "animals")`) silently wrote out an empty, header-only CSV instead of the
+# real data. Confirmed directly that the `else` branch's own group-name
+# derivation (`as.character(substitute(list(...)))`, minus the `"list"`
+# element -- already audited safe in Phase 6, always deparses with `"list"`
+# first for any number of arguments per R's own semantics) works correctly
+# for a single dataset too, so the special case was never necessary; merged
+# into one unconditional branch.
+# Binding decision #5: drops the `easycsv` dependency (`Suggests`-only but
+# called unconditionally -- an undeclared-dependency bug in its own right)
+# in favor of an explicit `path =` argument, and the interactive filename
+# prompt is rebuilt on `read_input()`/a `reader = readline` parameter per
+# binding decision #3.
+# Bug #8 audit: both `for(i in 1:length(data.list))` and `for(j in
+# 1:nrow(target.data))` reverse-range to `1:0` on a 0-dataset/0-row input --
+# fixed via `seq_along()`/`seq_len()`, same class as bugs #15-17.
+# Updated 12.09.2026
+convert2snafu <- function(..., category, path, reader = readline)
 {
-  # Data list
-  data.list <- list(...)
 
-  # Initialize snafu matrix
-  snafu.mat <- matrix(0, nrow = 0, ncol = 7)
-  colnames(snafu.mat) <- c("id", "listnum", "category", "item", "RT", "RTstart", "group")
+  data_list <- list(...)
 
-  if(length(data.list) == 1)
-  {
+  snafu_mat <- matrix(0, nrow = 0, ncol = 7)
+  colnames(snafu_mat) <- c("id", "listnum", "category", "item", "RT", "RTstart", "group")
 
-  }else{
+  if(length(data_list) != 0){
 
-    # Get group names
     name <- as.character(substitute(list(...)))
-    name <- name[-which(name=="list")]
+    name <- name[-which(name == "list")]
 
-    for(i in 1:length(data.list))
-    {
-      # Target data
-      target.data <- as.matrix(data.list[[i]])
+    for(i in seq_along(data_list)){
 
-      # Number of possible responses
-      n <- ncol(target.data)
+      target_data <- as.matrix(data_list[[i]])
 
-      # IDs
-      if(is.null(row.names(target.data)))
-      {id <- paste("A", 1:nrow(target.data), sep = "")
-      }else{id <- paste("A", formatC(as.numeric(row.names(target.data)), digits = 2, format = "d", flag = 0), sep = "")}
+      if(is.null(row.names(target_data))){
+        id <- paste("A", seq_len(nrow(target_data)), sep = "")
+      }else{
+        id <- paste("A", formatC(as.numeric(row.names(target_data)), digits = 2, format = "d", flag = 0), sep = "")
+      }
 
-      for(j in 1:nrow(target.data))
-      {
-        # Target participant
-        target.part <- target.data[j,]
+      for(j in seq_len(nrow(target_data))){
 
-        # Item
-        item <- na.omit(target.part)
+        target_part <- target_data[j, ]
 
-        # Target ID
-        target.id <- rep(id[j], length(item))
+        item <- na.omit(target_part)
 
-        # List number
+        target_id <- rep(id[j], length(item))
         listnum <- rep(0, length(item))
-
-        # Category
         categorey <- rep(category, length(item))
-
-        # RT
         RT <- rep(0, length(item))
-
-        # RTstart
         RTstart <- rep(0, length(item))
-
-        # Group
         group <- rep(name[i], length(item))
 
-        # Bind data
-        target.mat <- cbind(target.id, listnum,
+        target_mat <- cbind(target_id, listnum,
                             categorey, item,
                             RT, RTstart, group)
 
-        row.names(target.mat) <- NULL
-        colnames(target.mat) <- colnames(snafu.mat)
+        row.names(target_mat) <- NULL
+        colnames(target_mat) <- colnames(snafu_mat)
 
-        # Append snafu matrix
-        snafu.mat <- rbind(snafu.mat, target.mat)
+        snafu_mat <- rbind(snafu_mat, target_mat)
+
       }
+
     }
 
   }
 
-  # Choose directory
-  DIR <- easycsv::choose_dir()
+  filename <- read_input("Name of file: ", reader = reader)
 
-  # Get file name
-  FILENAME <- readline("Name of file: ")
+  full_path <- file.path(path, paste(filename, "csv", sep = "."))
 
-  # Set up path
-  PATH <- paste(DIR, FILENAME, sep = "/")
-  PATH <- gsub("\\\\", "/", PATH)
-  PATH <- paste(PATH, "csv", sep = ".")
-
-  write.table(snafu.mat, file = PATH,
+  write.table(snafu_mat, file = full_path,
               quote = FALSE, sep = ",", row.names = FALSE)
 
-  # Message to user
-  message(paste("SNAFU formatted file was saved in: "), PATH)
+  message(paste("SNAFU formatted file was saved in: "), full_path)
+
 }

@@ -5,7 +5,7 @@
 \title{Converts \code{\link[SemNetCleaner]{textcleaner}} object
 to a SNAFU GUI format}
 \usage{
-convert2snafu(..., category)
+convert2snafu(..., category, path, reader = readline)
 }
 \arguments{
 \item{...}{Matrix or data frame.
@@ -13,6 +13,14 @@ A clean response matrices}
 
 \item{category}{Character.
 Category of verbal fluency data}
+
+\item{path}{Character.
+Directory to save the SNAFU-formatted \code{.csv} file to}
+
+\item{reader}{Function.
+The input reader used to prompt for the output file name. Defaults to
+\code{readline}. Exposed so this can be driven programmatically (e.g. in
+automated tests) instead of real console input}
 }
 \value{
 A .csv file formatted for SNAFU
@@ -48,7 +56,7 @@ input into the function (\code{...})
 \examples{
 # Convert data to SNAFU
 if(interactive())
-{convert2snafu(open.clean, category = "animals")}
+{convert2snafu(open.clean, category = "animals", path = tempdir())}
 
 }
 \references{

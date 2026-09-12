@@ -10,7 +10,7 @@ pluralize(word)
 \item{word}{A word}
 }
 \value{
-Returns the word in singular form, unless a plural form
+Returns the word in plural form, unless a plural form
 could not be found (then the original word is returned)
 }
 \description{
