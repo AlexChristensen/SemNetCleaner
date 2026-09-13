@@ -225,7 +225,33 @@ spellcheck_dictionary <- function(
     res$main_count <- main_count
     res$go_back_count <- go_back_count
     res$go_back_reset <- go_back_reset
-    if(exists("multi_count")){res$multi_count <- multi_count}
+    if(exists("multi_count")){
+      res$multi_count <- multi_count
+      # Two bugs found via live crashes, both from the SAME root cause:
+      # `target`/`target_history` are the multi-word response's own
+      # in-progress working copy and undo STACK -- mutated word by word
+      # across the inner `multi_count` loop, but never folded into `to[[i]]`
+      # until that whole loop finishes. Every OTHER resumable variable in
+      # this function is restored from `continue` on the next call; these
+      # weren't, so:
+      # (1) a `textcleaner_shiny()` resume mid multi-word response silently
+      #     reverted every earlier word in the SAME response back to its
+      #     pristine auto-corrected form (`target <- to[[i]]` recomputes it
+      #     from scratch below), and GO BACK crashed outright ("object
+      #     'prev_target' not found") the moment a fresh function call
+      #     referenced an undo-buffer it had never once assigned.
+      # (2) even within a single continuous call (no resume at all -- a
+      #     plain console `textcleaner()` session), a SECOND consecutive
+      #     GO BACK crashed too ("input `word` has length 0" in
+      #     `best_guess()`), because the ORIGINAL single-scalar
+      #     `prev_target` only ever held the last real decision's
+      #     pre-state -- seeing this same bug live is what turned this
+      #     into a full history stack instead of a second scalar.
+      # Saved/restored as a pair with `multi_count` itself (same
+      # `exists()` guard) since neither is meaningful without it.
+      res$wip_target <- target
+      if(exists("target_history")){res$wip_target_history <- target_history}
+    }
     res$data <- data
     res$keep_strings <- keep_strings
     res$stop <- TRUE
@@ -284,7 +310,33 @@ spellcheck_dictionary <- function(
 
       if(is.null(continue$multi_count)){
         multi_count <- 1
+        # One entry per word position, `target_history[[k]]` holding
+        # `target` exactly as it stood right before word k's own decision
+        # was applied -- a real undo STACK, not a single scalar. Bug found
+        # via a live double-GO-BACK crash ("In `best_guess()`: input `word`
+        # has length 0"): the original design used one `prev_target`
+        # scalar, overwritten only on a REAL (non-go-back) decision. GO
+        # BACK never refreshed it, so a SECOND consecutive GO BACK (no
+        # real decision in between) reused the SAME stale value, decrementing
+        # `multi_count` without actually reverting `target` to match. That
+        # then broke `menu_check <- which(check_words[multi_count] ==
+        # target)` at the next word position down: its original text had
+        # already been overwritten by an earlier BAD WORD/TYPE MY OWN WORD
+        # decision and never really undone, so it no longer appeared
+        # anywhere in `target` -- an empty match, fed straight into
+        # `best_guess()` as a length-0 `word`. A full history stack fixes
+        # this for any number of consecutive GO BACKs, not just one.
+        target_history <- list()
       }else{
+        # Restore this same multi-word response's in-progress working copy
+        # (`target`) and undo history (`target_history`) alongside
+        # `multi_count` itself -- see the history's own initialization
+        # comment above for the crash this, together with the stack itself,
+        # closes. Guarded the same way `multi_count`'s own restore is
+        # (`continue$multi_count` non-null), so this only ever fires once,
+        # for the exact response it was saved mid-way through.
+        if(!is.null(continue$wip_target)){target <- continue$wip_target}
+        target_history <- if(!is.null(continue$wip_target_history)) continue$wip_target_history else list()
         continue$multi_count <- NULL
       }
 
@@ -415,11 +467,18 @@ spellcheck_dictionary <- function(
 
           }else{
 
-            target <- prev_target
+            # Read from the history STACK at position `multi_count - 1`,
+            # not a single `prev_target` scalar -- see `target_history`'s
+            # own initialization comment above for why: a scalar only ever
+            # holds the LAST real decision's pre-state, which a second
+            # consecutive GO BACK (no real decision in between) would reuse
+            # unchanged instead of reverting any further.
+            prior_target <- target_history[[multi_count - 1]]
+            target <- prior_target
 
-            if(any(prev_target %in% full_dictionary & !prev_target %in% orig_dictionary)){
-              target_rms <- which(prev_target %in% full_dictionary & !prev_target %in% orig_dictionary)
-              ind_rms <- match(prev_target[target_rms], full_dictionary)
+            if(any(prior_target %in% full_dictionary & !prior_target %in% orig_dictionary)){
+              target_rms <- which(prior_target %in% full_dictionary & !prior_target %in% orig_dictionary)
+              ind_rms <- match(prior_target[target_rms], full_dictionary)
               full_dictionary <- full_dictionary[-ind_rms]
             }
 
@@ -454,7 +513,13 @@ spellcheck_dictionary <- function(
 
         }else{
 
-          prev_target <- target
+          # Push this position's pre-decision `target` onto the undo stack
+          # (see `target_history`'s own initialization comment above)
+          # BEFORE applying the decision below -- `target_history[[k]]`
+          # always means "target as it stood right before word k's own
+          # decision", read back by GO BACK at `target_history[[multi_count
+          # - 1]]` once `multi_count` has moved on to word k+1.
+          target_history[[multi_count]] <- target
           if(type == "free" && length(result$target) == 1){
             target[multi_count] <- result$target
           }else{
@@ -483,91 +548,113 @@ spellcheck_dictionary <- function(
 
     }else{
 
-      # Single response
-      menu_possible <- best_guess(target, full_dictionary = full_dictionary, dictionary)
+      # Single response. Wrapped in a `repeat` (Bug found via direct code
+      # review while investigating the multi-word GO BACK crashes above):
+      # GO BACK denied on the very first manual response (`main_count ==
+      # 1`) printed "This is the first response. 'GO BACK' is not
+      # available." but then fell straight through to this loop's own
+      # `main_count <- main_count + 1` below -- silently ADVANCING PAST
+      # this response instead of re-asking it, leaving it stuck at
+      # whatever the automated pass produced, with no real user decision
+      # ever recorded for it. The multi-word branch above never had this
+      # bug: its own per-word decision already lives inside a real
+      # `while(multi_count != ...)` loop, so a denied GO BACK there
+      # (leaving `multi_count` unchanged) naturally re-loops and re-asks.
+      # This response has no such loop of its own -- added one here,
+      # breaking out on every OTHER path (a real decision applied, or a
+      # GO BACK that actually succeeded) exactly where execution used to
+      # fall through anyway, so those paths are unchanged.
+      repeat{
 
-      # Phase 11: same precompute-once-reuse-for-`pending` pattern as the
-      # multi-word branch above -- `context = NULL` here since there is no
-      # surrounding multi-word string for a single-response decision
-      pending <- list(
-        context = NULL, check = target, possible = menu_possible,
-        original = from[[i]], category = category, keep_strings = keep_strings
-      )
+        menu_possible <- best_guess(target, full_dictionary = full_dictionary, dictionary)
 
-      result <- try(
-        spellcheck_menu(
-          check = target, context = NULL, possible = menu_possible,
-          original = from[[i]], current_index = i, changes = changes,
-          full_dictionary = full_dictionary, category = category, dictionary = dictionary,
-          keep_strings = keep_strings, go_back_count = go_back_count,
-          reader = reader, search_fn = search_fn
-        ),
-        silent = TRUE
-      )
+        # Phase 11: same precompute-once-reuse-for-`pending` pattern as the
+        # multi-word branch above -- `context = NULL` here since there is no
+        # surrounding multi-word string for a single-response decision
+        pending <- list(
+          context = NULL, check = target, possible = menu_possible,
+          original = from[[i]], category = category, keep_strings = keep_strings
+        )
 
-      line_break()
+        result <- try(
+          spellcheck_menu(
+            check = target, context = NULL, possible = menu_possible,
+            original = from[[i]], current_index = i, changes = changes,
+            full_dictionary = full_dictionary, category = category, dictionary = dictionary,
+            keep_strings = keep_strings, go_back_count = go_back_count,
+            reader = reader, search_fn = search_fn
+          ),
+          silent = TRUE
+        )
 
-      if("STOP" %in% result){
+        line_break()
 
-        message("\nUser stopped. Saving progress...\n")
-        res <- save_state(pending = pending)
-        close(pb)
-        Sys.sleep(2)
-        return(res)
+        if("STOP" %in% result){
 
-      }else if(inherits(result, "try-error")){
+          message("\nUser stopped. Saving progress...\n")
+          res <- save_state(pending = pending)
+          close(pb)
+          Sys.sleep(2)
+          return(res)
 
-        error_report(result, "spellcheck_menu", "textcleaner")
-        res <- save_state(target, pending = pending)
-        close(pb)
-        message("\nSaving progress...\n")
-        Sys.sleep(2)
-        return(res)
+        }else if(inherits(result, "try-error")){
 
-      }
+          error_report(result, "spellcheck_menu", "textcleaner")
+          res <- save_state(target, pending = pending)
+          close(pb)
+          message("\nSaving progress...\n")
+          Sys.sleep(2)
+          return(res)
 
-      if(result$go_back_count == go_back_count){
-        if(go_back_reset){
-          go_back_count <- 1
-        }else{
-          go_back_reset <- TRUE
         }
-      }else{
-        go_back_count <- result$go_back_count
-        go_back_reset <- FALSE
-      }
 
-      if(result$go_back){
+        if(result$go_back_count == go_back_count){
+          if(go_back_reset){
+            go_back_count <- 1
+          }else{
+            go_back_reset <- TRUE
+          }
+        }else{
+          go_back_count <- result$go_back_count
+          go_back_reset <- FALSE
+        }
 
-        if(main_count != 1){
+        if(result$go_back){
 
-          to[[i]] <- initial_to[[i]]
+          if(main_count != 1){
 
-          prev_resp <- initial_to[[ind[main_count - go_back_count]]]
-          prev_resp_split <- unlist(strsplit(prev_resp, split = " "))
+            to[[i]] <- initial_to[[i]]
 
-          if(any(!prev_resp_split %in% full_dictionary == prev_resp_split %in% orig_dictionary)){
-            target_rms <- which(!prev_resp_split %in% full_dictionary == prev_resp_split %in% orig_dictionary)
-            ind_rms <- match(prev_resp_split[target_rms], full_dictionary)
-            full_dictionary <- full_dictionary[-ind_rms]
+            prev_resp <- initial_to[[ind[main_count - go_back_count]]]
+            prev_resp_split <- unlist(strsplit(prev_resp, split = " "))
+
+            if(any(!prev_resp_split %in% full_dictionary == prev_resp_split %in% orig_dictionary)){
+              target_rms <- which(!prev_resp_split %in% full_dictionary == prev_resp_split %in% orig_dictionary)
+              ind_rms <- match(prev_resp_split[target_rms], full_dictionary)
+              full_dictionary <- full_dictionary[-ind_rms]
+            }
+
+            to[[ind[main_count - go_back_count]]] <- prev_resp
+            changes <- changes[names(changes) != paste(ind[main_count - go_back_count])]
+
+            main_count <- main_count - (go_back_count + 1)
+            go_back_count <- 1
+
+            break
+
+          }else{
+            message("This is the first response. 'GO BACK' is not available.")
+            line_break()
+            Sys.sleep(0.5)
           }
 
-          to[[ind[main_count - go_back_count]]] <- prev_resp
-          changes <- changes[names(changes) != paste(ind[main_count - go_back_count])]
-
-          main_count <- main_count - (go_back_count + 1)
-          go_back_count <- 1
-
         }else{
-          message("This is the first response. 'GO BACK' is not available.")
-          line_break()
-          Sys.sleep(0.5)
+          to[[i]] <- result$target
+          changes <- result$changes
+          full_dictionary <- result$full_dictionary
+          break
         }
 
-      }else{
-        to[[i]] <- result$target
-        changes <- result$changes
-        full_dictionary <- result$full_dictionary
       }
     }
 
