@@ -16,4 +16,4 @@ Depends: R (>= 4.0.1), SemNetDictionaries (>= 0.3.0)
 Imports: future, future.apply, hunspell, phonics, progressr, searcher, stringi, stringdist
 Suggests: DT, foreign, promises, R.matlab, readxl, rstudioapi, shiny (>= 1.8.0), tcltk, testthat (>= 3.0.0), withr
 Config/testthat/edition: 3
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
