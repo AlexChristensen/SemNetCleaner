@@ -28,45 +28,63 @@
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
+#' @keywords internal
 #' @importFrom tools file_ext
-# Read a Shiny-uploaded file
-# New (Phase 11). `.Rdata` is deliberately NOT dispatched to `read_data()`:
-# that function's own `.Rdata` branch does `load(file, envir = .GlobalEnv)`
-# -- writing directly into the GLOBAL environment is a real hazard inside a
-# shared, long-running Shiny process (one session's upload could clobber
-# another's globals, or the app's own). Loaded into a private `new.env()`
-# instead, erroring clearly unless the file contains exactly one object
-# (ambiguous otherwise -- which object was the user's actual dataset?).
-# Updated 12.09.2026
-read_uploaded_file <- function(datapath, filename, header = TRUE, sep = ",")
+# Read uploaded file ----
+# Reads a file uploaded to the internal Shiny app; `.Rdata` is loaded into a private
+# environment (the global one is shared in a long-running Shiny process) and must hold
+# exactly one object
+# Updated 14.10.2026
+read_uploaded_file <- function(
+    datapath, # temporary path of uploaded file
+    filename, # original name of uploaded file
+    header = TRUE, # first row contains names
+    sep = "," # separator for delimited files
+)
 {
 
+  # Check for errors
   read_uploaded_file_errors(datapath, filename)
 
+  # Get file extension
   ext <- tools::file_ext(filename)
 
-  # `datapath`'s own name is a shiny-managed temp filename (e.g. "0.dat" or
-  # similar), not guaranteed to carry `filename`'s real extension --
-  # `read_data()` dispatches purely off the path's own extension, so a copy
-  # with the real extension is made before handing off (never a rename: the
-  # original `datapath` isn't ours to move, shiny manages its own cleanup).
+  # The temporary name of an upload does not carry the real extension that `read_data()`
+  # dispatches on, so a copy with the real extension is read (the upload itself is left alone)
   staged_path <- if(nzchar(ext)){
+
+    # Create temporary path with the real extension
     staged <- tempfile(fileext = paste0(".", ext))
+
+    # Copy uploaded file
     file.copy(datapath, staged, overwrite = TRUE)
+
+    # Return staged path
     staged
+
   }else{
+
+    # Use uploaded path
     datapath
+
   }
 
+  # Check for R data file
   if(tolower(ext) == "rdata"){
 
+    # Create empty environment
     load_env <- new.env(parent = emptyenv())
+
+    # Load file into environment
     load(staged_path, envir = load_env)
 
+    # Get object names
     objects <- ls(load_env)
 
+    # Check for exactly one object
     if(length(objects) != 1){
+
+      # Send error
       stop(
         paste0(
           "In `read_uploaded_file()`: \"", filename, "\" must contain exactly ",
@@ -74,32 +92,50 @@ read_uploaded_file <- function(datapath, filename, header = TRUE, sep = ",")
         ),
         call. = FALSE
       )
+
     }
 
+    # Return the object
     return(load_env[[objects]])
 
   }
 
-  read_data(staged_path, header = header, sep = sep)
+  # Read all other formats
+  return(read_data(staged_path, header = header, sep = sep))
 
 }
 
 #' @noRd
+# Read uploaded file errors ----
 # Up-front validation for `read_uploaded_file()`
-# Updated 12.09.2026
-read_uploaded_file_errors <- function(datapath, filename)
+# Updated 14.10.2026
+read_uploaded_file_errors <- function(
+    datapath, # temporary path of uploaded file
+    filename # original name of uploaded file
+)
 {
 
+  # Check path type
   typeof_error(datapath, "character", "read_uploaded_file")
+
+  # Check path length
   length_error(datapath, 1, "read_uploaded_file")
+
+  # Check name type
   typeof_error(filename, "character", "read_uploaded_file")
+
+  # Check name length
   length_error(filename, 1, "read_uploaded_file")
 
+  # Check for existing file
   if(!file.exists(datapath)){
+
+    # Send error
     stop(
       paste0("In `read_uploaded_file()`: \"", datapath, "\" does not exist."),
       call. = FALSE
     )
+
   }
 
 }

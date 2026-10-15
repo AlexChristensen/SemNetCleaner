@@ -1,121 +1,131 @@
 #' @noRd
-# British-US English Conversion (Vector)
-# Ported from `brit.us.conv.vector()`. A sub-routine to convert English
-# spelling for a FLAT vector of individual words (no multi-word splitting --
-# see `brit_us_conversion()` below for that). Confirmed via SemNetDictionaries
-# ::brit2us's actual structure: it's named by the US spelling, valued by the
-# GB spelling (e.g. `brit2us[["analyze"]] == "analyse"`).
-# Kept as its own function, not merged into `brit_us_conversion()`, because
-# both are independently called elsewhere in the codebase (`spellcheck.dictionary
-# `/`.free` call this one directly with `dictionary = TRUE`; `moniker()` calls
-# `brit_us_conversion()` with `dictionary = FALSE`) -- confirmed via a
-# whole-codebase grep before deciding, not assumed.
-# Updated 09.09.2026
-# Reworked (per direct request): the original matched the DICTIONARY
-# (780 entries) against `vec` (`match(names(brit2us), vec)`), producing a
-# length-780 intermediate result even when `vec` itself might only have a
-# handful of words, then re-ran an equivalent `match()` a second time
-# (inside `na.omit(match(...))`) just to get index positions for the
-# assignment -- backwards (matching the big side against the small side)
-# and redundant (computing the same match twice). Matching `vec` (small)
-# against the dictionary (medium) directly needs only one `match()` call
-# and naturally scales with `length(vec)`, not `length(brit2us)`.
-# Real bug fixed, confirmed by direct reproduction: the original's
-# `vec[na.omit(match(names(brit2us), vec))] <- spelling_gb` finds only the
-# FIRST position in `vec` matching each dictionary entry (since `match()`
-# returns only the first match per dictionary name), so a duplicated word
-# in `vec` (e.g. `c("color", "other", "color")`) had only its first
-# occurrence converted -- confirmed: the original returns
-# `"colour" "other" "color"`, silently leaving the second "color"
-# unconverted. Matching element-by-element fixes this as a natural
-# consequence of asking the right direction of question.
-# Also ~4x faster (microbenchmark, n=300, real brit2us data): ~60.7us ->
-# ~16us median, from doing one `match()` per direction instead of two.
-# Updated 09.09.2026
+# Converts the spelling of a flat vector of single words between British and American
+# English; `brit2us` is named by the US spelling and valued by the GB spelling
+# Updated 14.10.2026
+# Matches `vec` against the dictionary (not the other way around) so that every
+# occurrence of a repeated word is converted
+# Updated 14.10.2026
 #' @noRd
-# Private, lazily-memoized `unlist(SemNetDictionaries::brit2us)` -- a
-# static package data structure (780 entries) that never changes at
-# runtime. Optimization found during a Phase 3 robustness/speed review,
-# per direct request: `brit_us_conversion_vector()`'s "US" branch was
-# rebuilding this `unlist()` from scratch on every single call --
-# confirmed real cost via microbenchmark (~60us each), non-negligible
-# since `moniker()` (and therefore this function) is called once per word
-# throughout `multiple_words()`/`ind_word_check()` across a whole
-# spellcheck session. The "UK" branch's own `names(brit2us)` isn't cached
-# -- confirmed ~400x cheaper (~150ns), not worth it.
-# Updated 10.09.2026
+# Memoized `unlist(brit2us)`; the table does not change during a session
+# Updated 14.10.2026
+# Cache unlisted British-US dictionary
 .brit2us_unlisted_cache <- new.env(parent = emptyenv())
 
+# Get brit2us unlisted ----
+# Get unlisted British-US dictionary
+# Updated 14.10.2026
 get_brit2us_unlisted <- function()
 {
+
+  # Check for cached value
   if(is.null(.brit2us_unlisted_cache$value)){
+
+    # Store unlisted dictionary
     .brit2us_unlisted_cache$value <- unlist(SemNetDictionaries::brit2us)
+
   }
+
+  # Return unlisted dictionary
   return(.brit2us_unlisted_cache$value)
+
 }
 
-brit_us_conversion_vector <- function(vec, spelling = c("UK", "US"), dictionary = FALSE)
+# Brit us conversion vector ----
+# Updated 14.10.2026
+brit_us_conversion_vector <- function(
+    vec, # vector of words
+    spelling = c("UK", "US"), # spelling to convert to
+    dictionary = FALSE # whether vec is a dictionary
+)
 {
 
+  # Check for UK spelling
   if(toupper(spelling) == "UK"){
 
     # Convert any US-spelled words in vec to their GB equivalents
+    # Find US spellings
     matched <- match(vec, names(SemNetDictionaries::brit2us))
+
+    # Find matched words
     found <- !is.na(matched)
 
+    # Check for any matches
     if(any(found)){
+
+      # Replace with UK spelling
       vec[found] <- unlist(SemNetDictionaries::brit2us[matched[found]])
+
     }
 
-  }else if(toupper(spelling) == "US"){
+  }else if(toupper(spelling) == "US"){ # US spelling
 
     # Convert any GB-spelled words in vec to their US equivalents
+    # Find UK spellings
     matched <- match(vec, get_brit2us_unlisted())
+
+    # Find matched words
     found <- !is.na(matched)
 
+    # Check for any matches
     if(any(found)){
+
+      # Replace with US spelling
       vec[found] <- names(SemNetDictionaries::brit2us)[matched[found]]
+
     }
 
   }
 
   # Remove duplicates and alphabetize
   if(dictionary){
+
+    # Sort unique words
     vec <- sort(unique(vec))
+
   }
 
+  # Return converted words
   return(vec)
 
 }
 
 #' @noRd
-# British-US English Conversion (per-element, possibly multi-word strings)
-# Ported from `brit.us.conv()`. Splits each element of `vec` on spaces,
-# converts each resulting word via `brit_us_conversion_vector()` above, then
-# rejoins. Dropped the inner `lapply()`'s `dictionary` parameter: confirmed
-# dead in the original (accepted as a formal argument but never referenced
-# in the closure body, which only ever calls
-# `brit.us.conv.vector(x, spelling = spelling)` -- a copy-paste leftover).
-# Updated 09.09.2026
-brit_us_conversion <- function(vec, spelling = c("UK", "US"), dictionary)
+# Brit us conversion ----
+# Converts the spelling of each response word by word (responses can be multi-word strings)
+# Updated 14.10.2026
+brit_us_conversion <- function(
+    vec, # vector of responses
+    spelling = c("UK", "US"), # spelling to convert to
+    dictionary # whether vec is a dictionary
+)
 {
 
+  # Split responses into words
   vec <- unlist(lapply(vec, strsplit, split = " "), recursive = FALSE)
 
+  # Loop over responses
   vec <- lapply(vec, function(x, spelling){
 
+    # Convert words
     converted <- brit_us_conversion_vector(x, spelling = spelling)
 
+    # Rejoin words
     conv <- paste(converted, collapse = " ")
 
+    # Return converted response
     return(conv)
 
   }, spelling = spelling)
 
+  # Check for dictionary
   if(dictionary){
+
+    # Sort converted words
     vec <- sort(unlist(vec))
+
   }
 
+  # Return converted responses
   return(vec)
 
 }

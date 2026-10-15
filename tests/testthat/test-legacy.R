@@ -57,3 +57,21 @@ test_that("every pre-2.0.0 exported name is still a real export (binding decisio
   }
 
 })
+
+test_that("the functions that only support the internal Shiny app are not exported", {
+
+  exports <- getNamespaceExports("SemNetCleaner")
+
+  app_helpers <- c(
+    "advance_wizard", "automated_edit_server", "automated_edit_ui",
+    "build_answer_burst", "finalize_textcleaner", "make_shiny_search_fn",
+    "prepare_automated_for_review", "read_uploaded_file",
+    "wizard_menu_labels", "wizard_response_letters", "textcleaner_shiny"
+  )
+
+  for(name in app_helpers){
+    expect_false(name %in% exports, info = name)
+    expect_true(exists(name, envir = asNamespace("SemNetCleaner"), inherits = FALSE), info = name)
+  }
+
+})

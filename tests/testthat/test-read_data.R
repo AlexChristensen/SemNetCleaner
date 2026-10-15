@@ -32,3 +32,25 @@ test_that("read_data() rejects an unsupported file extension with a clear, infor
   expect_error(read_data("somefile.xyz"), "'csv'")
 
 })
+
+test_that("read_data() names the package a file type needs when it is not installed", {
+
+  local_mocked_bindings(package_installed = function(package) FALSE)
+
+  tf <- tempfile(fileext = ".xlsx")
+  file.create(tf)
+
+  expect_error(read_data(tf), "readxl", fixed = TRUE)
+
+  tf_sav <- tempfile(fileext = ".sav")
+  file.create(tf_sav)
+
+  expect_error(read_data(tf_sav), "foreign", fixed = TRUE)
+
+  # delimited files need no extra package
+  tf_csv <- tempfile(fileext = ".csv")
+  writeLines(c("a,b", "1,2"), tf_csv)
+
+  expect_equal(nrow(read_data(tf_csv)), 1)
+
+})

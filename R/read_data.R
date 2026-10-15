@@ -101,53 +101,86 @@
 #' @importFrom tools file_ext
 #'
 #' @export
-# Read data
-# Ported from `read.data()`. Added up-front extension validation via a real
-# `read_data_errors()` (the original inlined its extension check first thing
-# in the function body -- moved out, same check, matching the file-per-
-# function `<name>_errors()` convention).
-# Updated 08.09.2026
-read_data <- function(file = file.choose(), header = TRUE, sep = ",", ...)
+# Read data ----
+# Reads a data file (rdata, rds, csv, xlsx, xls, sav, txt, mat, or dat) based on its extension
+# Updated 14.10.2026
+read_data <- function(
+    file = file.choose(), # path to the file
+    header = TRUE, # first row contains names
+    sep = ",", # separator for delimited files
+    ... # additional arguments passed to the reading function
+)
 {
 
   # Grab extension
   ext <- tolower(file_ext(file))
 
+  # Check for errors
   read_data_errors(ext)
 
-  # Determine data load
-  if(ext != "")
-  {
-    data <- switch(ext,
-                   rdata = load(file, envir = .GlobalEnv),
-                   rds = readRDS(file),
-                   csv = read.csv(file, header = header, sep = sep, as.is = TRUE, ...),
-                   xlsx = as.data.frame(readxl::read_xlsx(file, col_names = header, ...)),
-                   xls = as.data.frame(readxl::read_xls(file, col_names = header, ...)),
-                   sav = foreign::read.spss(file, to.data.frame = TRUE, stringAsFactors = FALSE, ...),
-                   txt = read.table(file, header = header, sep = sep, ...),
-                   mat = as.data.frame(R.matlab::readMat(file, ...)),
-                   dat = read.table(file, header = header, sep = sep, ...)
-    )
-  }else{data <- read.table(file, header = header, sep = sep, ...)}
+  # Get the package needed to read the extension
+  needed_package <- switch(
+    ext, "xlsx" = "readxl", "xls" = "readxl",
+    "sav" = "foreign", "mat" = "R.matlab", NULL
+  )
 
+  # Check for a missing package
+  if(!is.null(needed_package) && !package_installed(needed_package)){
+
+    # Send error
+    stop(
+      paste0(
+        "In `read_data()`: reading '.", ext, "' files needs the '", needed_package,
+        "' package. Install it with `install.packages(\"", needed_package, "\")`."
+      ),
+      call. = FALSE
+    )
+
+  }
+
+  # Determine data load
+  if(ext != ""){
+
+    # Read data based on extension
+    data <- switch(ext,
+                   rdata = load(file, envir = .GlobalEnv), # Load R data
+                   rds = readRDS(file), # Read RDS
+                   csv = read.csv(file, header = header, sep = sep, as.is = TRUE, ...), # Read comma-separated values
+                   xlsx = as.data.frame(readxl::read_xlsx(file, col_names = header, ...)), # Read Excel (xlsx)
+                   xls = as.data.frame(readxl::read_xls(file, col_names = header, ...)), # Read Excel (xls)
+                   sav = foreign::read.spss(file, to.data.frame = TRUE, stringAsFactors = FALSE, ...), # Read SPSS
+                   txt = read.table(file, header = header, sep = sep, ...), # Read text
+                   mat = as.data.frame(R.matlab::readMat(file, ...)), # Read MATLAB
+                   dat = read.table(file, header = header, sep = sep, ...) # Read data
+    )
+
+  }else{
+
+    data <- read.table(file, header = header, sep = sep, ...) # No extension
+
+  }
+
+  # Return data
   return(data)
 
 }
 
 #' @noRd
+# Read data errors ----
 # Up-front validation for `read_data()`
-# Updated 08.09.2026
-read_data_errors <- function(ext)
+# Updated 14.10.2026
+read_data_errors <- function(
+    ext # file extension
+)
 {
+
+  # Set supported extensions
   supported <- c("rdata", "rds", "csv", "xlsx", "xls", "sav", "txt", "mat", "dat", "")
 
-  # Robustness fix (Phase 2 review, per direct request): the original's
-  # bare "File extension not supported" gave no indication of what was
-  # actually received or what's actually supported -- every other
-  # `<name>_errors()` message in this rebuild names both. Matched here for
-  # consistency, and given `call. = FALSE` like the rest of the family.
+  # The message names the extension received and the supported extensions
   if(!ext %in% supported){
+
+    # Send error
     stop(
       paste0(
         "In `read_data()`: file extension '", ext, "' is not supported.\n",
@@ -155,5 +188,7 @@ read_data_errors <- function(ext)
       ),
       call. = FALSE
     )
+
   }
+
 }

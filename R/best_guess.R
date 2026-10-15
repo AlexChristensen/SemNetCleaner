@@ -51,54 +51,32 @@
 #'
 #' @export
 #' @importFrom SemNetDictionaries dictionaries load.dictionaries load.monikers append.dictionary
-# Best Guess
-# Real bug found during Phase 8's dependency audit: `NAMESPACE`'s
-# whole-package `import(SemNetDictionaries)` was dropped entirely (every
-# real call site already fully qualifies with `::`, so no `import`/
-# `importFrom` was ever load-bearing for those calls to work) -- but
-# `R CMD check` still flags a `Depends`-listed package with NO
-# `importFrom` at all as a NOTE ("these packages need to be imported from
-# ... for when this namespace is loaded but not attached"). These 4 tags
-# (one per real `SemNetDictionaries::` function actually called anywhere
-# in this package, confirmed via a whole-codebase grep) exist purely to
-# satisfy that check, not because any call site actually needs them --
-# every real call still uses `::` explicitly, unchanged.
-# Ported from `best.guess()`. Real bug fixed: the moniker-disambiguation
-# branch's inner check was `if(length(uniq.monix == 1))` -- misplaced
-# parentheses mean this computes `length(uniq.monix == 1)`, which (since
-# `==` returns a same-length logical vector) always just equals
-# `length(uniq.monix)`, and any nonzero number is truthy in `if()`. So the
-# check was always TRUE whenever `uniq.monix` was non-empty, regardless of
-# whether it actually had exactly one element -- confirmed by direct
-# reproduction (`length(c("a","b","c") == 1)` is 3, not FALSE). This meant
-# that whenever the outer OR-condition was satisfied via the *qwerty*-
-# distance path (`length(which(dists <= 1)) == 1`) while `uniq.monix` had
-# 2+ (ambiguous) entries, the buggy inner check still took the moniker
-# branch and returned the whole ambiguous set instead of falling through
-# to the correctly-disambiguated single qwerty-distance guess. Fixed to
-# the clearly-intended `if(length(uniq.monix) == 1)`, matching the outer
-# condition's own (correct) comparison.
-# Added up-front validation (the original had none).
-# Updated 08.09.2026
-best_guess <- function(word, full_dictionary, dictionary = NULL, tolerance = 1)
+# Best guess ----
+# Suggests corrections for a misspelled word: the dictionary words within
+# Damerau-Levenshtein distance of the word, narrowed by monikers (lists of common
+# misspellings) and then by agreement between the QWERTY keyboard distance and a phonetic
+# (Metaphone) match. When the guess is still ambiguous, up to 10 candidates are returned
+# for manual review
+# The `importFrom` tags above only satisfy `R CMD check` for `SemNetDictionaries`, which is
+# in `Depends`; every call is namespace-qualified
+# Updated 14.10.2026
+best_guess <- function(
+    word, # word to correct
+    full_dictionary, # dictionary used to check words
+    dictionary = NULL, # names of dictionaries requested
+    tolerance = 1 # maximum edit distance for automatic correction
+)
 {
 
+  # Check for errors
   best_guess_errors(word, full_dictionary, dictionary, tolerance)
 
   # Remove extra characters for spell-check
   word <- gsub("([-])|[[:punct:]]", "\\1", word)
 
-  # Optimization (microbenchmark, per direct request to look for a faster
-  # implementation): raw `%in%` replaced with the already-built, already-
-  # memoized `dictionary_contains()` (helpers.R) -- ~50x faster once
-  # cached for a realistic large free-association dictionary
-  # (`cocaspell.dictionary`, ~109k words: ~761us raw vs ~16us cached,
-  # median) with no meaningful cost for a small one like
-  # `animals.dictionary` (dictionary_contains()'s own size-aware dispatch
-  # already falls back to raw `%in%` below its 3000-word threshold).
-  # Verified identical() output.
-  if(!dictionary_contains(word, full_dictionary))
-  {
+  # Check for the word in the dictionary (memoized lookup, fast for large dictionaries)
+  if(!dictionary_contains(word, full_dictionary)){
+
     # Grab Damerau-Levenshtein distances
     guess <- as.vector(stringdist::stringdist(word, full_dictionary, method = "dl",
                                               weight = c(d = 1, # deletion
@@ -127,30 +105,34 @@ best_guess <- function(word, full_dictionary, dictionary = NULL, tolerance = 1)
                                                      t = 1 # transposition
                                           ))
 
+    # Check for plural variants closer than the word's guess
     if(any(plural_dist < target_dist)){
+
       # Update target distances
       target_dist[plural_dist < target_dist] <- plural_dist[plural_dist < target_dist]
+
     }
 
     # Determine if auto-correction is possible
     if(length(which(target_dist <= tolerance)) == 1){
+
       # Suggest option as best guess
       bestguess <- full_dictionary[target[which(target_dist <= tolerance)]]
 
-    }else if(length(target_dist) != 1){
+    }else if(length(target_dist) != 1){ # Multiple candidates
+
       # Check monikers, phonetic and qwerty distance
 
       # Check for monikers
       if(!is.null(dictionary)){
 
-        # Hoisted: the original called SemNetDictionaries::dictionaries(TRUE)
-        # 4 separate times in this block for the exact same result --
-        # computed once here instead, via the memoized get_available_
-        # dictionaries() (helpers.R; dictionaries() does real file I/O
-        # every call, confirmed ~155us each, microbenchmark)
+        # Get the available dictionaries once (memoized, since `dictionaries()` reads a file)
         non_general_dictionaries <- get_available_dictionaries()
+
+        # Remove general dictionary
         non_general_dictionaries <- non_general_dictionaries[non_general_dictionaries != "general"]
 
+        # Check for moniker dictionaries
         if(any(dictionary %in% non_general_dictionaries)){
 
           # Monikers
@@ -179,9 +161,11 @@ best_guess <- function(word, full_dictionary, dictionary = NULL, tolerance = 1)
           # Identify target monikers
           moniker_index <- moniker_target[which(moniker_target_dist <= tolerance)]
 
-          # Get unique monikers
-          uniq_monikers <- unique(gsub("[[:digit:]]+", "", names(monikers[moniker_index])))
+          # Get unique monikers (lowercase, since the moniker table capitalizes proper nouns)
+          uniq_monikers <- unique(tolower(gsub("[[:digit:]]+", "", names(monikers[moniker_index]))))
+
         }
+
       }
 
       # Tolerance-eligible candidates -- the same subset both QWERTY and
@@ -191,94 +175,132 @@ best_guess <- function(word, full_dictionary, dictionary = NULL, tolerance = 1)
       # Check QWERTY distance
       dists <- unlist(lapply(tolerance_candidates, function(x){qwerty_distance(x, word)}))
 
-      # Check phonetic (Metaphone) match -- a second, independent
-      # disambiguation signal alongside QWERTY, confined to the same
-      # tolerance-eligible candidate set (not the wider min_guess+1
-      # window -- see this file's own header comment for why that's a
-      # deliberately deferred, separate decision). `phonetic_match()`
-      # (helpers.R) wraps `phonics::metaphone()`, a hard `Imports`
-      # dependency.
+      # Check phonetic (Metaphone) match, a second signal alongside QWERTY for the same
+      # tolerance-eligible candidates
       phon_matches <- which(vapply(tolerance_candidates, function(x){
+
+        # Check phonetic match
         phonetic_match(word, x)
+
       }, logical(1)))
 
-      # Check if monikers exist and are unique -- monikers still win
-      # outright when unique, unchanged from the original (bug #14-fixed)
-      # priority
-      if(exists("uniq_monikers", envir = environment()) && length(uniq_monikers) == 1)
-      {
+      # Check if monikers exist and are unique; a unique moniker wins outright
+      if(exists("uniq_monikers", envir = environment()) && length(uniq_monikers) == 1){
+
+        # Use unique moniker
         bestguess <- uniq_monikers
 
-      }else{
+      }else{ # No unique moniker
 
+        # Check for unique QWERTY candidate
         qwerty_unique <- length(which(dists <= 1)) == 1
+
+        # Check for unique phonetic candidate
         phonetic_unique <- length(phon_matches) == 1
 
-        # QWERTY and phonetic are evaluated as peers, neither trusted
-        # over the other: agreement (same candidate) reinforces the
-        # answer; disagreement (different candidates) means the case is
-        # genuinely ambiguous -- neither wins, falls through to manual
-        # review -- rather than arbitrarily preferring one heuristic.
-        # Confirmed reproducible via direct testing: e.g. a "gremble"
-        # typo of "grumble" has QWERTY's adjacent-key logic pick
-        # "tremble" while Metaphone correctly picks "grumble" -- two
-        # independent heuristics with no principled reason one should
-        # always outrank the other.
-        if(qwerty_unique && phonetic_unique)
-        {
-          if(which(dists <= 1) == phon_matches)
-          {bestguess <- tolerance_candidates[which(dists <= 1)]}
+        # QWERTY and phonetic matches are treated as peers: agreement reinforces the answer and
+        # disagreement is ambiguous, so it falls through to manual review
+        if(qwerty_unique && phonetic_unique){
 
-        }else if(qwerty_unique)
-        {bestguess <- tolerance_candidates[which(dists <= 1)]
-        }else if(phonetic_unique)
-        {bestguess <- tolerance_candidates[phon_matches]}
+          # Use candidate only when both agree
+          if(which(dists <= 1) == phon_matches){
+
+            # Use the agreed candidate
+            bestguess <- tolerance_candidates[which(dists <= 1)]
+
+          }
+
+        }else if(qwerty_unique){ # Only QWERTY is unique
+
+          bestguess <- tolerance_candidates[which(dists <= 1)] # Use QWERTY candidate
+
+        }else if(phonetic_unique){ # Only phonetic is unique
+
+          bestguess <- tolerance_candidates[phon_matches] # Use phonetic candidate
+
+        }
 
       }
+
     }
 
-    if(!exists("bestguess", envir = environment()))
-    {
+    # Check for no automatic guess
+    if(!exists("bestguess", envir = environment())){
+
       # Order by least to greatest DL value
       target_order <- target[order(target_dist, decreasing = FALSE)]
 
       # Order guesses by guess values (only first 10)
-      if(length(target_order) > 10)
-      {bestguess <- full_dictionary[target_order][1:10]
-      }else{bestguess <- full_dictionary[target_order]}
+      if(length(target_order) > 10){
+
+        bestguess <- full_dictionary[target_order][1:10] # More than ten guesses
+
+      }else{
+
+        bestguess <- full_dictionary[target_order] # Ten or fewer guesses
+
+      }
+
     }
 
-  }else{bestguess <- word}
+  }else{
 
+    bestguess <- word # Word is in dictionary
+
+  }
+
+  # Return best guess(es)
   return(bestguess)
 
 }
 
 #' @noRd
-# Up-front validation for `best_guess()` -- the original had none
-# Updated 08.09.2026
-best_guess_errors <- function(word, full_dictionary, dictionary, tolerance)
+# Best guess errors ----
+# Up-front validation for `best_guess()`
+# Updated 14.10.2026
+best_guess_errors <- function(
+    word, # word to correct
+    full_dictionary, # dictionary used to check words
+    dictionary, # names of dictionaries requested
+    tolerance # maximum edit distance for automatic correction
+)
 {
+
+  # Check word type
   typeof_error(word, "character", "best_guess")
+
+  # Check word length
   length_error(word, 1, "best_guess")
+
+  # Check word for missing
   na_error(word, "best_guess")
+
+  # Check dictionary type
   typeof_error(full_dictionary, "character", "best_guess")
 
-  # Robustness fix (Phase 2 review, per direct request): an empty
-  # `full_dictionary` isn't caught by the type check above, but
-  # `min(stringdist(...))` over the resulting empty distance vector
-  # silently returns `Inf` (a warning, not an error) rather than rejecting
-  # a call that has no dictionary to guess against in the first place --
-  # confirmed directly. Same "min()/max() over empty" footgun already
-  # hardened in `range_error()`/`seq_min_max()` during the Phase 1 review.
+  # An empty dictionary leaves nothing to guess against (`min()` of nothing is `Inf`)
   if(length(full_dictionary) == 0){
+
+    # Send error
     stop("In `best_guess()`: `full_dictionary` must not be empty.", call. = FALSE)
+
   }
 
+  # Check for dictionary names
   if(!is.null(dictionary)){
+
+    # Check names type
     typeof_error(dictionary, "character", "best_guess")
+
   }
+
+  # Check tolerance type
   typeof_error(tolerance, "numeric", "best_guess")
+
+  # Check tolerance length
   length_error(tolerance, 1, "best_guess")
+
+  # Check tolerance range
   range_error(tolerance, c(0, Inf), "best_guess")
+
 }

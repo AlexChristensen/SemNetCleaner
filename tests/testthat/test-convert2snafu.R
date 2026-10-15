@@ -60,3 +60,10 @@ test_that("convert2snafu() no longer depends on easycsv -- takes an explicit pat
   expect_true("path" %in% names(formals(convert2snafu)))
 
 })
+
+test_that("convert2snafu() explains that category and path are required", {
+
+  expect_error(convert2snafu(open.clean[1:2, ], category = "animals"), "required", fixed = TRUE)
+  expect_error(convert2snafu(open.clean[1:2, ], path = tempdir()), "required", fixed = TRUE)
+
+})

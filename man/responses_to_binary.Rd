@@ -25,17 +25,11 @@ data, one participant per row) into a binary (participant x vocabulary)
 response matrix
 }
 \examples{
-# Toy example
-raw <- open.animals[c(1:10), -c(1:3)]
+# First 10 participants of the cleaned data
+binary_matrix <- responses_to_binary(open.clean[1:10, ])
 
-if(interactive())
-{
-  # Clean and preprocess data
-  clean <- textcleaner(open.animals[, -c(1:2)], partBY = "row", dictionary = "animals")
-
-  # Change response matrix to binary response matrix
-  binary_matrix <- responses_to_binary(clean$responses$corrected)
-}
+# Participants by responses (0 = not given, 1 = given)
+binary_matrix[, 1:10]
 
 }
 \author{

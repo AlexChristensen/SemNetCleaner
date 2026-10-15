@@ -167,6 +167,38 @@ test_that("custom_menu() formats a longer choice list (nc > default) without err
 
 })
 
+test_that("custom_menu() renders on a narrow console instead of 'object def/word/string not found' (issues #20/#22/#26/#28)", {
+
+  # Real bug fixed: `word`/`string`/`def` were only built inside
+  # `if(ncol > 1L)`, where `ncol = width %/% item width`. A narrow console
+  # (e.g. an RStudio side pane on Windows) gave ncol <= 1, skipped the
+  # block, and the later `paste0(..., def, ...)` failed with "object 'def'
+  # not found" (or 'word'/'string' for default = 9/10); at ncol = 0,
+  # `rep.int(..., ncol - 1L)` failed with "invalid 'times' value".
+  old_width <- options(width = 20)
+  on.exit(options(old_width), add = TRUE)
+
+  five_default_choices <- c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD WORD", "giraffe", "griffin")
+  ten_default_choices <- c(paste("option", 1:10), "guessone", "guesstwo")
+
+  for(width in c(80, 40, 20)){
+
+    options(width = width)
+
+    out_five <- capture.output(custom_menu(five_default_choices, default = 5))
+    expect_true(any(grepl("ADD TO DICTIONARY", out_five)))
+    expect_true(any(grepl("giraffe", out_five)))
+
+    out_ten <- capture.output(custom_menu(ten_default_choices, default = 10))
+    expect_true(any(grepl("option 6", out_ten)))
+    expect_true(any(grepl("guesstwo", out_ten)))
+
+    expect_true(nzchar(custom_menu(five_default_choices, default = 5, help = TRUE)))
+
+  }
+
+})
+
 test_that("yes_no_menu() accepts y/n via the injected reader and re-prompts on garbage", {
 
   expect_equal(yes_no_menu("Continue?", reader = scripted_reader("y")), 1)
@@ -289,6 +321,19 @@ test_that("moniker() looks up a word in a moniker list and passes through unmatc
 
 })
 
+test_that("moniker() returns lowercase even when the moniker table's canonical form is capitalized", {
+
+  # Real bug fixed (found driving the free-association wizard): the table's
+  # canonical forms carry capitals for proper nouns ("I", "French"), so
+  # "i dont know" came back as "I do know"
+  misnom <- list(French = c("frenchh", "french"), I = "i", cat1 = "kitty")
+
+  expect_equal(moniker("french", misnom, spelling = "US"), list("french"))
+  expect_equal(moniker("i", misnom, spelling = "US"), list("i"))
+  expect_equal(moniker("kitty", misnom, spelling = "US"), list("cat"))
+
+})
+
 test_that("parallel_process() restores the previous future plan even when FUN errors", {
 
   old_plan <- future::plan()
@@ -391,6 +436,24 @@ test_that("get_dictionary_hash() caches and reuses the hash for the same diction
 
   expect_identical(hash1, hash2)
   expect_true(exists("cat", envir = hash1, inherits = FALSE))
+
+})
+
+test_that("get_dictionary_hash() tolerates empty strings, NA and duplicates in a large dictionary (U7)", {
+
+  # The hash is now built with one vectorized list2env() (4x faster than the
+  # former assign() loop, which matters for the 370k-word "general"
+  # dictionary); unlike assign() a zero-length name is an error there, so ""
+  # is dropped with NA
+  words <- paste0("word", 1:3500)
+  dict <- c(words, "", NA, "word1", "polar bear")
+  hash <- get_dictionary_hash(dict)
+
+  expect_setequal(ls(hash), c(words, "polar bear"))
+  expect_equal(
+    dictionary_contains(c("word1", "polar bear", "", "NA", "nope"), dict),
+    c(TRUE, TRUE, FALSE, FALSE, FALSE)
+  )
 
 })
 
@@ -539,5 +602,180 @@ test_that("get_two_letter_combinations() matches a direct expand.grid()-based bu
   expect_identical(result1, result2)
   expect_length(result1, 676)
   expect_true(all(c("aa", "zz", "qx") %in% result1))
+
+})
+
+test_that("error_report(fatal = TRUE) ends with a real R error naming the failing step and its cause", {
+
+  failure <- try(stop("something specific broke"), silent = TRUE)
+
+  output <- capture.output(
+    suppressMessages(
+      expect_error(
+        error_report(failure, "convert_miss", "textcleaner", fatal = TRUE),
+        "`textcleaner\\(\\)` stopped in 'convert_miss': something specific broke"
+      )
+    )
+  )
+
+  # non-fatal (the default) still just reports
+  expect_no_error(suppressMessages(capture.output(error_report(failure, "convert_miss", "textcleaner"))))
+
+})
+
+test_that("pause() sleeps only when the SemNetCleaner.pause option allows it", {
+
+  # the suite runs with pauses off (setup-no-pause.R)
+  expect_lt(system.time(pause(5))[["elapsed"]], 1)
+
+  withr::local_options(SemNetCleaner.pause = TRUE)
+  expect_gte(system.time(pause(0.2))[["elapsed"]], 0.15)
+
+})
+
+test_that("resolve_add_path() passes a path through and explains when the chooser cannot be used", {
+
+  # "choose" used to be handed to SemNetDictionaries, which could open the
+  # chooser more than once and failed obscurely without an interactive session
+  expect_null(resolve_add_path(NULL))
+  expect_equal(resolve_add_path("/some/folder"), "/some/folder")
+
+  # tests are not interactive
+  expect_error(resolve_add_path("choose"), "interactive R session")
+
+  local_mocked_bindings(is_interactive = function() TRUE, tcltk_available = function() FALSE)
+  expect_error(resolve_add_path("choose"), "directory chooser is not available")
+
+})
+
+test_that("drop_repeated_entry_words() removes words that only repeat the rest of an expanded multi-word entry", {
+
+  # "pollar bear": "pollar" is corrected to the two-word entry "polar bear",
+  # next to the original word "bear" that the entry already contains
+  expect_equal(drop_repeated_entry_words(c("polar bear", "bear")), "polar bear")
+  expect_equal(drop_repeated_entry_words(c("polar bear", "bear", "xqzvk")), c("polar bear", "xqzvk"))
+  expect_equal(drop_repeated_entry_words(c("african bush elephant", "bush", "elephant")), "african bush elephant")
+
+  # nothing to drop: different following word, a one-word entry, or not all of the rest present
+  expect_equal(drop_repeated_entry_words(c("polar bear", "cat")), c("polar bear", "cat"))
+  expect_equal(drop_repeated_entry_words(c("cat", "cat")), c("cat", "cat"))
+  expect_equal(drop_repeated_entry_words(c("african bush elephant", "bush")), c("african bush elephant", "bush"))
+  expect_equal(drop_repeated_entry_words(character(0)), character(0))
+
+})
+
+test_that("ind_word_check() no longer duplicates the second word of a multi-word entry (pollar bear -> polar bear)", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+
+  expect_equal(ind_word_check("pollar bear", dict, "animals", "US"), list("polar bear"))
+  expect_equal(ind_word_check("polar bear xqzvk", dict, "animals", "US"), list("polar bear xqzvk"))
+
+})
+
+test_that("custom_menu() prints each key of the 5-option menu once, even on a very wide console", {
+
+  # Real bug fixed: with a console of 132+ columns and at least one
+  # suggestion, the row pattern was longer than the 5 default options and
+  # recycled "1: SKIP" into a second copy at the end of the row.
+  choices <- c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD WORD", "dog", "dig")
+
+  for(w in c(20, 80, 131, 132, 200, 400)){
+    withr::local_options(width = w)
+    out <- paste(capture.output(custom_menu(choices, title = "T", default = 5)), collapse = "\n")
+    for(key in c("1: SKIP", "2: ADD TO DICTIONARY", "3: TYPE MY OWN", "4: GOOGLE IT", "5: BAD WORD", "Q: dog", "W: dig")){
+      expect_equal(lengths(regmatches(out, gregexpr(key, out, fixed = TRUE))), 1L, info = paste(key, "at width", w))
+    }
+  }
+
+})
+
+test_that("appropriate_answer(exit = TRUE) lets 'x' or a blank answer leave from the re-prompt", {
+
+  choices <- c("SKIP", "ADD", "TYPE", "GOOGLE", "BAD", "dog")
+
+  expect_equal(suppressMessages(appropriate_answer("9", choices, 5, exit = TRUE, reader = scripted_reader("x"))), 0)
+  expect_equal(suppressMessages(appropriate_answer("9", choices, 5, exit = TRUE, reader = scripted_reader("X"))), 0)
+  expect_equal(suppressMessages(appropriate_answer("9", choices, 5, exit = TRUE, reader = scripted_reader(""))), 0)
+
+  # a valid answer after an invalid one still works, and without `exit` an
+  # 'x' is rejected as before (the walkthrough / save menus)
+  expect_equal(suppressMessages(appropriate_answer("9", choices, 5, exit = TRUE, reader = scripted_reader("3"))), 3)
+  expect_error(suppressMessages(appropriate_answer("9", choices, 5, reader = scripted_reader(c("x")))), "exhausted")
+
+})
+
+test_that("drop_repeated_entry_words() also drops a repeat of only the END of an expanded entry", {
+
+  # "cocker" had been expanded to "cocker spaniel" and merged with "english";
+  # the "spaniel" the participant typed is left behind
+  expect_identical(
+    drop_repeated_entry_words(c("english cocker spaniel", "spaniel", "sapniel")),
+    c("english cocker spaniel", "sapniel")
+  )
+  expect_identical(drop_repeated_entry_words(c("polar bear", "bear", "x")), c("polar bear", "x"))
+  expect_identical(drop_repeated_entry_words(c("a b c", "b", "c", "d")), c("a b c", "d"))
+  # a word that is not the end of the entry stays
+  expect_identical(drop_repeated_entry_words(c("a b c", "b")), c("a b c", "b"))
+  expect_identical(drop_repeated_entry_words(c("dog", "dog")), c("dog", "dog"))
+
+})
+
+test_that("phrase_covered() marks the words that sit inside a dictionary entry", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+
+  expect_identical(phrase_covered(c("sting", "ray", "xx", "yy"), dict), c(TRUE, TRUE, FALSE, FALSE))
+  # the longest entry covers all of its words
+  expect_identical(phrase_covered(c("brown", "recluse", "spider"), dict), c(TRUE, TRUE, TRUE))
+  expect_identical(phrase_covered(c("dog", "xx"), dict), c(FALSE, FALSE))
+  expect_identical(phrase_covered("dog", dict), FALSE)
+  expect_identical(phrase_covered(character(0), dict), logical(0))
+
+})
+
+test_that("segment_entries() splits words into the longest dictionary entries, or NULL when a word is not covered", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+
+  expect_identical(segment_entries(c("sea", "slug"), dict), "sea slug")
+  expect_identical(segment_entries(c("sea", "slug", "dog"), dict), c("sea slug", "dog"))
+  expect_identical(segment_entries(c("dog", "sea", "slug", "cat"), dict), c("dog", "sea slug", "cat"))
+  expect_identical(segment_entries(c("dog", "cat"), dict), c("dog", "cat"))
+  expect_null(segment_entries(c("dog", "xqzvk"), dict))
+
+})
+
+test_that("split_valid_strings() splits a string of dictionary words unless the string is itself an entry", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+  to <- list(a = "sea slug", b = c("marmoset otter", "cat"), c = "cat xqzvk", d = NA_character_, e = "sea slug dog", f = "dog")
+
+  res <- split_valid_strings(to, dict)
+
+  expect_identical(res$a, "sea slug")
+  expect_identical(res$b, c("marmoset", "otter", "cat"))
+  expect_identical(res$c, "cat xqzvk")
+  expect_identical(res$d, NA_character_)
+  expect_identical(res$e, c("sea slug", "dog"))
+  expect_identical(res$f, "dog")
+  expect_identical(names(res), names(to))
+
+})
+
+test_that("parallel_process() leaves the user's random seed alone", {
+
+  set.seed(2026)
+  before <- get(".Random.seed", envir = globalenv())
+
+  parallel_process(3, function(i) i, cores = 1, progress = FALSE)
+  parallel_process(3, function(i) i, cores = 1, progress = TRUE)
+
+  expect_identical(get(".Random.seed", envir = globalenv()), before)
+
+  # No seed to begin with: none is left behind
+  rm(".Random.seed", envir = globalenv())
+  parallel_process(3, function(i) i, cores = 1, progress = FALSE)
+  expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 
 })

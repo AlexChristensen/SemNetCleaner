@@ -121,3 +121,28 @@ test_that("correct_data() does not crash when every response is entirely unresol
   expect_no_error(correct_data(data_mat, corr_mat))
 
 })
+
+test_that("correct_data() does not overflow when a response is corrected into three or more words (issue #23)", {
+
+  # Real bug fixed: `correct_mat` was sized `2 * max(responses per
+  # participant)` columns, so corrections that expand a response into 3+
+  # words overflowed it ("subscript out of bounds in `[<-`").
+  data <- matrix(
+    c("catdogfish", "birdcowpig", "horse", "cat"),
+    nrow = 2, byrow = TRUE, dimnames = list(c("P1", "P2"), c("R1", "R2"))
+  )
+  corr_mat <- cbind(
+    from = c("catdogfish", "birdcowpig", "horse", "cat"),
+    to_1 = c("cat", "bird", "horse", "cat"),
+    to_2 = c("dog", "cow", NA, NA),
+    to_3 = c("fish", "pig", NA, NA)
+  )
+
+  result <- correct_data(data, corr_mat)
+
+  expect_equal(result$corrected["P1", ], c(Response_1 = "cat", Response_2 = "dog", Response_3 = "fish", Response_4 = "bird", Response_5 = "cow", Response_6 = "pig"))
+  expect_equal(result$corrected["P2", 1:2], c(Response_1 = "horse", Response_2 = "cat"))
+  expect_true(all(is.na(result$corrected["P2", 3:6])))
+  expect_equal(unname(result$behavioral[, "Perseverations"]), c(0, 0))
+
+})

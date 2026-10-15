@@ -46,7 +46,7 @@ test_that("prepare_automated_for_review()'s own output round-trips through final
   # arrays" the moment the two were compared. prepare_automated_for_review()
   # must be used for BOTH sides of that hand-off.
   raw <- data.frame(
-    ID = c("P1", "P2", "P3"), R1 = c("dog", "bird", "cow"),
+    ID = c("P1", "P2", "P3"), R1 = c("dog", "bird", "coww"),   # only changed responses are reviewed
     R2 = c("catdog", "fish", "pig"), R3 = c("cat", "turtle", "horse"),
     stringsAsFactors = FALSE
   )
@@ -58,7 +58,7 @@ test_that("prepare_automated_for_review()'s own output round-trips through final
   initial <- suppressMessages(advance_wizard(initial, build_answer_burst(1)))
 
   review_matrix <- prepare_automated_for_review(initial)
-  target_row <- row.names(review_matrix)[review_matrix[, "from"] == "cow"]
+  target_row <- row.names(review_matrix)[review_matrix[, "from"] == "coww"]
   edited <- review_matrix
   edited[target_row, "to_1"] <- "puppy"
 

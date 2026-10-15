@@ -35,3 +35,19 @@ test_that("convert_miss() preserves a 0-row fluency matrix's shape instead of ma
   expect_equal(dim(result), c(0, 3))
 
 })
+
+test_that("convert_miss() keeps a single participant as a one-row matrix (fluency)", {
+
+  # Real bug fixed: `apply(data, 2, bad_response)` over a ONE-row matrix
+  # returns a plain vector, so a single participant lost its dimensions and
+  # the next step failed with "non-numeric matrix extent"
+  one <- matrix(c("dog", "99", "cat"), nrow = 1, dimnames = list("P1", c("R1", "R2", "R3")))
+
+  result <- convert_miss(one, 99, type = "fluency")
+
+  expect_true(is.matrix(result))
+  expect_equal(dim(result), c(1, 3))
+  expect_equal(dimnames(result), dimnames(one))
+  expect_equal(unname(result[1, ]), c("dog", "", "cat"))
+
+})

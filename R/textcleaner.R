@@ -1,14 +1,347 @@
+# As unpadded matrix ----
+# `as.matrix()` on a data frame pads numbers to a common width ("  4", " 10"), so the IDs
+# would no longer match the input; `as.character()` leaves them as written
+# Updated 14.10.2026
+as_unpadded_matrix <- function(
+    data # matrix or data frame
+)
+{
+
+  # Check for data frame
+  if(is.data.frame(data)){
+
+    # Convert columns to character (without padding numbers)
+    data[] <- lapply(data, function(column){
+
+      # Check for character column
+      if(is.character(column)){
+
+        # Return column
+        return(column)
+
+      }
+
+      # Convert to character
+      return(as.character(column))
+
+    })
+
+  }
+
+  # Convert to matrix
+  return(as.matrix(data))
+
+}
+
+# Errors for textcleaner arguments ----
+# Up-front checks on the arguments of `textcleaner()` that would otherwise fail (or be
+# silently ignored) deep in the pipeline
+# Updated 14.10.2026
+textcleaner_errors <- function(
+    miss, # value coded as missing
+    keepStrings, # keep multi-word responses as strings
+    keepLength, # maximum number of words in a response
+    keepCue, # keep cue words in responses
+    keepRepeats, # keep repeated responses
+    allowNumbers, # allow numbers in responses
+    continue, # unfinished result to continue
+    cores, # number of cores
+    reader, # function used to read answers
+    search_fn, # function used to search the web
+    edit_fn # function used to edit automated changes
+)
+{
+
+  # Check missing value
+  length_error(miss, 1, "textcleaner")
+  na_error(miss, "textcleaner")
+
+  # Check logical arguments
+  logical_arguments <- list(
+    keepStrings = keepStrings, keepCue = keepCue,
+    keepRepeats = keepRepeats, allowNumbers = allowNumbers
+  )
+
+  # Loop over logical arguments
+  for(name in names(logical_arguments)){
+
+    # Check for TRUE or FALSE
+    if(!isTRUE(logical_arguments[[name]]) && !isFALSE(logical_arguments[[name]])){
+
+      # Send error
+      stop(paste0("In `textcleaner()`: `", name, "` must be TRUE or FALSE."), call. = FALSE)
+
+    }
+
+  }
+
+  # Check for maximum number of words
+  if(!is.null(keepLength)){
+
+    # Check number of words
+    typeof_error(keepLength, "numeric", "textcleaner")
+    length_error(keepLength, 1, "textcleaner")
+    range_error(keepLength, c(1, Inf), "textcleaner")
+
+  }
+
+  # Check number of cores
+  typeof_error(cores, "numeric", "textcleaner")
+  length_error(cores, 1, "textcleaner")
+  range_error(cores, c(1, Inf), "textcleaner")
+
+  # Check functions
+  for(argument in list(reader = reader, search_fn = search_fn, edit_fn = edit_fn)){
+
+    # Check for function
+    if(!is.function(argument)){
+
+      # Send error
+      stop("In `textcleaner()`: `reader`, `search_fn`, and `edit_fn` must be functions.", call. = FALSE)
+
+    }
+
+  }
+
+  # Check for a result to continue
+  if(!is.null(continue) && !is.list(continue)){
+
+    # Send error
+    stop(
+      "In `textcleaner()`: `continue` must be the unfinished result that `textcleaner()` returned.",
+      call. = FALSE
+    )
+
+  }
+
+}
+
+# Rows changed by the automated spell-check ----
+# The automated spell-check resolves every response that is not left for manual review,
+# including responses that were already correct. Only the rows whose corrected value
+# differs from the original (a different "to_1", more than one "to_" value, or a "to_1"
+# that is missing) need to be reviewed
+# Updated 14.10.2026
+changed_by_automation <- function(
+    correspondence, # correspondence matrix ("from", "to_1", "to_2", ...)
+    rows # rows resolved by the automated spell-check
+)
+{
+
+  # Get the rows resolved automatically
+  automated <- correspondence[rows, , drop = FALSE]
+
+  # Get the corrected columns
+  to_columns <- grep("^to_", colnames(automated))
+
+  # Check for no corrected columns
+  if(length(to_columns) == 0 || nrow(automated) == 0){
+
+    # Return the rows as they are
+    return(rows)
+
+  }
+
+  # Get the original responses
+  original <- automated[, "from"]
+
+  # Get the first corrected response
+  first_to <- automated[, to_columns[1]]
+
+  # Check for further corrected responses
+  if(length(to_columns) > 1){
+
+    # Find rows with further corrected responses
+    has_more <- rowSums(!is.na(automated[, to_columns[-1], drop = FALSE])) > 0
+
+  }else{ # Only one corrected column
+
+    # No further corrected responses
+    has_more <- rep(FALSE, nrow(automated))
+
+  }
+
+  # Find unchanged rows (the same response and nothing else)
+  unchanged <- !is.na(first_to) & first_to == original & !has_more
+
+  # Return the rows that changed
+  return(rows[!unchanged])
+
+}
+
+# Check textcleaner data ----
+# Up-front checks on `data`, so that the common unusable inputs stop with a
+# plain-language message instead of an internal error several steps in (or,
+# before this was added, a console error report followed by a silent NULL).
+# Updated 14.10.2026
+check_textcleaner_data <- function(
+    data # matrix or data frame of responses
+)
+{
+
+  # Check for usable data type
+  if(is.null(data) || !(is.data.frame(data) || is.matrix(data))){
+
+    # Send error
+    stop(
+      "`data` must be a data frame or matrix of responses (see ?textcleaner), not ",
+      if(is.null(data)) "NULL" else paste0("a ", class(data)[1]), ".",
+      call. = FALSE
+    )
+
+  }
+
+  # Check for rows
+  if(nrow(data) == 0){
+
+    # Send error
+    stop("`data` has no rows, so there are no participants to clean.", call. = FALSE)
+
+  }
+
+  # Check for columns
+  if(ncol(data) == 0){
+
+    # Send error
+    stop("`data` has no columns, so there are no responses to clean.", call. = FALSE)
+
+  }
+
+  # Return silently
+  invisible(TRUE)
+
+}
+
+# Check responses remain ----
+# After cleaning, at least one response must remain; otherwise the
+# spell-check has nothing to work on (and used to fail inside
+# `parallel_process()` with "input `iterations` has a minimum value of 0").
+# Updated 14.10.2026
+check_responses_remain <- function(
+    responses, # cleaned responses
+    miss # value(s) coded as missing
+)
+{
+
+  # Flatten responses
+  responses <- as.vector(as.matrix(responses))
+
+  # Check for any responses
+  if(!any(!is.na(responses) & nzchar(responses))){
+
+    # Send error
+    stop(
+      "No responses were found to spell-check: every response is missing ",
+      "(`miss = ", paste(miss, collapse = ", "), "`), blank, or empty after cleaning.",
+      call. = FALSE
+    )
+
+  }
+
+  # Return silently
+  invisible(TRUE)
+
+}
+
+# Detect task type ----
+# Guesses the task type from the column names: long-format free association data has
+# "Cue" and "Response" columns, anything else is wide-format fluency data
+# Updated 14.10.2026
+detect_task_type <- function(
+    data # matrix or data frame of responses
+)
+{
+
+  # Get lowercase column names
+  column_names <- tolower(trimws(colnames(data)))
+
+  # Check for cue and response columns
+  if(all(c("cue", "response") %in% column_names)){
+
+    # Return free association
+    "free"
+
+  }else{ # No cue and response columns
+
+    # Return fluency
+    "fluency"
+
+  }
+
+}
+
+# Check free columns ----
+# Free association data must be long format with "Cue" and "Response" columns; the names
+# are matched regardless of case (and renamed to the exact spelling) and a message names
+# what is expected
+# Updated 14.10.2026
+check_free_columns <- function(
+    data # long-format free association data
+)
+{
+
+  # Get column names
+  column_names <- colnames(data)
+
+  # Get lowercase column names
+  lowered <- tolower(trimws(column_names))
+
+  # Loop over required columns
+  for(required in c("Cue", "Response")){
+
+    # Find required column
+    target <- which(lowered == tolower(required))
+
+    # Check for missing column
+    if(length(target) == 0){
+
+      # Send error
+      stop(
+        "Free association data (type = \"free\") must be in long format with ",
+        "columns named \"ID\", \"Cue\", and \"Response\" (see ?textcleaner), but no \"",
+        required, "\" column was found. Columns found: ",
+        paste0("\"", column_names, "\"", collapse = ", "), ". ",
+        "If each participant's responses are in separate columns, use type = \"fluency\".",
+        call. = FALSE
+      )
+
+    }
+
+    # Use exact spelling of the name
+    column_names[target[1]] <- required
+
+  }
+
+  # Set column names
+  colnames(data) <- column_names
+
+  # Return data
+  return(data)
+
+}
+
 #' Text Cleaner
 #'
 #' @description An automated cleaning function for spell-checking, de-pluralizing,
 #' removing duplicates, and binarizing text data
+#'
+#' @details Responses are cleaned before they are spell-checked: they are
+#' lowercased, accented and typographic characters are transliterated to
+#' ASCII (\code{"caf\u00e9"} becomes \code{"cafe"}), and characters with no
+#' ASCII equivalent (e.g., Chinese or Cyrillic text) are removed, so a response
+#' made only of such characters is treated as missing. The dictionaries
+#' supplied by \pkg{SemNetDictionaries} are English.
 #'
 #' @param data Matrix or data frame.
 #'
 #' For \code{type = "fluency"}, data are expected to
 #' follow wide formatting (IDs are the row names
 #' and are \strong{not} a column in the matrix
-#' or data frame):
+#' or data frame; alternatively, a column named \code{"ID"}, \code{"subject"},
+#' \code{"participant"}, \code{"part"} or \code{"sub"} is used as the IDs and
+#' removed from the responses; failing that, a single column whose values are
+#' all different and contain digits (e.g., \code{1, 2, 3} or \code{P01, P02}) is
+#' taken to be the IDs; with none of these, rows are numbered):
 #'
 #' \tabular{cccc}{
 #'
@@ -72,10 +405,21 @@
 #' @param partBY Character.
 #' Are participants by row or column?
 #' Set to \code{"row"} for by row.
-#' Set to \code{"col"} for by column
+#' Set to \code{"col"} for by column (the data are transposed first, so the
+#' column names become the participants' IDs, exactly as the row names are
+#' when participants are by row)
 #'
 #' @param dictionary Character vector.
-#' Can be a vector of a corpus or any text for comparison.
+#' The name(s) of the dictionary (or dictionaries) to spell-check against,
+#' e.g., \code{"animals"}, or a custom dictionary saved as
+#' \code{<name>.dictionary.rds} in the working directory or in \code{add.path}.
+#' It can also be a vector of the words themselves, such as a corpus or
+#' \code{result$dictionary} from an earlier run; as in
+#' \code{SemNetDictionaries::load.dictionaries()}, a vector of MORE than 10
+#' elements is taken to be the words, and 10 or fewer are taken to be names.
+#' For \code{type = "free"}, the spell-check is always against the
+#' \code{cocaspell} word list; \code{dictionary} then only supplies its list of
+#' common misspellings
 #' Dictionary to be used for more efficient text cleaning.
 #' Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}
 #'
@@ -103,7 +447,10 @@
 #' @param keepStrings Boolean.
 #' Should strings be retained or separated?
 #' Defaults to \code{FALSE}.
-#' Set to \code{TRUE} to retain strings as strings
+#' Set to \code{TRUE} to retain strings as strings. For fluency data, a string
+#' whose words are all in the dictionary (after correction) is still split into
+#' them, unless the string itself is a dictionary entry ("sea slug" stays
+#' "sea slug"; "marmoset otter" becomes "marmoset" and "otter")
 #'
 #' @param allowPunctuations Character vector.
 #' Allows punctuation characters to be included in responses.
@@ -111,13 +458,11 @@
 #' Set to \code{"all"} to keep all punctuation characters
 #'
 #' @param allowNumbers Boolean.
-#' Defaults to \code{FALSE}.
-#' Set to \code{TRUE} to keep numbers in text
-#'
-#' @param lowercase Boolean.
-#' Should words be converted to lowercase?
-#' Defaults to \code{TRUE}.
-#' Set to \code{FALSE} to keep words as they are
+#' Defaults to \code{FALSE}, which removes stand-alone numbers (e.g., list
+#' numbering such as \code{"1."}). Words that mix letters and digits (e.g.,
+#' \code{"d0g"}) are kept as written so that the spell-check can correct or
+#' flag them.
+#' Set to \code{TRUE} to keep all numbers in text
 #'
 #' @param keepLength Numeric.
 #' Maximum number of words allowed in a response.
@@ -131,13 +476,25 @@
 #' Defaults to \code{FALSE}.
 #' Set to \code{TRUE} to allow cue words to be retained
 #'
+#' @param keepRepeats Boolean.
+#' Should repeated responses (perseverations) within a participant be
+#' retained in \code{$responses$clean}? Only applies to
+#' \code{type = "fluency"}. Defaults to \code{FALSE}, which keeps only the
+#' first occurrence of each response. Set to \code{TRUE} to keep every
+#' occurrence (e.g., so that a later analysis, such as SNAFU, can count
+#' them). The binary response matrix is unaffected, and repeats are counted
+#' in \code{$behavioral$Perseverations} either way
+#'
 #' @param continue List.
 #' A result previously unfinished that still needs to be completed.
-#' Allows you to continue to manually spell-check their data
-#' after you've closed or errored out. Also accepts a previously
-#' \strong{completed} result (e.g., a saved return value of this same
-#' function, or of calling the manual spell-check stage directly) to
-#' skip straight to finalizing the output without repeating the spell-check.
+#' Allows you to continue to manually spell-check your data
+#' after you've exited early (\code{X}) or it stopped on an error: those are
+#' the cases in which \code{textcleaner()} returns an unfinished result
+#' instead of the final output. A finished result (one that already holds
+#' \code{$responses}) cannot be passed back, because there is nothing left to
+#' continue. The result of a manual spell-check stage that has already finished
+#' (as the Shiny app hands over) is accepted too, to skip straight to
+#' finalizing the output.
 #' Defaults to \code{NULL}
 #'
 #' @param reader Function.
@@ -154,7 +511,9 @@
 #' @param cores Numeric.
 #' Number of computer cores to use in parallelized computations (the
 #' "ad hoc" moniker re-check after manual spell-check). Defaults to \code{1}
-#' (sequential)
+#' (sequential). With more than one core the workers load the installed
+#' package, so \pkg{SemNetCleaner} must be installed (not loaded with
+#' \code{devtools::load_all()})
 #'
 #' @param edit_fn Function.
 #' The spreadsheet-editor function used to review automated spell-check
@@ -164,75 +523,86 @@
 #' dependencies. Exposed so this step can be driven programmatically instead
 #' of opening a real interactive editor
 #'
-#' @return This function returns a list containing the following objects:
+#' @return A list of class \code{"textcleaner"}. For \code{type = "fluency"}:
 #'
-#' \item{binary}{A matrix of responses where each row represents a participant
-#' and each column represents a unique response. A response that a participant has provided is a '\code{1}'
-#' and a response that a participant has not provided is a '\code{0}'}
-#'
-#' \item{responses}{A list containing two objects:
+#' \item{responses}{A list of three matrices:
 #'
 #' \itemize{
 #'
-#' \item \code{clean} --- A response matrix that has been spell-checked
-#' and de-pluralized with duplicates removed.
-#' This can be used as a final dataset for analyses (e.g., fluency of responses)
+#' \item \code{original} --- The responses as given, after basic preparation:
+#' missing values (\code{miss}) and blank cells converted to \code{NA};
+#' punctuation and stand-alone numbers removed (see \code{allowPunctuations}
+#' and \code{allowNumbers}); accented letters converted to plain ones
+#' (e.g., an accented "e" to a plain "e"); surrounding and repeated white space removed;
+#' and letters lowercased
 #'
-#' \item \code{original} --- The original response matrix that has had
-#' white spaces before and after words response. Also converts all
-#' upper-case letters to lower case
+#' \item \code{clean} --- The spell-checked, de-pluralized responses with
+#' repeats removed (unless \code{keepRepeats = TRUE}); one row per
+#' participant, labeled by ID. This can be used as a final dataset for
+#' analyses (e.g., fluency of responses)
 #'
-#' }
-#'
-#' }
-#'
-#' \item{spellcheck}{A list containing three objects:
-#'
-#' \itemize{
-#'
-#' \item \code{full} --- All responses regardless of spell-checking changes
-#'
-#' \item \code{auto} --- Only the incorrect responses that were changed
-#' during spell-check
+#' \item \code{binary} --- A matrix where each row is a participant and
+#' each column a unique response: \code{1} if the participant gave the
+#' response and \code{0} if not
 #'
 #' }
 #'
 #' }
 #'
-#' \item{removed}{A list containing two objects:
+#' \item{behavioral}{A data frame, one row per participant, with the number of
+#' \code{Perseverations} (repeated responses), \code{Intrusions} (responses
+#' marked bad), and \code{Appropriate} (responses kept)}
 #'
-#' \itemize{
+#' \item{spellcheck}{A list of three matrices: \code{correspondence} --- every
+#' unique response (\code{from}) and what it became (\code{to_1},
+#' \code{to_2}, ...); \code{automated} --- the rows changed by the
+#' automated spell-check; \code{manual} --- the rows that went through the
+#' manual wizard}
 #'
-#' \item \code{rows} --- Identifies removed participants by their row
-#' (or column) location in the original data file
+#' \item{moniker}{The \code{manual} rows of \code{spellcheck}: the corrections
+#' made by hand. Consider submitting them to \code{SemNetDictionaries}}
 #'
-#' \item \code{ids} --- Identifies removed participants by their ID
-#' (see argument \code{data})
+#' \item{dictionary, added_words}{Only present if words were added to the
+#' dictionary and "In my results" was chosen when asked where to save them
+#' (or a file could not be written). \code{dictionary} is the whole
+#' dictionary, the one used plus the added words, so it can be passed back
+#' as \code{dictionary = result$dictionary}. \code{added_words} is only
+#' the words added during the session}
 #'
-#' }
-#'
-#' }
-#'
-#' \item{partChanges}{A list where each participant is a list index with each
-#' response that was been changed. Participants are identified by their ID (see argument \code{data}).
-#' This can be used to replicate the cleaning process and to keep track of changes more generally.
-#' Participants with \code{NA} did not have any changes from their original data
-#' and participants with missing data are removed (see \code{removed$ids})}
+#' For \code{type = "free"}, \code{data} holds the \code{original} and
+#' \code{clean} long-format data, \code{responses$clean} is a response-by-cue
+#' frequency matrix, and \code{behavioral}, \code{spellcheck} and the
+#' dictionary objects are as above. If the manual spell-check is exited
+#' early, the object instead holds the saved state and can be passed back
+#' with \code{continue = }
 #'
 #' @examples
-#' # Toy example
-#' raw <- open.animals[c(1:10),-c(1:3)]
+#' # Toy example (every response is a known animal, so there is no
+#' # manual spell-check; \code{edit_fn} skips the review app)
+#' toy <- data.frame(
+#'   Response_1 = c("dog", "cat", "bird"),
+#'   Response_2 = c("cat", "fish", "dog"),
+#'   Response_3 = c("fish", "bird", "cow")
+#' )
+#'
+#' clean <- textcleaner(
+#'   toy, partBY = "row", dictionary = "animals",
+#'   spelling = "US", edit_fn = function(x) x
+#' )
+#'
+#' # Cleaned responses
+#' clean$responses$clean
 #'
 #' if(interactive())
 #' {
-#'     #Full test
-#'     clean <- textcleaner(open.animals[,-c(1,2)], partBY = "row", dictionary = "animals")
+#'   # Full example with the manual spell-check
+#'   clean <- textcleaner(open.animals[, -c(1, 2)], partBY = "row", dictionary = "animals")
 #' }
 #'
 #' @references
-#' Christensen, A. P., & Kenett, Y. N. (in press).
+#' Christensen, A. P., & Kenett, Y. N. (2021).
 #' Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks.
-#' \emph{Psychological Methods}.
+#' \emph{Psychological Methods}. \doi{10.1037/met0000463}
 #'
 #' Hornik, K., & Murdoch, D. (2010).
 #' Watch Your Spelling!.
@@ -244,371 +614,530 @@
 #' @importFrom utils edit
 #'
 #' @export
-# Text Cleaner----
-# Merges `textcleaner.fluency()`/`textcleaner.free()` into one function with
-# internal `type` branches, per binding decision #2 -- the two originals'
-# shared scaffolding (obtain ID, convert missing, normalize/prep, dispatch
-# to the merged `spellcheck_dictionary()`, build a correspondence matrix,
-# fold in manual corrections via `correct_changes()`) was already factored
-# out into its own type-dispatching functions across Phases 2-6; what's left
-# here is genuinely different per type: `partBY` transposition and the
-# whole-matrix vs. long-format `keepLength`/`keepCue` filtering mechanics,
-# `correct_data()` vs. `correct_data_free()` (binding decision #2's carve-
-# out), and the final reshape (a binary vocabulary matrix for fluency, a
-# response x cue frequency matrix for free).
+# Text cleaner ----
+# One function for both tasks (`type = "fluency"` and `"free"`). The shared steps are their
+# own functions (obtain ID, convert missing, normalize, spell-check, correspondence matrix,
+# corrections); what differs by task is the `partBY` transposition, the whole-matrix versus
+# long-format `keepLength`/`keepCue` filtering, `correct_data()` versus `correct_data_free()`,
+# and the final reshape (a binary vocabulary matrix for fluency, a response by cue
+# frequency matrix for free)
 #
-# Real bugs found and fixed while building this (the first time either
-# original function has been ported):
+# `continue` is an unfinished result: it is resumed when its `$stop` flag is `TRUE` and
+# used as the finished spell-check otherwise
 #
-# - **`partBY`'s own default was never resolved with `match.arg()`.**
-#   `if(partBY == "col")` on the unresolved 2-element default (`c("row",
-#   "col")`) compares a length-2 vector against a scalar -- confirmed
-#   directly that this crashes outright ("the condition has length > 1")
-#   on any R >= 4.3, for the DEFAULT call path of the package's own
-#   flagship function (`textcleaner(data, type = "fluency")` with no
-#   explicit `partBY =`). Every one of this function's own doc examples
-#   happens to always pass `partBY` explicitly, which is almost certainly
-#   why this was never caught. Fixed via `match.arg(partBY)`.
-# - **The fluency `keepLength` filter had two independent, compounding
-#   bugs -- fixing only the first exposes the second.** (1) `response_lengths
-#   <- apply(data, 1:2, length)` measures each cell's `length()` -- always
-#   `1` for a single string, regardless of how many words it contains --
-#   so this was a structural no-op for `keepLength >= 2` and would
-#   instead flag EVERY cell for `keepLength <= 1`, always via the SAME
-#   (masked) comparison as bug (2). Fixed via the free-association
-#   branch's already-correct per-cell word count (`lengths(strsplit(x,
-#   " "))`). (2) Once word counts are measured correctly, the REMOVAL
-#   threshold itself is off by one: `which(response_lengths >=
-#   keepLength)` removes any response with `>= keepLength` words --
-#   confirmed directly that `keepLength = 1` then removes EVERY response
-#   (every response trivially has >= 1 words), not just multi-word ones.
-#   The function's own documented contract ("keep responses with words
-#   less than or equal to the number") and the free-association branch's
-#   already-correct `data[response_lengths <= keepLength, ]` both use
-#   `<=` for KEEPING, equivalent to `>` for removing -- fixed to match
-#   (`response_lengths > keepLength`). Bug (1) alone masked bug (2)
-#   completely (a constant `1` is never `>= keepLength` for any
-#   `keepLength >= 2`, the only values that would have exposed the
-#   threshold error), which is almost certainly why this was never
-#   caught -- confirmed unreachable through this exact code path in the
-#   untouched original for any `keepLength` a user would plausibly set.
-# - **The `continue` resume-vs-completed dispatch used the same fragile
-#   `length(continue)`-counting hack as bug #10** (there, inside
-#   `spellcheck.dictionary()`/`.free()` itself; here, one level up, in
-#   `textcleaner.fluency()`/`.free()`, deciding whether a non-NULL
-#   `continue` is a still-in-progress wizard state to hand to
-#   `spellcheck_dictionary(continue = ...)`, or an already-COMPLETED
-#   spell-check result to use directly) -- `length(continue) != 7` for
-#   fluency, `> 8` for free, silently misrouting a completed result that
-#   happened to also save its dictionary (`+1` field) into the "still
-#   resuming" branch, handing `spellcheck_dictionary()` a `continue` with
-#   none of the fields (`full_dictionary`, `ind`, `changes`, `main_count`,
-#   ...) it actually expects. Both shapes already carry an explicit `$stop`
-#   flag (`TRUE` mid-wizard, `FALSE` once finished, set by
-#   `spellcheck_dictionary()` itself) -- using that instead of a field
-#   count is unambiguous regardless of which optional fields happen to be
-#   present, closing out bug #10's pattern at this second call site.
-# - **Bug #54: the free-only correspondence-matrix "mark embedded bad
-#   words" step used a bare substring match.** `grep("NA", x)` on each
-#   "to_" cell was meant to catch a multi-word response like `"polar NA"`
-#   (one word of a compound manually marked bad, via the "BAD WORD"
-#   option) and treat the WHOLE compound as unusable -- but a substring
-#   match also fires on any ordinary word that merely CONTAINS "NA", e.g.
-#   `"CANADA"` or `"NASA"`, silently corrupting a perfectly valid response
-#   into the bad-response sentinel. Confirmed directly (only reachable
-#   with `lowercase = FALSE`, since a lowercased word can never contain an
-#   uppercase "NA" substring). Fixed with a word-boundary-aware match
-#   (`"(^|[[:space:]])NA([[:space:]]|$)"`) that only fires when "NA"
-#   appears as its own token, and simplified from a branching
-#   `apply()`/`lapply()` pair into one vectorized call (`ifelse()`/
-#   `grepl()` are already vectorized over a whole matrix or vector alike).
-#
-# `free`'s "still in development" warning kept (not resolved) for this
-# merged version -- unlike fluency, which has a real end-to-end reference
-# fixture (`open.animals` raw data against `open.preprocess`'s known-good
-# output), there's no equivalent bundled raw free-association dataset to
-# `identical()`-verify the full pipeline against, so confidence in the
-# merged free-association path rests on synthetic reproductions rather
-# than a real-data regression check. Drops `textcleaner.free()`'s own
-# ~40 lines of commented-out dead code (an unfinished cue-frequency-by-
-# condition breakdown) and its unused `original` variable (computed but
-# never read, the same write-only pattern as `auto.spell`/Phase 4).
-# Updated 12.09.2026
+# Free association keeps its "still in development" warning (there is no real-data
+# reference fixture for the full pipeline, only synthetic reproductions)
+# Updated 14.10.2026
 textcleaner <- function(
-  data = NULL, type = c("fluency", "free"),
-  miss = 99, partBY = c("row", "col"),
-  dictionary = NULL, spelling = c("UK", "US"),
-  add.path = NULL, keepStrings = FALSE,
-  allowPunctuations,
-  allowNumbers = FALSE, lowercase = TRUE,
-  keepLength = NULL, keepCue = FALSE,
-  continue = NULL,
-  reader = readline, search_fn = searcher::search_site, cores = 1,
-  edit_fn = automated_edit
+    data = NULL, # matrix or data frame of responses
+    type = c("fluency", "free"), # type of semantic task
+    miss = 99, # value(s) coded as missing
+    partBY = c("row", "col"), # participants in rows or columns
+    dictionary = NULL, # dictionary names or a vector of words
+    spelling = c("UK", "US"), # spelling used in the dictionary
+    add.path = NULL, # directory with custom dictionaries
+    keepStrings = FALSE, # keep multi-word responses as strings
+    allowPunctuations, # punctuation allowed in responses
+    allowNumbers = FALSE, # allow numbers in responses
+    keepLength = NULL, # maximum number of words in a response
+    keepCue = FALSE, # keep cue words in responses
+    keepRepeats = FALSE, # keep repeated responses
+    continue = NULL, # unfinished result to continue
+    reader = readline, # function used to read answers
+    search_fn = searcher::search_site, # function used to search the web
+    cores = 1, # number of cores
+    edit_fn = automated_edit # function used to edit automated changes
 )
 {
 
+  # Check for errors
+  textcleaner_errors(
+    miss, keepStrings, keepLength, keepCue, keepRepeats, allowNumbers,
+    continue, cores, reader, search_fn, edit_fn
+  )
+
+  # Check for new run
+  if(is.null(continue)){
+
+    # Check data
+    check_textcleaner_data(data)
+
+    # Resolve path to custom dictionaries
+    add.path <- resolve_add_path(add.path)
+
+  }
+
+  # A finished `textcleaner()` result has nothing left to continue
+  # Check for finished result
+  if(!is.null(continue) && !is.null(continue$responses) && is.null(continue$from)){
+
+    # Send error
+    stop(
+      "`continue` is a finished textcleaner() result (it already holds `$responses`), so there is nothing left to continue. ",
+      "`continue` takes the UNFINISHED result that textcleaner() returns when you exit the manual spell-check early ('X') ",
+      "or it stops on an error.",
+      call. = FALSE
+    )
+
+  }
+
+  # Check for an unfinished result
+  if(!is.null(continue) && is.null(continue$type)){
+
+    # Send error
+    stop(
+      "`continue` must be the unfinished result that `textcleaner()` returns when you exit the manual spell-check early ('X') or it stops on an error.",
+      call. = FALSE
+    )
+
+  }
+
   # Resolve type
+  # Check for continuing
   if(!is.null(continue)){
 
+    # Use type of unfinished result
     type <- continue$type
 
-  }else if(missing(type)){
+  }else if(missing(type)){ # Type not specified
 
-    type <- ifelse(ncol(data) > 3, "fluency", "free")
+    # Guess type from data structure
+    type <- detect_task_type(data)
 
+    # Let user know
     message(
       paste0(
         'Assuming semantic task type based on data structure: "', type, '"'
       )
     )
 
-  }else{
+  }else{ # Type specified
+
+    # Match type
     type <- match.arg(type)
+
   }
 
   # Free-association-only defaults
+  # Check for free association
   if(type == "free"){
 
+    # Check for missing keepStrings
     if(missing(keepStrings)){
+
+      # Keep strings by default
       keepStrings <- TRUE
+
+      # Let user know
       message("'keepStrings' is set to TRUE for free association tasks by default. Set argument to change this behavior.")
+
     }
 
+    # Check for missing dictionary
     if(missing(dictionary)){
+
+      # Use free association dictionary by default
       dictionary <- "cocaspell"
+
+    }
+
+    # Check for repeats setting
+    if(isTRUE(keepRepeats)){
+
+      # Let user know
+      message("'keepRepeats' only applies to fluency tasks and is ignored for free association tasks.")
+
     }
 
   }
 
-  # Shared defaults (only meaningful for a fresh run; harmlessly recomputed,
-  # and unused, when resuming or given an already-completed `continue`,
-  # matching the untouched original's own layout)
+  # Cleaning applied to the words the user types in the manual wizard (see
+  # `normalize_typed_words()`), built here so that a resumed run gets it too;
+  # `allowPunctuations` only receives its default further down for a fresh run, hence the fallback
+  normalize_punctuation <- if(missing(allowPunctuations)) "-" else allowPunctuations
+
+  # Create function to clean typed words
+  normalize_fn <- function(words){
+
+    # Clean words like other responses
+    normalize_responses(words, normalize_punctuation, allowNumbers)
+
+  }
+
+  # Shared defaults (only used for a fresh run)
+  # Check for new run
   if(is.null(continue)){
 
+    # Check for missing spelling
     if(missing(spelling)){
+
+      # Use US spelling by default
       spelling <- "US"
+
+      # Let user know
       message("\nThe 'spelling' argument was not set. Using default: 'US' English spelling")
-      Sys.sleep(0.5)
-    }else{
+
+      # Pause to read
+      pause(0.5)
+
+    }else{ # Spelling specified
+
+      # Match spelling
       spelling <- match.arg(spelling)
+
     }
 
+    # Check for missing punctuation
     if(missing(allowPunctuations)){
+
+      # Allow hyphens by default
       allowPunctuations <- "-"
+
     }
 
   }
 
+  # Check for continuing
   if(!is.null(continue)){
 
+    # Check for unfinished result
     if(isTRUE(continue$stop)){
 
       # Still mid-wizard -- hand straight back to spellcheck_dictionary()
       spell_check <- spellcheck_dictionary(
-        continue = continue, reader = reader, search_fn = search_fn, cores = cores
+        continue = continue, reader = reader, search_fn = search_fn, cores = cores,
+        normalize_fn = normalize_fn
       )
 
-    }else{
+    }else{ # Completed result
 
       # Already a completed spell-check result (see bug fix note above)
       spell_check <- continue
 
     }
 
-  }else if(type == "fluency"){
+  }else if(type == "fluency"){ # Fluency
 
     # Real bug fixed: `match.arg()` on `partBY`'s own default (see above)
     partBY <- match.arg(partBY)
 
-    data <- as.matrix(data)
+    # Convert to matrix (without padding numbers)
+    data <- as_unpadded_matrix(data)
 
+    # Check for participants by column
     if(partBY == "col"){
+
+      # Transpose data
       data <- t(data)
+
+      # Let user know
       message("\nParticipants were made to go across the rows")
+
     }
 
-    id_res <- try(obtain_id(data, type = "fluency"), silent = TRUE)
-    if(inherits(id_res, "try-error")){
-      return(error_report(id_res, "obtain_id", "textcleaner"))
-    }
+    # obtain_id() raises its own plain-language errors (ambiguous or missing
+    # ID columns); they are user-input problems, not bugs, so they are
+    # passed through as they are rather than wrapped in a bug report
+    id_res <- obtain_id(data, type = "fluency")
 
+    # Remove ID column
     data <- id_res$data
+
+    # Store IDs
     ids <- id_res$ids
-    row.names(data) <- ids
 
-    data <- try(convert_miss(data, miss, type = "fluency"), silent = TRUE)
-    if(inherits(data, "try-error")){
-      return(error_report(data, "convert_miss", "textcleaner"))
-    }
+    # One response column whose cells each hold a whole list of words ("dog cat bird fish ...")
+    # is the most common wrong format; the pipeline expects one response per column
+    if(ncol(data) == 1 && !isTRUE(keepStrings)){
 
-    data <- try(
-      prep_spellcheck_dictionary(data, allowPunctuations, allowNumbers, lowercase, type = "fluency"),
-      silent = TRUE
-    )
-    if(inherits(data, "try-error")){
-      return(error_report(data, "prep_spellcheck_dictionary", "textcleaner"))
-    }
+      # Count words in each cell
+      words_per_cell <- lengths(strsplit(trimws(as.character(data[, 1])), "[[:space:]]+"))
 
-    if(!is.null(keepLength)){
+      # Remove missing cells
+      words_per_cell <- words_per_cell[!is.na(data[, 1])]
 
-      data <- as.matrix(data)
+      # Check for several words in most cells
+      if(length(words_per_cell) > 0 && mean(words_per_cell >= 3) > 0.5){
 
-      # Two real, compounding bugs fixed here -- see the fix note above:
-      # per-cell WORD count via `strsplit()` (not `length()`, which is
-      # always 1 for a single string cell), and `> keepLength` (not `>=`)
-      # for the removal threshold, matching "keep <= keepLength words"
-      response_lengths <- apply(data, 1:2, function(x){ length(unlist(strsplit(x, split = " "))) })
+        # Send error
+        stop(
+          "Only one response column was found and most of its cells contain several words. ",
+          "Fluency data must have ONE response per column (one row per participant), e.g.:\n\n",
+          "  ID   Response_1  Response_2  Response_3\n",
+          "  1    dog         cat         bird\n\n",
+          "Split each participant's list into separate columns before calling textcleaner(), e.g. ",
+          "with strsplit(). If each cell really is a single multi-word response, set keepStrings = TRUE.",
+          call. = FALSE
+        )
 
-      remove_responses <- which(response_lengths > keepLength, arr.ind = TRUE)
-
-      if(nrow(remove_responses) != 0){
-        data[remove_responses] <- NA
       }
 
     }
 
-    data <- as.data.frame(data)
+    # Set IDs as row names
+    row.names(data) <- ids
 
-    uniq_resp <- na.omit(unique(unlist(data)))
+    # Convert missing values
+    data <- try(convert_miss(data, miss, type = "fluency"), silent = TRUE)
 
-    if(is.null(dictionary)){
-      dictionary <- "cocaspell"
+    # Check for error
+    if(inherits(data, "try-error")){
+
+      # Report error
+      error_report(data, "convert_miss", "textcleaner", fatal = TRUE)
+
     }
 
+    # Normalize responses
+    data <- try(
+      prep_spellcheck_dictionary(data, allowPunctuations, allowNumbers, type = "fluency"),
+      silent = TRUE
+    )
+
+    # Check for error
+    if(inherits(data, "try-error")){
+
+      # Report error
+      error_report(data, "prep_spellcheck_dictionary", "textcleaner", fatal = TRUE)
+
+    }
+
+    # Check for remaining responses
+    check_responses_remain(data, miss)
+
+    # Check for maximum words
+    if(!is.null(keepLength)){
+
+      # Convert to matrix
+      data <- as.matrix(data)
+
+      # Count the words of each cell and remove responses with more than `keepLength` words
+      response_lengths <- apply(data, 1:2, function(x){ length(unlist(strsplit(x, split = " "))) })
+
+      # Find responses that are too long
+      remove_responses <- which(response_lengths > keepLength, arr.ind = TRUE)
+
+      # Check for any too-long responses
+      if(nrow(remove_responses) != 0){
+
+        # Set to missing
+        data[remove_responses] <- NA
+
+      }
+
+    }
+
+    # Convert to data frame
+    data <- as.data.frame(data)
+
+    # Get unique responses
+    uniq_resp <- na.omit(unique(unlist(data)))
+
+    # Check for missing dictionary
+    if(is.null(dictionary)){
+
+      # Use default dictionary
+      dictionary <- "cocaspell"
+
+    }
+
+    # Run spell-check
     spell_check <- try(
       spellcheck_dictionary(
         uniq_resp = uniq_resp, dictionary = dictionary, spelling = spelling,
         add_path = add.path, keep_strings = keepStrings, data = data,
-        type = "fluency", reader = reader, search_fn = search_fn, cores = cores
+        type = "fluency", reader = reader, search_fn = search_fn, cores = cores,
+        normalize_fn = normalize_fn
       ),
       silent = TRUE
     )
 
+    # Check for error
     if(inherits(spell_check, "try-error")){
-      return(error_report(spell_check, "spellcheck_dictionary", "textcleaner"))
+
+      # Report error
+      error_report(spell_check, "spellcheck_dictionary", "textcleaner", fatal = TRUE)
+
     }
 
-  }else{
+  }else{ # Free association
 
+    # Warn about development status
     warning(
       "Free association preprocessing is still in development. Use with caution and independently verify that the results are correct.\n\nPlease send bugs/issues to <https://github.com/AlexChristensen/SemNetCleaner/issues"
     )
 
-    data <- as.matrix(data)
+    # Convert to matrix (without padding numbers)
+    data <- as_unpadded_matrix(data)
 
-    id_res <- try(obtain_id(data, type = "free"), silent = TRUE)
-    if(inherits(id_res, "try-error")){
-      return(error_report(id_res, "obtain_id", "textcleaner"))
-    }
+    # Check for cue and response columns
+    data <- check_free_columns(data)
 
+    # Get IDs
+    id_res <- obtain_id(data, type = "free")
+
+    # Store data
     data <- id_res$data
+
+    # Store IDs
     ids <- id_res$ids
 
+    # Convert missing values
     data <- try(convert_miss(data, miss, type = "free"), silent = TRUE)
+
+    # Check for error
     if(inherits(data, "try-error")){
-      return(error_report(data, "convert_miss", "textcleaner"))
+
+      # Report error
+      error_report(data, "convert_miss", "textcleaner", fatal = TRUE)
+
     }
 
+    # Normalize responses
     data <- try(
-      prep_spellcheck_dictionary(data, allowPunctuations, allowNumbers, lowercase, type = "free"),
+      prep_spellcheck_dictionary(data, allowPunctuations, allowNumbers, type = "free"),
       silent = TRUE
     )
+
+    # Check for error
     if(inherits(data, "try-error")){
-      return(error_report(data, "prep_spellcheck_dictionary", "textcleaner"))
+
+      # Report error
+      error_report(data, "prep_spellcheck_dictionary", "textcleaner", fatal = TRUE)
+
     }
 
+    # Check for remaining responses
+    check_responses_remain(data[, "Response"], miss)
+
+    # Check for maximum words
     if(!is.null(keepLength)){
+
+      # Count words in each response
       response_lengths <- lengths(strsplit(data[, "Response"], split = " "))
+
+      # Keep short responses
       data <- data[response_lengths <= keepLength, ]
+
     }
 
+    # Check for removing cues
     if(!isTRUE(keepCue)){
+
+      # Get cues
       cues <- unique(data[, "Cue"])
+
+      # Remove responses that are cues
       data <- data[is.na(match(data[, "Response"], cues)), ]
+
     }
 
+    # Get unique responses
     uniq_resp <- na.omit(unique(unlist(data[, "Response"])))
 
+    # Run spell-check
     spell_check <- try(
       spellcheck_dictionary(
         uniq_resp = uniq_resp, dictionary = dictionary, spelling = spelling,
         add_path = add.path, keep_strings = keepStrings, keep_length = keepLength,
         keep_cue = keepCue, data = data, type = "free",
-        reader = reader, search_fn = search_fn, cores = cores
+        reader = reader, search_fn = search_fn, cores = cores, normalize_fn = normalize_fn
       ),
       silent = TRUE
     )
 
+    # Check for error
     if(inherits(spell_check, "try-error")){
-      return(error_report(spell_check, "spellcheck_dictionary", "textcleaner"))
+
+      # Report error
+      error_report(spell_check, "spellcheck_dictionary", "textcleaner", fatal = TRUE)
+
     }
 
   }
 
   # Check if spell-check was stopped (either error or user stop)
   if(isTRUE(spell_check$stop)){
+
+    # Return unfinished result
     return(spell_check)
+
   }
 
   # Initialize results to return
   res <- list()
 
+  # Check for added dictionary
   if("dictionary" %in% names(spell_check)){
+
+    # Store dictionary
     res$dictionary <- spell_check$dictionary
+
+    # Store added words
+    res$added_words <- spell_check$added_words
+
   }
 
+  # Get data
   data <- spell_check$data
+
+  # Get IDs
   ids <- if(type == "fluency") row.names(spell_check$data) else unique(spell_check$data[, "ID"])
 
+  # Check for fluency
   if(type == "fluency"){
+
+    # Store original responses
     res$responses$original <- data
-  }else{
+
+  }else{ # Free association
+
+    # Store original data
     res$data$original <- data
+
   }
 
+  # Get original responses
   original <- spell_check$from
+
+  # Get corrected responses
   checked <- spell_check$to
 
+  # Create correspondence matrix
   corr_mat <- try(correspondence_matrix(original, checked), silent = TRUE)
 
+  # Check for error
   if(inherits(corr_mat, "try-error")){
+
+    # Report error
     error_report(corr_mat, "correspondence_matrix", "textcleaner")
+
+    # Return unfinished result
     return(spell_check)
-  }
-
-  if(type == "free" && ncol(corr_mat) > 1){
-
-    # Bug #54 fix (see above): word-boundary-aware match instead of a bare
-    # substring match, applied as one vectorized call over every "to_"
-    # column at once (works identically whether that selection is a
-    # genuine matrix or, with exactly one "to_" column, a plain vector)
-    corr_mat[, -1] <- ifelse(
-      grepl("(^|[[:space:]])NA([[:space:]]|$)", corr_mat[, -1]),
-      "NA", corr_mat[, -1]
-    )
 
   }
 
+  # (BAD WORD drops just the bad word in both tasks, so no response is turned into "NA" here)
+
+  # Name rows
   row.names(corr_mat) <- formatC(seq_len(nrow(corr_mat)), digits = 2, flag = "0")
+
+  # Store correspondence matrix
   res$spellcheck$correspondence <- corr_mat
 
-  # `drop = FALSE`: a single-row selection here previously collapsed into a
-  # plain named vector, losing its correspondence-matrix ROW NAME (only
-  # column names survive a vector's own `names()`) -- see the severe bug
-  # this caused downstream, fixed in `correct_changes()`. Keeping this a
-  # genuine matrix here, at the source, is the real fix; the recovery
-  # inside `correct_changes()` is defense in depth for any other caller.
-  res$spellcheck$automated <- corr_mat[spell_check$auto, , drop = FALSE]
+  # Keep only the responses the automated spell-check changed (`drop = FALSE` keeps the row
+  # names of the correspondence matrix when one row is selected)
+  res$spellcheck$automated <- corr_mat[changed_by_automation(corr_mat, spell_check$auto), , drop = FALSE]
+
+  # Store manual responses
   res$spellcheck$manual <- corr_mat[spell_check$manual, , drop = FALSE]
 
-  # Correct auto-corrections, build the final cleaned/binary/behavioral
-  # output -- extracted (Phase 11) into `finalize_textcleaner()` so
-  # `textcleaner_shiny()` can re-run this exact logic a second time once its
-  # own corrections-review step knows the user's real edits. `spell_check`
-  # passed through as the error-path fallback return value, matching this
-  # function's own original (pre-extraction) behavior exactly.
-  return(finalize_textcleaner(res, data, type, ids, reader = reader, edit_fn = edit_fn, spell_check = spell_check))
+  # Correct the auto-corrections and build the cleaned, binary, and behavioral output (shared
+  # with the internal Shiny wizard); `spell_check` is returned if that fails
+  return(finalize_textcleaner(
+    res, data, type, ids, reader = reader, edit_fn = edit_fn,
+    spell_check = spell_check, keep_repeats = keepRepeats
+  ))
 
 }
 #----

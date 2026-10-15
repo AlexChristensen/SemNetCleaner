@@ -11,7 +11,8 @@ finalize_textcleaner(
   ids,
   reader = readline,
   edit_fn = automated_edit,
-  spell_check = res
+  spell_check = res,
+  keep_repeats = FALSE
 )
 }
 \arguments{
@@ -43,6 +44,12 @@ The automated-corrections review function. Defaults to
 \item{spell_check}{List.
 The error-path fallback return value, matching \code{textcleaner()}'s own
 original (pre-extraction) behavior exactly. Defaults to \code{res}}
+
+\item{keep_repeats}{Boolean.
+Should repeated responses (perseverations) be kept in the cleaned
+responses? Only applies to \code{type = "fluency"}. Defaults to
+\code{FALSE}, which removes repeats from \code{$responses$clean};
+they are counted in \code{$behavioral$Perseverations} either way}
 }
 \value{
 A finished, \code{textcleaner}-classed result
@@ -51,7 +58,7 @@ A finished, \code{textcleaner}-classed result
 Reviews automated spell-check corrections and builds the
 final cleaned/binary/behavioral output -- the exact logic
 \code{\link{textcleaner}} itself runs once, internally, via a pure code
-motion (Phase 11). Exposed so \code{\link{textcleaner_shiny}}'s
+motion. Exposed so \code{\link{textcleaner_shiny}}'s
 corrections-review module can re-run this same, already-tested logic a
 second time once the user's real edits (from the embedded
 \code{\link{automated_edit_server}}) are known, instead of duplicating
@@ -66,3 +73,4 @@ not reachable from there by its bare name.
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>
 }
+\keyword{internal}

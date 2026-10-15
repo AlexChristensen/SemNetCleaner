@@ -110,3 +110,16 @@ test_that("best_guess() still lets monikers win outright when unique, even if ph
   )
 
 })
+
+test_that("best_guess() lowercases a moniker's canonical form (free-association fix)", {
+
+  # Real bug fixed (found driving the free-association wizard): the moniker
+  # table's canonical forms carry capitals ("Bay"), so "baz" was corrected to
+  # "Bay" while every dictionary word and response is lowercase
+  cocaspell <- SemNetDictionaries::load.dictionaries("cocaspell")
+
+  result <- suppressWarnings(best_guess("baz", full_dictionary = cocaspell, dictionary = "cocaspell"))
+
+  expect_equal(result, "bay")
+
+})

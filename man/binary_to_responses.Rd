@@ -29,17 +29,14 @@ A list containing objects for each participant and their responses
 Converts a binary response matrix into characters for each participant
 }
 \examples{
-# Toy example
-raw <- open.animals[c(1:10), -c(1:3)]
+# Binary matrix of the first 10 participants of the cleaned data
+binary_matrix <- responses_to_binary(open.clean[1:10, ])
 
-if(interactive())
-{
-  # Clean and preprocess data
-  clean <- textcleaner(open.animals[, -c(1:2)], partBY = "row", dictionary = "animals")
+# Each participant's responses, as a list
+binary_to_responses(binary_matrix)
 
-  # Change binary response matrix to word response matrix
-  char_matrix <- binary_to_responses(clean$responses$binary)
-}
+# As a participants by responses matrix
+binary_to_responses(binary_matrix, to_data_frame = TRUE)
 
 }
 \author{

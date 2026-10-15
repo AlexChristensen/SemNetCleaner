@@ -11,63 +11,49 @@
 #' unique response observed across the whole sample
 #'
 #' @examples
-#' # Toy example
-#' raw <- open.animals[c(1:10), -c(1:3)]
+#' # First 10 participants of the cleaned data
+#' binary_matrix <- responses_to_binary(open.clean[1:10, ])
 #'
-#' if(interactive())
-#' {
-#'   # Clean and preprocess data
-#'   clean <- textcleaner(open.animals[, -c(1:2)], partBY = "row", dictionary = "animals")
-#'
-#'   # Change response matrix to binary response matrix
-#'   binary_matrix <- responses_to_binary(clean$responses$corrected)
-#' }
+#' # Participants by responses (0 = not given, 1 = given)
+#' binary_matrix[, 1:10]
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
 #' @importFrom stats na.omit
 #'
 #' @export
-# Response matrix to binary matrix
-# Ported from `resp2bin()`, renamed per the naming convention: reuses the
-# exact name `../SemNeT`'s own `helpers.R` already established for this same
-# underlying operation ("convert a raw word-response matrix into a binary
-# participant x vocabulary matrix") -- confirmed the two implementations are
-# fundamentally the same algorithm on direct comparison; kept this function's
-# plain-matrix return shape (not SemNeT's order-tracking list/class wrapper),
-# matching this package's own original documented contract.
-# Real bug fixed: `for(i in 1:n)` reverse-ranges to `1:0` when `nrow(responses)
-# == 0` (a degenerate but reachable input, e.g. after upstream filtering drops
-# every participant), indexing row 1 of a 0-row matrix -- fixed via seq_len().
-# Second real bug fixed, confirmed inherited (the untouched original
-# resp2bin() crashes identically): a `responses` matrix with 0 total
-# elements (0 rows, OR 0 columns with any number of rows) has
-# `length(mat) == 0`, so bad_response()'s own `if(length(word) == 0) word <-
-# NA` guard collapses the WHOLE MATRIX into a bare scalar NA -- destroying
-# its dimensions, so the later `nrow(mat)` no longer returns a number
-# ("non-numeric matrix extent"). Fixed with an early return before
-# bad_response() is ever called, rather than changing bad_response()'s own
-# (separately relied-upon) zero-length guard. NOTE: an earlier version of
-# this fix only guarded `nrow(mat) == 0`, missing the 0-column/>0-row case
-# -- caught during a follow-up review, re-checking `length(mat) == 0`
-# (total elements) instead covers both degenerate shapes correctly.
-# Updated 08.09.2026
-responses_to_binary <- function(responses)
+# Responses to binary ----
+# Converts a matrix of responses (participants in rows) to a binary matrix of
+# participants by vocabulary; a matrix with no elements gives a matrix with no columns
+# Updated 14.10.2026
+responses_to_binary <- function(
+    responses # matrix or data frame of responses
+)
 {
 
+  # Check for errors
   responses_to_binary_errors(responses)
 
   # Data matrix
   mat <- as.matrix(responses)
+
+  # Get number of participants
   n_cases <- nrow(mat)
 
   # A completely empty input (0 rows, or 0 columns with 0+ rows) has no
   # vocabulary to observe -- short-circuit before bad_response() ever sees
   # it (see the bug note above), preserving the participant count either way
   if(length(mat) == 0){
+
+    # Create empty binary matrix
     binary_matrix <- matrix(0, nrow = n_cases, ncol = 0)
+
+    # Keep participant names
     row.names(binary_matrix) <- row.names(responses)
+
+    # Return empty matrix
     return(binary_matrix)
+
   }
 
   # Replace bad responses with NA so they never become a "word"
@@ -78,27 +64,40 @@ responses_to_binary <- function(responses)
 
   # Initialize binary matrix
   binary_matrix <- matrix(0, nrow = n_cases, ncol = length(vocabulary))
+
+  # Name columns by word
   colnames(binary_matrix) <- vocabulary
+
+  # Name rows by participant
   row.names(binary_matrix) <- row.names(responses)
 
-  # Mark each participant's given responses. Optimization (microbenchmark,
-  # real 516x34 open.clean data): the original's per-row loop replaced with
-  # one vectorized match() + matrix-index assignment -- ~60x faster (~137ms
-  # -> ~2.2ms, median, n=100). Verified identical() output across real
-  # bundled data plus empty-vector/NA/single-row/0-row/0-column edge cases.
+  # Mark each participant's given responses with one vectorized match
   matched <- match(mat, colnames(binary_matrix))
+
+  # Get participant of each response
   row_indices <- rep(seq_len(n_cases), times = ncol(mat))
+
+  # Get non-missing responses
   valid <- !is.na(matched)
+
+  # Mark given responses
   binary_matrix[cbind(row_indices[valid], matched[valid])] <- 1
 
+  # Return binary matrix
   return(binary_matrix)
 
 }
 
 #' @noRd
+# Responses to binary errors ----
 # Up-front validation for `responses_to_binary()`
-# Updated 08.09.2026
-responses_to_binary_errors <- function(responses)
+# Updated 14.10.2026
+responses_to_binary_errors <- function(
+    responses # matrix or data frame of responses
+)
 {
+
+  # Check for valid input type
   object_error(responses, c("matrix", "data.frame", "vector"), "responses_to_binary")
+
 }

@@ -150,3 +150,63 @@ test_that("auto_spellcheck() resolves correctly with real parallel workers (core
   expect_equal(result$manual, numeric(0))
 
 })
+
+test_that("auto_spellcheck() does not crash when no multi-word response fully auto-resolves, keepStrings = FALSE (issues #21/#24)", {
+
+  # Real bug fixed: `multi_word` was only rebuilt from `orig` when at least
+  # one multi-word response fully resolved. Otherwise it stayed the raw
+  # list(response, correct) results of multiple_words(), and the
+  # response_splitter()/dictionary_contains() step after it failed with
+  # "'length = 2' in coercion to 'logical(1)'" -- the wizard then reported
+  # a second, unrelated-looking "$ operator is invalid for atomic vectors".
+  # Names must still line up with the response indices. Uses the "general"
+  # dictionary because the multi-word stage only runs for responses with at
+  # least `get_multi_min()` words, which is 2 there (3 for "animals").
+  general_dict <- SemNetDictionaries::load.dictionaries("general")
+
+  for(check in list(
+    list("1" = "zzznotareal qqzzvvxx"),
+    list("1" = "zzznotareal qqzzvvxx", "2" = "zzznotareal"),
+    list("1" = "zzznotareal qqzzvvxx", "2" = "zzznotareal qqzzvvxx")
+  )){
+
+    result <- suppressMessages(auto_spellcheck(
+      check = check, full_dictionary = general_dict, dictionary = "general",
+      spelling = "US", keep_strings = FALSE, type = "fluency"
+    ))
+
+    expect_equal(sort(result$manual), seq_along(check))
+    expect_length(result$auto, 0)
+    expect_equal(unname(unlist(result$to)), unname(unlist(check)))
+
+  }
+
+  # A mix: one multi-word response resolves, one doesn't
+  mixed <- suppressMessages(auto_spellcheck(
+    check = list("1" = "zzznotareal qqzzvvxx", "2" = "night table", "3" = "dog"),
+    full_dictionary = general_dict, dictionary = "general",
+    spelling = "US", keep_strings = FALSE, type = "fluency"
+  ))
+
+  expect_equal(mixed$manual, 1)
+  expect_equal(sort(mixed$auto), c(2, 3))
+
+})
+
+test_that("auto_spellcheck() free: finishes when the stop-word stage removes every unresolved response (free-association fix)", {
+
+  # Real bug fixed (found driving the free-association wizard): responses made
+  # only of stop words ("i am") are dropped as the first free-only step. With
+  # nothing else unresolved the pipeline went on with an EMPTY candidate list
+  # and ended in parallel_process()'s "input `iterations` has a minimum value
+  # of 0"
+  result <- suppressMessages(auto_spellcheck(
+    check = list("i am", "dog", "you are"), full_dictionary = dict, dictionary = "animals",
+    spelling = "US", keep_strings = FALSE, type = "free", keep_length = 2
+  ))
+
+  expect_equal(result$manual, numeric(0))
+  expect_equal(result$auto, 1:3)
+  expect_equal(unname(unlist(result$to)), c(NA, "dog", NA))
+
+})

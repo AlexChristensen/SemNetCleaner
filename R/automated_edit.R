@@ -1,40 +1,52 @@
 #' @noRd
+# Errors for the review app ----
 # Up-front validation for `automated_edit()`.
-# Updated 12.09.2026
-automated_edit_errors <- function(automated)
+# Updated 14.10.2026
+automated_edit_errors <- function(
+    automated # table of automated corrections
+)
 {
 
+  # Check input type
   object_error(automated, c("matrix", "data.frame"), "automated_edit")
 
+  # Check for the original responses column
   if(!"from" %in% colnames(automated)){
+
+    # Send error
     stop("In `automated_edit()`: `automated` must have a \"from\" column.", call. = FALSE)
+
   }
 
+  # Check for correction columns
   if(!any(grepl("^to_", colnames(automated)))){
+
+    # Send error
     stop("In `automated_edit()`: `automated` must have at least one \"to_#\" column.", call. = FALSE)
+
   }
 
+  # Check for responses to review
   if(nrow(automated) == 0){
+
+    # Send error
     stop("In `automated_edit()`: `automated` has zero rows to review.", call. = FALSE)
+
   }
 
 }
 
 #' @noRd
-# Keyboard-editing JS glue for the review table (ENTER-to-edit, Tab/arrow-
-# key navigation blurring the active cell). Ported from `app.R`'s own `js`
-# vector. Real bug fixed: the original referenced `js` (via `JS(js)`
-# inside `render_dt()`) *before* `js` was itself defined later in the same
-# file -- it only ever worked because `renderDT()`'s callback closure
-# doesn't force its arguments until the app actually runs, by which point
-# top-level `source()`-ing of the whole script had already reached the
-# later `js <- c(...)` assignment. A function is defined and called at the
-# point of use instead, so this can't silently depend on ordering again.
-# Updated 12.09.2026
+# JavaScript for the review app ----
+# JavaScript for the review table: ENTER starts editing a cell and Tab or the arrow keys
+# leave it. It is a function (not an object defined later in the file) so that it does
+# not depend on the order of the file
+# Updated 14.10.2026
 automated_edit_js <- function()
 {
 
-  DT::JS(
+  # Create JavaScript for keyboard editing
+  return(DT::JS(
     "table.on('key', function(e, datatable, key, cell, originalEvent){",
     "  var targetName = originalEvent.target.localName;",
     "  if(key == 13 && targetName == 'body'){",
@@ -46,7 +58,7 @@ automated_edit_js <- function()
     "    $(e.target).trigger('blur');",
     "  }",
     "});"
-  )
+  ))
 
 }
 
@@ -55,7 +67,7 @@ automated_edit_js <- function()
 #' @description The UI half of the review app used to hand-correct
 #' automated spell-check changes mid-\code{\link{textcleaner}} pipeline
 #' (see \code{automated_edit()}). Exposed as a reusable, namespaceable
-#' building block (Phase 11) so a larger app (\code{textcleaner_shiny()})
+#' building block so a larger app (\code{textcleaner_shiny()})
 #' can embed it as one step of a bigger wizard instead of only launching it
 #' standalone.
 #'
@@ -70,50 +82,59 @@ automated_edit_js <- function()
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
-# The review app's UI. Same visual structure as the original `app.R`'s
-# `ui`/`dt_output()`, minus two dead, never-finished blocks: a top/bottom
-# "Add Column" button pair (`correct_changes()` already pre-computes every
-# `to_#` column the review table will ever need, so dynamic column-adding
-# was never actually necessary) and a commented-out mouse-hover tooltip
-# prototype. `id = NULL` namespacing added (Phase 11): every `inputId`/
-# `outputId` wrapped in `ns()` (`shiny::NS(id)`), which is the identity
-# function when `id` is `NULL` -- zero behavior change for the standalone
-# launcher or Phase 9's own tests.
-# Updated 12.09.2026
-automated_edit_ui <- function(id = NULL)
+#' @keywords internal
+# User interface of the review app ----
+# The review app's UI. Every `inputId` and `outputId` goes through `ns()` (`shiny::NS(id)`,
+# which does nothing when `id` is `NULL`), so the UI can be embedded as a module
+# Updated 14.10.2026
+automated_edit_ui <- function(
+    id = NULL # namespace of the module
+)
 {
 
+  # Create namespace function
   ns <- shiny::NS(id)
 
-  shiny::fluidPage(
+  # Create page
+  return(shiny::fluidPage(
 
+    # Set font for highlighted text
     shiny::tags$style('#mydiv {font-family:"Lucida Console";}'),
 
+    # Set title
     title = "Edit Data",
 
+    # Add spacing
     shiny::br(),
+    # Add top Done button
     shiny::fluidRow(shiny::column(
       12, shiny::actionButton(inputId = ns("done"), "Done"), align = "right"
     )),
 
     shiny::fluidRow(shiny::column(
       12,
+      # Add heading
       shiny::HTML("<h1><span id = 'mydiv'>textcleaner</span>'s Auto-correct Check</h1>"),
+      # Add instructions
       shiny::HTML("<h4>Press <span id = 'mydiv'>ENTER</span> or double-click to edit responses.
         </br>Arrow keys to move between cells."),
+      # Add note about extra cells
       shiny::HTML("<h5><em>Additional cells are provided to separate multiple responses
         (e.g., \"dog cat bird\" to \"dog\" \"cat\" \"bird\")</em></h5>"),
+      # Add divider
       shiny::hr(),
+      # Add table
       DT::DTOutput(ns("x")), align = "center"
     )),
 
+    # Add bottom Done button
     shiny::fluidRow(shiny::column(
       12, shiny::actionButton(inputId = ns("done2"), "Done"), align = "right"
     )),
+    # Add spacing
     shiny::br(), shiny::br()
 
-  )
+  ))
 
 }
 
@@ -122,7 +143,7 @@ automated_edit_ui <- function(id = NULL)
 #' @description The server half of the review app used to hand-correct
 #' automated spell-check changes mid-\code{\link{textcleaner}} pipeline
 #' (see \code{automated_edit()}). Exposed as a reusable, namespaceable
-#' building block (Phase 11) so a larger app (\code{textcleaner_shiny()})
+#' building block so a larger app (\code{textcleaner_shiny()})
 #' can embed it as one module of a bigger wizard instead of only launching
 #' it standalone.
 #'
@@ -151,33 +172,36 @@ automated_edit_ui <- function(id = NULL)
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
-# Server factory: `automated` is closed over directly by the returned
-# `function(input, output, session)` -- the app's only real input, no
-# `tempdir()`/CSV round-trip at all (real bug fixed, see `automated_edit()`
-# below for the full explanation). `on_finish` defaults to `shiny::stopApp`
-# for real interactive use, but is the injection point `shiny::testServer()`
-# tests use to capture the produced matrix directly. `id = NULL` namespacing
-# added (Phase 11): when `id` is supplied, the whole body runs inside
-# `shiny::moduleServer(id, ...)`, so two embedded instances (e.g. two
-# concurrent app sessions) never cross-talk over shared input/output IDs.
-# `shiny::moduleServer()` itself already namespaces `output$x` writes and
-# `input$x_cell_edit`/`input$done`/`input$done2` reads correctly with no
-# further `ns()` calls needed inside the body -- only the UI's own
-# `inputId`/`outputId` strings need explicit `ns()` wrapping.
-# Updated 12.09.2026
-automated_edit_server <- function(automated, on_finish = shiny::stopApp, id = NULL)
+#' @keywords internal
+# Server of the review app ----
+# Server factory: `automated` is closed over directly (there is no file round trip) and
+# `on_finish` defaults to `shiny::stopApp` (tests use it to capture the produced matrix).
+# With an `id`, the body runs inside `shiny::moduleServer()`, so embedded instances never
+# share input or output IDs
+# Updated 14.10.2026
+automated_edit_server <- function(
+    automated, # table of automated corrections
+    on_finish = shiny::stopApp, # function called with the edited table
+    id = NULL # namespace of the module
+)
 {
 
+  # Create server function
   server_fn <- function(input, output, session){
 
+    # Store the editable table
     reactive_data <- shiny::reactiveVal(as.data.frame(automated, stringsAsFactors = FALSE))
 
+    # Render editable table once: the data are read without a reactive dependency
+    # (`shiny::isolate()`), and the table is processed in the browser (`server = FALSE`),
+    # so an edit does not redraw the table and the user keeps their place; the browser
+    # table holds the edited value and the server only records it
     output$x <- DT::renderDT(
       {
-        reactive_data()
+        # Return the starting table
+        shiny::isolate(reactive_data())
       },
-      selection = "none", server = TRUE,
+      selection = "none", server = FALSE,
       editable = list(target = "cell", disable = list(columns = 1)),
       options = list(
         orderFixed = c(1, "asc"),
@@ -185,98 +209,88 @@ automated_edit_server <- function(automated, on_finish = shiny::stopApp, id = NU
         scrollX = TRUE, autoWidth = FALSE, searching = FALSE,
         columns.width = "1em"
       ),
+      # Add keyboard editing
       callback = automated_edit_js(),
+      # Add keyboard navigation extension
       extensions = "KeyTable"
     )
 
-    proxy <- DT::dataTableProxy("x")
-
+    # Record the edit when a cell is edited
     shiny::observeEvent(input$x_cell_edit, {
+      # Get edited cell
       info <- input$x_cell_edit
+      # Get current table
       new_data <- reactive_data()
+      # Replace edited value
       new_data[info$row, info$col] <- suppressWarnings(
         DT::coerceValue(info$value, new_data[info$row, info$col])
       )
+      # Store updated table (the table in the browser already shows the edit)
       reactive_data(new_data)
-      DT::replaceData(proxy, reactive_data(), resetPaging = FALSE)
     })
 
-    # Real bug fixed: the original bound this exact same body to BOTH
-    # `input$done` and `input$done2` via two separate, copy-pasted
-    # `observeEvent()` calls. Shiny requires one `observeEvent()` per
-    # distinct input trigger (two buttons can't share one input ID), but
-    # the body itself doesn't need to be duplicated -- one shared closure,
-    # bound twice.
+    # One shared closure for both Done buttons (each button needs its own `observeEvent()`)
     finish <- function(){
+
+      # Return edited table
       on_finish(as.matrix(reactive_data()))
+
     }
 
+    # Finish when the top Done button is pressed
     shiny::observeEvent(input$done, finish())
+
+    # Finish when the bottom Done button is pressed
     shiny::observeEvent(input$done2, finish())
 
   }
 
-  # `id = NULL`: return the plain `function(input, output, session)`, for
-  # `shiny::shinyApp()`'s own `server` argument -- this function's original
-  # (pre-Phase-11) contract, unchanged. `id` supplied: call
-  # `shiny::moduleServer()` directly instead of returning a function to call
-  # later -- matching the standard shiny module convention (`moduleServer()`
-  # mounts the module immediately, against the caller's own ambient reactive
-  # domain, rather than being deferred like a plain server function) -- so
-  # this must itself be called from inside a live server/module body, not
-  # stored and invoked later.
+  # Without `id`, return the plain `function(input, output, session)` for `shiny::shinyApp()`;
+  # with `id`, mount the module right away with `shiny::moduleServer()`, which must be called
+  # from inside a live server or module body
   if(is.null(id)){
+
+    # Return server function
     return(server_fn)
+
   }
 
-  shiny::moduleServer(id, server_fn)
+  # Mount server as a module
+  return(shiny::moduleServer(id, server_fn))
 
 }
 
 #' @noRd
-# Launches the review app for spreadsheet-style correction of automated
-# spell-check changes -- the manual-review step of the `textcleaner()`
-# wizard, driven by `correct_changes()`'s `edit_fn` parameter (which
-# defaults to this function; pass `edit_fn = edit` there for the
-# lightweight, shiny/DT-free base-R editor instead).
+# Automated edit ----
+# Launches the review app for spreadsheet-style correction of the automated spell-check
+# changes: the manual-review step of the `textcleaner()` wizard, used through
+# `correct_changes()`'s `edit_fn` (pass `edit_fn = edit` there for the lightweight base R
+# editor, which needs no `shiny` or `DT`)
 #
-# Ported from `AutomatedEdit()`. The app itself was out of scope for the
-# main rebuild (binding decision #4); this closes that out. Two real bugs
-# confirmed and fixed:
-#
-# Bug (path join): the original's `app.R` read its input via
-# `read.data(file = paste(tempdir(), "automated.csv", sep = "\\"))` inside
-# a `reactive({...})` -- a hardcoded Windows-style path separator, broken
-# on Linux/Mac (a literal backslash has no path-separator meaning on
-# Unix). Rather than patch the join, the whole `tempdir()`/CSV round-trip
-# is removed: `automated` is now passed in as a real R argument and closed
-# over directly by `automated_edit_server()`, which also removes the
-# concurrent-session collision risk of two callers racing on the same
-# fixed filename, and makes the server logic unit-testable via
-# `shiny::testServer()` with no file setup at all.
-#
-# Bug (global leak): the original's `onStop(function(x){ changes <<- ... })`
-# wrote to a variable literally named `changes` in the caller's global
-# environment on every session close (Done button OR the user just
-# closing the window) -- entirely redundant with, and riskier than, the
-# `stopApp()` return value both Done handlers already produce. Dropped
-# entirely; `stopApp()`'s return value (via the injectable `on_finish`) is
-# the only path data leaves this app by.
-#
-# Also fixed: `DT` was `library()`-attached unconditionally despite being
-# a `Suggests`-only dependency (confirmed nothing in `DESCRIPTION`
-# guarantees it's installed) -- now `requireNamespace()`-guarded exactly
-# like `shiny`, with every call fully `DT::`-qualified.
-# Updated 12.09.2026
-automated_edit <- function(automated, ...)
+# `automated` is passed as an argument and closed over by `automated_edit_server()`, so there
+# is no temporary file and nothing is left in the global environment; the table leaves the
+# app only as the value of `shiny::stopApp()`. `shiny` and `DT` are `Suggests` and checked
+# with `requireNamespace()`
+# Updated 14.10.2026
+automated_edit <- function(
+    automated, # table of automated corrections
+    ... # arguments passed to shiny::runApp
+)
 {
 
+  # Check for errors
   automated_edit_errors(automated)
 
+  # Set required packages
   required_packages <- c("shiny", "DT")
+
+  # Find missing packages
   missing_packages <- required_packages[!vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)]
 
+  # Check for missing packages
   if(length(missing_packages) > 0){
+
+    # Send error
     stop(
       paste0(
         "In `automated_edit()`: the following packages are required but aren't installed: ",
@@ -285,8 +299,10 @@ automated_edit <- function(automated, ...)
       ),
       call. = FALSE
     )
+
   }
 
+  # Run the review app
   shiny::runApp(
     shiny::shinyApp(ui = automated_edit_ui(), server = automated_edit_server(automated)),
     ...

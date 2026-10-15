@@ -15,9 +15,9 @@ textcleaner(
   keepStrings = FALSE,
   allowPunctuations,
   allowNumbers = FALSE,
-  lowercase = TRUE,
   keepLength = NULL,
   keepCue = FALSE,
+  keepRepeats = FALSE,
   continue = NULL,
   reader = readline,
   search_fn = searcher::search_site,
@@ -31,7 +31,11 @@ textcleaner(
 For \code{type = "fluency"}, data are expected to
 follow wide formatting (IDs are the row names
 and are \strong{not} a column in the matrix
-or data frame):
+or data frame; alternatively, a column named \code{"ID"}, \code{"subject"},
+\code{"participant"}, \code{"part"} or \code{"sub"} is used as the IDs and
+removed from the responses; failing that, a single column whose values are
+all different and contain digits (e.g., \code{1, 2, 3} or \code{P01, P02}) is
+taken to be the IDs; with none of these, rows are numbered):
 
 \tabular{cccc}{
 
@@ -95,10 +99,21 @@ Defaults to \code{99}}
 \item{partBY}{Character.
 Are participants by row or column?
 Set to \code{"row"} for by row.
-Set to \code{"col"} for by column}
+Set to \code{"col"} for by column (the data are transposed first, so the
+column names become the participants' IDs, exactly as the row names are
+when participants are by row)}
 
 \item{dictionary}{Character vector.
-Can be a vector of a corpus or any text for comparison.
+The name(s) of the dictionary (or dictionaries) to spell-check against,
+e.g., \code{"animals"}, or a custom dictionary saved as
+\code{<name>.dictionary.rds} in the working directory or in \code{add.path}.
+It can also be a vector of the words themselves, such as a corpus or
+\code{result$dictionary} from an earlier run; as in
+\code{SemNetDictionaries::load.dictionaries()}, a vector of MORE than 10
+elements is taken to be the words, and 10 or fewer are taken to be names.
+For \code{type = "free"}, the spell-check is always against the
+\code{cocaspell} word list; \code{dictionary} then only supplies its list of
+common misspellings
 Dictionary to be used for more efficient text cleaning.
 Defaults to \code{NULL}, which will use \code{\link[SemNetDictionaries]{general.dictionary}}
 
@@ -126,7 +141,10 @@ Set to \code{"choose"} to open an interactive directory explorer}
 \item{keepStrings}{Boolean.
 Should strings be retained or separated?
 Defaults to \code{FALSE}.
-Set to \code{TRUE} to retain strings as strings}
+Set to \code{TRUE} to retain strings as strings. For fluency data, a string
+whose words are all in the dictionary (after correction) is still split into
+them, unless the string itself is a dictionary entry ("sea slug" stays
+"sea slug"; "marmoset otter" becomes "marmoset" and "otter")}
 
 \item{allowPunctuations}{Character vector.
 Allows punctuation characters to be included in responses.
@@ -134,13 +152,11 @@ Defaults to \code{"-"}.
 Set to \code{"all"} to keep all punctuation characters}
 
 \item{allowNumbers}{Boolean.
-Defaults to \code{FALSE}.
-Set to \code{TRUE} to keep numbers in text}
-
-\item{lowercase}{Boolean.
-Should words be converted to lowercase?
-Defaults to \code{TRUE}.
-Set to \code{FALSE} to keep words as they are}
+Defaults to \code{FALSE}, which removes stand-alone numbers (e.g., list
+numbering such as \code{"1."}). Words that mix letters and digits (e.g.,
+\code{"d0g"}) are kept as written so that the spell-check can correct or
+flag them.
+Set to \code{TRUE} to keep all numbers in text}
 
 \item{keepLength}{Numeric.
 Maximum number of words allowed in a response.
@@ -154,13 +170,25 @@ Should cue words be retained in the responses?
 Defaults to \code{FALSE}.
 Set to \code{TRUE} to allow cue words to be retained}
 
+\item{keepRepeats}{Boolean.
+Should repeated responses (perseverations) within a participant be
+retained in \code{$responses$clean}? Only applies to
+\code{type = "fluency"}. Defaults to \code{FALSE}, which keeps only the
+first occurrence of each response. Set to \code{TRUE} to keep every
+occurrence (e.g., so that a later analysis, such as SNAFU, can count
+them). The binary response matrix is unaffected, and repeats are counted
+in \code{$behavioral$Perseverations} either way}
+
 \item{continue}{List.
 A result previously unfinished that still needs to be completed.
-Allows you to continue to manually spell-check their data
-after you've closed or errored out. Also accepts a previously
-\strong{completed} result (e.g., a saved return value of this same
-function, or of calling the manual spell-check stage directly) to
-skip straight to finalizing the output without repeating the spell-check.
+Allows you to continue to manually spell-check your data
+after you've exited early (\code{X}) or it stopped on an error: those are
+the cases in which \code{textcleaner()} returns an unfinished result
+instead of the final output. A finished result (one that already holds
+\code{$responses}) cannot be passed back, because there is nothing left to
+continue. The result of a manual spell-check stage that has already finished
+(as the Shiny app hands over) is accepted too, to skip straight to
+finalizing the output.
 Defaults to \code{NULL}}
 
 \item{reader}{Function.
@@ -177,7 +205,9 @@ The function used to open a browser search for the "GOOGLE WORD"/
 \item{cores}{Numeric.
 Number of computer cores to use in parallelized computations (the
 "ad hoc" moniker re-check after manual spell-check). Defaults to \code{1}
-(sequential)}
+(sequential). With more than one core the workers load the installed
+package, so \pkg{SemNetCleaner} must be installed (not loaded with
+\code{devtools::load_all()})}
 
 \item{edit_fn}{Function.
 The spreadsheet-editor function used to review automated spell-check
@@ -188,80 +218,99 @@ dependencies. Exposed so this step can be driven programmatically instead
 of opening a real interactive editor}
 }
 \value{
-This function returns a list containing the following objects:
+A list of class \code{"textcleaner"}. For \code{type = "fluency"}:
 
-\item{binary}{A matrix of responses where each row represents a participant
-and each column represents a unique response. A response that a participant has provided is a '\code{1}'
-and a response that a participant has not provided is a '\code{0}'}
-
-\item{responses}{A list containing two objects:
+\item{responses}{A list of three matrices:
 
 \itemize{
 
-\item \code{clean} --- A response matrix that has been spell-checked
-and de-pluralized with duplicates removed.
-This can be used as a final dataset for analyses (e.g., fluency of responses)
+\item \code{original} --- The responses as given, after basic preparation:
+missing values (\code{miss}) and blank cells converted to \code{NA};
+punctuation and stand-alone numbers removed (see \code{allowPunctuations}
+and \code{allowNumbers}); accented letters converted to plain ones
+(e.g., an accented "e" to a plain "e"); surrounding and repeated white space removed;
+and letters lowercased
 
-\item \code{original} --- The original response matrix that has had
-white spaces before and after words response. Also converts all
-upper-case letters to lower case
+\item \code{clean} --- The spell-checked, de-pluralized responses with
+repeats removed (unless \code{keepRepeats = TRUE}); one row per
+participant, labeled by ID. This can be used as a final dataset for
+analyses (e.g., fluency of responses)
 
-}
-
-}
-
-\item{spellcheck}{A list containing three objects:
-
-\itemize{
-
-\item \code{full} --- All responses regardless of spell-checking changes
-
-\item \code{auto} --- Only the incorrect responses that were changed
-during spell-check
+\item \code{binary} --- A matrix where each row is a participant and
+each column a unique response: \code{1} if the participant gave the
+response and \code{0} if not
 
 }
 
 }
 
-\item{removed}{A list containing two objects:
+\item{behavioral}{A data frame, one row per participant, with the number of
+\code{Perseverations} (repeated responses), \code{Intrusions} (responses
+marked bad), and \code{Appropriate} (responses kept)}
 
-\itemize{
+\item{spellcheck}{A list of three matrices: \code{correspondence} --- every
+unique response (\code{from}) and what it became (\code{to_1},
+\code{to_2}, ...); \code{automated} --- the rows changed by the
+automated spell-check; \code{manual} --- the rows that went through the
+manual wizard}
 
-\item \code{rows} --- Identifies removed participants by their row
-(or column) location in the original data file
+\item{moniker}{The \code{manual} rows of \code{spellcheck}: the corrections
+made by hand. Consider submitting them to \code{SemNetDictionaries}}
 
-\item \code{ids} --- Identifies removed participants by their ID
-(see argument \code{data})
+\item{dictionary, added_words}{Only present if words were added to the
+dictionary and "In my results" was chosen when asked where to save them
+(or a file could not be written). \code{dictionary} is the whole
+dictionary, the one used plus the added words, so it can be passed back
+as \code{dictionary = result$dictionary}. \code{added_words} is only
+the words added during the session}
 
-}
-
-}
-
-\item{partChanges}{A list where each participant is a list index with each
-response that was been changed. Participants are identified by their ID (see argument \code{data}).
-This can be used to replicate the cleaning process and to keep track of changes more generally.
-Participants with \code{NA} did not have any changes from their original data
-and participants with missing data are removed (see \code{removed$ids})}
+For \code{type = "free"}, \code{data} holds the \code{original} and
+\code{clean} long-format data, \code{responses$clean} is a response-by-cue
+frequency matrix, and \code{behavioral}, \code{spellcheck} and the
+dictionary objects are as above. If the manual spell-check is exited
+early, the object instead holds the saved state and can be passed back
+with \code{continue = }
 }
 \description{
 An automated cleaning function for spell-checking, de-pluralizing,
 removing duplicates, and binarizing text data
 }
+\details{
+Responses are cleaned before they are spell-checked: they are
+lowercased, accented and typographic characters are transliterated to
+ASCII (\code{"caf\u00e9"} becomes \code{"cafe"}), and characters with no
+ASCII equivalent (e.g., Chinese or Cyrillic text) are removed, so a response
+made only of such characters is treated as missing. The dictionaries
+supplied by \pkg{SemNetDictionaries} are English.
+}
 \examples{
-# Toy example
-raw <- open.animals[c(1:10),-c(1:3)]
+# Toy example (every response is a known animal, so there is no
+# manual spell-check; \code{edit_fn} skips the review app)
+toy <- data.frame(
+  Response_1 = c("dog", "cat", "bird"),
+  Response_2 = c("cat", "fish", "dog"),
+  Response_3 = c("fish", "bird", "cow")
+)
+
+clean <- textcleaner(
+  toy, partBY = "row", dictionary = "animals",
+  spelling = "US", edit_fn = function(x) x
+)
+
+# Cleaned responses
+clean$responses$clean
 
 if(interactive())
 {
-    #Full test
-    clean <- textcleaner(open.animals[,-c(1,2)], partBY = "row", dictionary = "animals")
+  # Full example with the manual spell-check
+  clean <- textcleaner(open.animals[, -c(1, 2)], partBY = "row", dictionary = "animals")
 }
 
 }
 \references{
-Christensen, A. P., & Kenett, Y. N. (in press).
+Christensen, A. P., & Kenett, Y. N. (2021).
 Semantic network analysis (SemNA): A tutorial on preprocessing, estimating, and analyzing semantic networks.
-\emph{Psychological Methods}.
+\emph{Psychological Methods}. \doi{10.1037/met0000463}
 
 Hornik, K., & Murdoch, D. (2010).
 Watch Your Spelling!.

@@ -22,7 +22,7 @@ Reconstructs the automated spell-check corrections matrix
 matrix-ness and the correspondence-matrix row name for a single-row
 selection (see this file's own header comment for the real bug this
 fixes), and padding with enough \code{"to_#"} columns for the widest
-multi-word \code{"from"} entry. Exposed as its own function (Phase 11)
+multi-word \code{"from"} entry. Exposed as its own function
 so \code{\link{textcleaner_shiny}}'s corrections-review module can render
 the exact same shape \code{correct_changes()} itself will later expect
 back from \code{edit_fn} -- computing this independently (e.g. from the
@@ -38,3 +38,4 @@ not reachable from there by its bare name.
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>
 }
+\keyword{internal}

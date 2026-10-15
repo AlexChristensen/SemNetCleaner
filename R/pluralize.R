@@ -53,23 +53,17 @@
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
 #' @export
-# Pluralize
-# Name unchanged (already a plain, unabbreviated verb). Added up-front
-# validation (the original had none). Irregular-word table extracted to
-# the shared `irregular_plurals` in helpers.R -- see that table's own
-# comment for why (an exact 9-pair overlap confirmed against
-# singularize()'s independent table).
-# Optimization: every `word %in% checker` (coca.dictionary) replaced with
-# `coca_dictionary_contains()` (helpers.R) -- a memoized hash lookup in
-# place of rebuilding match()'s internal hash table on every single call
-# against the same 80K-word vector (~450us every time, confirmed via
-# microbenchmark) -- ~240x faster per lookup after the one-time (~130ms)
-# hash build, which happens lazily on first use and is shared across every
-# call in the session (and with singularize()'s identical dictionary).
-# Updated 09.09.2026
-pluralize <- function(word)
+# Pluralize ----
+# Converts a word to its plural: irregular words come from the shared
+# `irregular_plurals` table, the rest from suffix rules; the result must be a
+# recognized word, otherwise the original word is returned
+# Updated 14.10.2026
+pluralize <- function(
+    word # word to pluralize
+)
 {
 
+  # Check for errors
   pluralize_errors(word)
 
   # Original word
@@ -77,16 +71,16 @@ pluralize <- function(word)
 
   # Irregular cases
   matched <- unname(irregular_plurals[word])
+
+  # Check for match
   chn <- !is.na(matched)
 
+  # Check for irregular match
   if(chn){
-    # Trust the curated irregular table directly -- skip the dictionary
-    # gate below entirely. A hand-curated entry may legitimately target a
-    # word not itself present in a general-purpose dictionary (e.g. some
-    # of the animal names in the table), and re-validating it there would
-    # silently discard a correct match -- exactly the failure mode this
-    # fixes (see irregular_plurals's own comment in helpers.R).
+
+    # Trust the curated irregular table; its entries may not be in a general-purpose dictionary
     return(matched)
+
   }
 
   # Identify last two letters
@@ -94,126 +88,181 @@ pluralize <- function(word)
 
   # chn is always FALSE past the early return above -- no longer wrapped
   # in `if(!chn)`, which was otherwise always TRUE here
-  if(any(c("ss", "sh", "ch") == last_letters))
-  {word <- paste(word, "es", sep = "", collapse = "")
-  }else if(any(c("fe") == last_letters))
-  {
+  if(any(c("ss", "sh", "ch") == last_letters)){
+
+    word <- paste(word, "es", sep = "", collapse = "") # Ends in ss, sh, or ch
+
+  }else if(any(c("fe") == last_letters)){ # Ends in 'fe'
+
     # Remove 'fe'
     word <- substr(word, 1, nchar(word) - 2)
+
     # Add 'ves'
     word <- paste(word, "ves", sep = "", collapse = "")
-  }else if(any(c("us") == last_letters))
-  {
+
+  }else if(any(c("us") == last_letters)){ # Ends in 'us'
+
     # Remove 'us'
     word <- substr(word, 1, nchar(word) - 2)
+
     # Add 'i'
     word <- paste(word, "i", sep = "", collapse = "")
-  }else if(any(c("is") == last_letters))
-  {
+
+  }else if(any(c("is") == last_letters)){ # Ends in 'is'
+
     # Remove 'is'
     word <- substr(word, 1, nchar(word) - 2)
+
     # Add 'es'
     word <- paste(word, "es", sep = "", collapse = "")
-  }else if(any(c("on") == last_letters))
-  {
+
+  }else if(any(c("on") == last_letters)){ # Ends in 'on'
+
     # Remove 'on'
     word <- substr(word, 1, nchar(word) - 2)
+
     # Add 'a'
     word <- paste(word, "a", sep = "", collapse = "")
-  }else{
+
+  }else{ # Other endings
+
     # Identify last letter
     last_letter <- substr(word, nchar(word), nchar(word))
 
     # Change to plural based on last letter
-    if(any(c("s", "x", "z") == last_letter))
-    {
+    if(any(c("s", "x", "z") == last_letter)){
+
+      # Add 'es'
       word <- paste(word, "es", sep = "", collapse = "")
 
-      if("s" == last_letter)
-      {
-        if(!coca_dictionary_contains(word))
-        {
+      # Check for 's' ending
+      if("s" == last_letter){
+
+        # Check whether result is a word
+        if(!coca_dictionary_contains(word)){
+
           # Check for 'ses' ending
           word <- paste(orig_word, "ses", sep = "", collapse = "")
+
         }
-      }else if("z" == last_letter)
-      {
-        if(!coca_dictionary_contains(word))
-        {
+
+      }else if("z" == last_letter){ # Ends in 'z'
+
+        # Check whether result is a word
+        if(!coca_dictionary_contains(word)){
+
           # Check for 'zes' ending
           word <- paste(orig_word, "zes", sep = "", collapse = "")
+
         }
+
       }
 
-    }else if(any(c("f") == last_letter))
-    {
+    }else if(any(c("f") == last_letter)){ # Ends in 'f'
+
       # Remove 'f'
       word <- substr(word, 1, nchar(word) - 1)
+
       # Add 'ves'
       word <- paste(word, "ves", sep = "", collapse = "")
 
-      if(!coca_dictionary_contains(word))
-      {
+      # Check whether result is a word
+      if(!coca_dictionary_contains(word)){
+
         # Check for 's' ending
         word <- paste(orig_word, "s", sep = "", collapse = "")
+
       }
 
-    }else if(any(c("y") == last_letter))
-    {
-      if(any(c("a", "e", "i", "o", "u") == substr(word, nchar(word) - 1, nchar(word) - 1)))
-      {word <- paste(word, "s", sep = "", collapse = "")
-      }else{
+    }else if(any(c("y") == last_letter)){ # Ends in 'y'
+
+      # Check for vowel before 'y'
+      if(any(c("a", "e", "i", "o", "u") == substr(word, nchar(word) - 1, nchar(word) - 1))){
+
+        word <- paste(word, "s", sep = "", collapse = "") # Add s
+
+      }else{ # Consonant before 'y'
+
         # Remove 'y'
         word <- substr(word, 1, nchar(word) - 1)
+
         # Add 'ies'
         word <- paste(word, "ies", sep = "", collapse = "")
+
       }
-    }else if(any(c("o") == last_letter))
-    {
+
+    }else if(any(c("o") == last_letter)){ # Ends in 'o'
+
+      # Add 'es'
       word <- paste(word, "es", sep = "", collapse = "")
 
-      if(!coca_dictionary_contains(word))
-      {
+      # Check whether result is a word
+      if(!coca_dictionary_contains(word)){
+
         # Check for 's' ending
         word <- paste(orig_word, "s", sep = "", collapse = "")
+
       }
 
-    }else{word <- paste(orig_word, "s", sep = "", collapse = "")}
+    }else{
+
+      word <- paste(orig_word, "s", sep = "", collapse = "") # Ends in other letters
+
+    }
+
   }
 
-  # Final gate. Broadened (per direct request) to use word_is_recognized()
-  # -- coca.dictionary first, then the real hunspell spell-checker when
-  # installed -- instead of a bare coca-only lookup, and to try BOTH "+s"
-  # and "+es" candidates before giving up. This is what makes words like
-  # "virus"/"campus"/"bonus"/"census"/"genius"/"chorus"/"circus"/"status"
-  # (whose naive "+s" fail-safe form isn't a real word, but whose "+es"
-  # form is) resolve correctly WITHOUT needing an individual irregular-
-  # table entry for each one -- verified empirically, not guessed, against
-  # SemNetDictionaries::coca.dictionary and hunspell::hunspell_check().
-  if(!word_is_recognized(word))
-  {
+  # Final gate: a word recognized by the COCA dictionary or hunspell is returned; otherwise
+  # the "+s" and "+es" forms are tried ("virus" to "viruses") before the original word is returned
+  if(!word_is_recognized(word)){
+
+    # Try adding 's'
     word_with_s <- paste(orig_word, "s", sep = "", collapse = "")
 
-    if(word_is_recognized(word_with_s))
-    {return(word_with_s)}
+    # Check for recognized word
+    if(word_is_recognized(word_with_s)){
 
+      return(word_with_s) # Return form with s
+
+    }
+
+    # Try adding 'es'
     word_with_es <- paste(orig_word, "es", sep = "", collapse = "")
 
-    if(word_is_recognized(word_with_es))
-    {return(word_with_es)}
+    # Check for recognized word
+    if(word_is_recognized(word_with_es)){
 
+      return(word_with_es) # Return form with es
+
+    }
+
+    # Return original word
     return(orig_word)
 
-  }else{return(word)}
+  }else{
+
+    return(word) # Recognized word
+
+  }
 
 }
 
 #' @noRd
-# Up-front validation for `pluralize()` -- the original had none
-# Updated 08.09.2026
-pluralize_errors <- function(word)
+# Pluralize errors ----
+# Up-front validation for `pluralize()`
+# Updated 14.10.2026
+pluralize_errors <- function(
+    word # word to pluralize
+)
 {
+
+  # Check word type
   typeof_error(word, "character", "pluralize")
+
+  # Check word length
   length_error(word, 1, "pluralize")
+
+  # Check word for missing
   na_error(word, "pluralize")
+
 }

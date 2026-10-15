@@ -3,7 +3,10 @@
 ^\.github$
 ^\.Rproj\.user$
 ^Readme\.md$
-.gitignore
-LICENSE
+^\.gitignore$
+^LICENSE$
 ^REFACTOR_PLAN\.md$
 ^SHINY_PLAN\.md$
+^cran-comments\.md$
+^dev$
+^tests$

@@ -44,9 +44,17 @@
 #' }
 #'
 #' @examples
-#' # Convert data to SNAFU
+#' # Convert data to SNAFU (\code{reader} supplies the file name)
+#' convert2snafu(
+#'   open.clean[1:5, ], category = "animals", path = tempdir(),
+#'   reader = function(prompt = "") "snafu_example"
+#' )
+#'
 #' if(interactive())
-#' {convert2snafu(open.clean, category = "animals", path = tempdir())}
+#' {
+#'   # Asks for the file name
+#'   convert2snafu(open.clean, category = "animals", path = tempdir())
+#' }
 #'
 #' @references
 #' # For SNAFU, see:
@@ -60,69 +68,105 @@
 #' @importFrom utils write.table
 #'
 #' @export
-# Convert data to SNAFU
-# Real bug fixed: `if(length(data.list) == 1){}else{...}` -- the untouched
-# original's single-dataset branch is completely EMPTY, so the function's
-# own documented single-argument use (`convert2snafu(open.clean, category =
-# "animals")`) silently wrote out an empty, header-only CSV instead of the
-# real data. Confirmed directly that the `else` branch's own group-name
-# derivation (`as.character(substitute(list(...)))`, minus the `"list"`
-# element -- already audited safe in Phase 6, always deparses with `"list"`
-# first for any number of arguments per R's own semantics) works correctly
-# for a single dataset too, so the special case was never necessary; merged
-# into one unconditional branch.
-# Binding decision #5: drops the `easycsv` dependency (`Suggests`-only but
-# called unconditionally -- an undeclared-dependency bug in its own right)
-# in favor of an explicit `path =` argument, and the interactive filename
-# prompt is rebuilt on `read_input()`/a `reader = readline` parameter per
-# binding decision #3.
-# Bug #8 audit: both `for(i in 1:length(data.list))` and `for(j in
-# 1:nrow(target.data))` reverse-range to `1:0` on a 0-dataset/0-row input --
-# fixed via `seq_along()`/`seq_len()`, same class as bugs #15-17.
-# Updated 12.09.2026
-convert2snafu <- function(..., category, path, reader = readline)
+# Convert to SNAFU format ----
+# Converts one or more response matrices to the SNAFU format and writes a csv file to
+# `path`; each dataset is a group and the file name is asked for
+# Updated 14.10.2026
+convert2snafu <- function(
+    ..., # datasets to convert
+    category, # name of the category
+    path, # directory to save file
+    reader = readline # function used to read file name
+)
 {
 
+  # Check for missing arguments
+  if(missing(category) || missing(path)){
+
+    # Send error
+    stop(
+      "In `convert2snafu()`: `category` (e.g., \"animals\") and `path` (the folder to save the file in) are required.",
+      call. = FALSE
+    )
+
+  }
+
+  # Get datasets
   data_list <- list(...)
 
+  # Initialize SNAFU matrix
   snafu_mat <- matrix(0, nrow = 0, ncol = 7)
+
+  # Name columns
   colnames(snafu_mat) <- c("id", "listnum", "category", "item", "RT", "RTstart", "group")
 
+  # Check for datasets
   if(length(data_list) != 0){
 
+    # Get dataset names
     name <- as.character(substitute(list(...)))
+
+    # Remove list name
     name <- name[-which(name == "list")]
 
+    # Loop over datasets
     for(i in seq_along(data_list)){
 
+      # Get dataset as matrix
       target_data <- as.matrix(data_list[[i]])
 
+      # Check for row names
       if(is.null(row.names(target_data))){
+
+        # Create IDs from row numbers
         id <- paste("A", seq_len(nrow(target_data)), sep = "")
+
       }else{
+
+        # Create IDs from row names
         id <- paste("A", formatC(as.numeric(row.names(target_data)), digits = 2, format = "d", flag = 0), sep = "")
+
       }
 
+      # Loop over participants
       for(j in seq_len(nrow(target_data))){
 
+        # Get participant responses
         target_part <- target_data[j, ]
 
+        # Remove missing responses
         item <- na.omit(target_part)
 
+        # Set participant ID
         target_id <- rep(id[j], length(item))
+
+        # Set list number
         listnum <- rep(0, length(item))
+
+        # Set category
         categorey <- rep(category, length(item))
+
+        # Set response time
         RT <- rep(0, length(item))
+
+        # Set response time start
         RTstart <- rep(0, length(item))
+
+        # Set group
         group <- rep(name[i], length(item))
 
+        # Combine columns
         target_mat <- cbind(target_id, listnum,
                             categorey, item,
                             RT, RTstart, group)
 
+        # Remove row names
         row.names(target_mat) <- NULL
+
+        # Match column names
         colnames(target_mat) <- colnames(snafu_mat)
 
+        # Add participant to SNAFU matrix
         snafu_mat <- rbind(snafu_mat, target_mat)
 
       }
@@ -131,13 +175,17 @@ convert2snafu <- function(..., category, path, reader = readline)
 
   }
 
+  # Get file name
   filename <- read_input("Name of file: ", reader = reader)
 
+  # Create full path
   full_path <- file.path(path, paste(filename, "csv", sep = "."))
 
+  # Write file
   write.table(snafu_mat, file = full_path,
               quote = FALSE, sep = ",", row.names = FALSE)
 
+  # Send location of saved file
   message(paste("SNAFU formatted file was saved in: "), full_path)
 
 }

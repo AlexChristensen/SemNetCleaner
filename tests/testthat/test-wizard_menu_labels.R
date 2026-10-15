@@ -73,12 +73,12 @@ test_that("end to end: sending wizard_menu_labels()'s own displayed position for
   final <- suppressMessages(advance_wizard(initial, burst))
 
   expect_false(isTRUE(final$stop))
-  # KEEP ORIGINAL reverts the WHOLE response to its pre-auto-correct text,
-  # un-split (regardless of keep_strings, for type = "fluency" --
-  # spellcheck_dictionary.R's own `target <- result$target` always takes
-  # the whole-string replacement path here, never the per-word one, which
-  # only ever applies for type = "free")
-  expect_equal(unname(final$responses$clean["P1", ]), c("turtle catdog elephant", "cat"))
+  # KEEP ORIGINAL reverts the whole response to its pre-auto-correct text.
+  # With keep_strings = FALSE strings are SEPARATED (`?textcleaner`), so since
+  # the string is not a dictionary entry (the burst answers "no" to adding it)
+  # its original words are returned individually rather than as one fused
+  # multi-word response (U14; this used to assert the fused string)
+  expect_equal(unname(final$responses$clean["P1", ]), c("turtle", "catdog", "elephant", "cat"))
 
 })
 
@@ -105,12 +105,10 @@ test_that("end to end: sending wizard_menu_labels()'s own displayed position for
   final <- suppressMessages(advance_wizard(initial, burst))
 
   expect_false(isTRUE(final$stop))
-  # keep_strings = TRUE keeps a resolved multi-word response joined as ONE
-  # string (not split back into separate response slots) -- confirmed via
-  # spellcheck_dictionary.R's own `if(keep_strings){target <- paste(target,
-  # collapse = " ")}` -- so the real assertion is against the joined string,
-  # not individual elements
-  expect_true("turtle dog elephant" %in% unname(final$responses$clean["P1", ]))
+  # keep_strings = TRUE keeps strings as strings, except that a string whose
+  # words are all dictionary words is split unless it is itself an entry:
+  # "turtle dog elephant" is three separate responses
+  expect_true(all(c("turtle", "dog", "elephant") %in% unname(final$responses$clean["P1", ])))
   expect_false(any(grepl("catdog", unname(final$responses$clean["P1", ]))))
 
 })

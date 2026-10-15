@@ -1,0 +1,357 @@
+Changes in version 2.0.0
+
+o UPDATE: package rebuilt from the ground up: one file per function, input checks up front, the fluency and free association code paths merged, and a `testthat` suite (there were no tests before)
+
+o ADD: `bad_response`, `best_guess`, `binary_to_responses`, `qwerty_distance`, `read_data`, and `responses_to_binary` replace `bad.response`, `best.guess`, `bin2resp`, `qwerty.dist`, `read.data`, and `resp2bin`; the dotted names still work
+
+o REMOVE: `lowercase` argument of `textcleaner`; responses are always lowercased because capitalization does not change the word (a capital counted as a spelling error and `Cat` could be corrected to `gnat`). Calls that pass `lowercase` now fail with "unused argument"
+
+o ADD: `keepRepeats` argument in `textcleaner` (fluency only) keeps repeated responses in `$responses$clean` (GitHub Issue #17); `$responses$binary` and `$behavioral$Perseverations` are unchanged
+
+o ADD: `$dictionary` (the whole dictionary, reusable as `dictionary = result$dictionary`) and `$added_words` (only the words added in the session) in the `textcleaner` output when the dictionary is saved "In my results"
+
+o ADD: the manual spell-check help opens in a separate browser window when the manual spell-check starts (and again with `H`); `options(SemNetCleaner.help_window = FALSE)` keeps the help in the console
+
+o ADD: the instructions for reviewing the automated corrections (shown after the manual spell-check) open in a separate browser window too, followed by one ENTER prompt, instead of three screens of text in the console; `options(SemNetCleaner.help_window = FALSE)` keeps the console instructions
+
+o UPDATE: requires `SemNetDictionaries` (>= 0.3.0) (new category dictionaries and monikers, and a classed warning for a dictionary that cannot be found); a missing dictionary still stops with the `textcleaner` message when none loads, and gives one warning naming it when only some are missing
+
+o FIX: saving the dictionary at the end of the manual spell-check under a name that already exists kept the old file and lost the words added in that session
+
+o FIX: the review app for the automated corrections (`automated_edit`) redrew the whole table after every edit, so the user lost their place; the table is now processed in the browser and an edit no longer redraws it
+
+o UPDATE: the review of the automated corrections shows only the responses the automated spell-check changed (`$spellcheck$automated`, as documented); responses that were already correct are no longer listed, and the review is skipped when nothing changed (open.animals: 462 rows instead of 793)
+
+o ADD: `options(SemNetCleaner.pause = FALSE)` turns off the deliberate pauses in the console wizard
+
+o UPDATE: `parallel_process` (used by `textcleaner`) no longer changes the global random seed
+
+o ADD: `best_guess` uses a phonetic (Metaphone) match alongside the QWERTY keyboard distance (`"graple"` is now corrected); when the two disagree the response goes to manual review
+
+o UPDATE: `keepStrings = TRUE` (fluency) splits a string of dictionary words unless the whole string is a dictionary entry ("sea slug" stays, "marmoset otter" becomes "marmoset" and "otter", "sea slug dog" becomes "sea slug" and "dog"); with `keepStrings = FALSE` a dictionary entry inside a longer string is kept whole
+
+o UPDATE: with `keepStrings = FALSE`, a multi-word string that cannot be split automatically is asked about word by word, and strings are separated unless they are dictionary entries
+
+o UPDATE: BAD WORD with `keepStrings = TRUE` drops only the bad word and keeps the rest of the string (one `NA` is kept for the intrusion count); BAD STRING still drops the whole string
+
+o UPDATE: ID columns are only inferred when they look like IDs (numeric, or every value contains a digit); the names `Participants`, `IDs`, `Subjects`, etc. are recognized; explicit row names are used as IDs when there is no ID column (also for `partBY = "col"`)
+
+o UPDATE: task `type` is detected from the presence of `Cue` and `Response` columns rather than `ncol(data) > 3`
+
+o UPDATE: duplicated or missing participant IDs are an error naming the values and rows (they were silently renamed)
+
+o UPDATE: unusable input (`NULL`, no rows or columns, all responses missing, a failed preparation step) stops with a plain-language error instead of printing a bug report and returning `NULL`
+
+o UPDATE: `correct_changes` (through `textcleaner`) opens the Shiny/`DT` review app on every operating system (Linux used `edit`); pass `edit_fn = edit` for no extra packages. A review table with extra `to_` columns is accepted
+
+o UPDATE: separators written without spaces (`cow/pig`, `fish,bird`) separate words, digits inside words are kept for the spell-check, accented characters are transliterated (`"cafe"`), and runs of spaces are collapsed
+
+o UPDATE: words typed in the manual spell-check receive the same cleaning as every other response
+
+o UPDATE: typing `x` or pressing ENTER at "Please enter a new selection:" exits; GO BACK across responses is announced and documented
+
+o UPDATE: dependencies: `hunspell` and `phonics` are now `Imports`; `pbapply`, `parallel`, and `easycsv` are dropped; `shiny`, `DT`, `promises`, `tcltk`, and `rstudioapi` are `Suggests` only, and so are `foreign`, `readxl`, and `R.matlab`, which `read_data` needs only for `.sav`, `.xls`/`.xlsx`, and `.mat` files (it names the package to install); requires R (>= 4.0.1) and `SemNetDictionaries` (>= 0.2.1)
+
+o UPDATE: parallel processing uses `future`, `future.apply`, and `progressr`; the worker plan is always restored. Workers load the installed package, so `cores > 1` needs the package installed
+
+o REMOVE: the vignettes (and the `knitr`, `rmarkdown`, `markdown`, and `htmlTable` suggestions); the tutorial is Christensen and Kenett (2021, https://doi.org/10.1037/met0000463)
+
+o UPDATE: faster spell-checking against very large dictionaries such as `"general"` (370,000 words)
+
+o MOVE: `textcleaner_shiny` (point-and-click wizard) and the functions that support it are internal while the app is developed
+
+o FIX: `correct_data` perseverations were always 0 for a participant with no `"NA"` response (3 instead of 116 in `open.animals`); the same empty-`which()` negative index also emptied other vectors, matrix columns, and lists
+
+o FIX: a manual edit made while reviewing automated corrections was discarded for fluency data
+
+o FIX: `textcleaner` crashed with the default `partBY` ("the condition has length > 1")
+
+o FIX: `keepLength` filtered nothing for `keepLength >= 2` and everything for `keepLength <= 1`
+
+o FIX: GO BACK in the manual spell-check could discard every other recorded change; after a mistyped answer GO BACK and HELP replaced the word with `NA`; with `keepStrings = TRUE` and no suggestions GO BACK acted as BAD STRING
+
+o FIX: menus crashed on narrow consoles (`object 'def' not found`) and printed `1: SKIP` twice on consoles of 132 or more columns (GitHub Issues #20, #22, #26, #28)
+
+o FIX: data with one response column after the ID column failed (`attempt to set 'rownames' on an object with no dimensions`) (GitHub Issue #16); data with three or fewer columns was treated as free association (GitHub Issue #18)
+
+o FIX: a single column of whole word lists stops with a message explaining the one-response-per-column format (GitHub Issue #25)
+
+o FIX: `correct_data` overflowed when a response was corrected into three or more words (GitHub Issue #23)
+
+o FIX: errors in the corrections review were hidden behind a dump of the results object (GitHub Issues #27, #29)
+
+o FIX: a dictionary that cannot be found stops immediately, explaining that custom dictionaries are saved as `<name>.dictionary.rds`; `auto_spellcheck` crashed with `keepStrings = FALSE` when no multi-word response could be corrected (GitHub Issues #21, #24)
+
+o FIX: saving a dictionary with "choose the directory" falls back to the working directory when `tcltk` cannot load (GitHub Issue #24); `add.path = "choose"` is resolved once, up front
+
+o FIX: a dictionary name that is not a valid file name, or a failed save, no longer loses the manual session; names are validated and a failed save keeps the dictionary in `$dictionary`
+
+o FIX: participant IDs came back space-padded when the ID column was numeric
+
+o FIX: pressing ENTER at "TYPE MY OWN WORD" or "TYPE MY OWN STRING" crashed; menu answers with stray whitespace were rejected
+
+o FIX: the HELP screen and the walkthrough described the wrong option numbers and wording under `keepStrings = TRUE`
+
+o FIX: `allowNumbers = TRUE` and capital letters crashed the automated spell-check (`qwerty_distance` now lowercases and has digits on the keyboard); `allowPunctuations = ""` crashed
+
+o FIX: a single participant failed; `continue =` a finished result failed with `argument is of length zero` and now explains what can be continued
+
+o FIX: resuming after exiting at a single-word decision could fail with `input 'word' has length 0`
+
+o FIX: a response that repeats an unknown word ("teh cat teh dog") stopped the run; the word is now asked about once for all occurrences
+
+o FIX: "pollar bear" became "polar bear bear", "tardigrade goose" lost "goose", "sea sponge" became "seal sponge", and "english cocker spaniel" repeated "spaniel"; "sting" in "sting ray" was asked about although "sting ray" is a dictionary entry
+
+o FIX: free association: KEEP ORIGINAL and a one-word TYPE MY OWN STRING garbled the response; a response reduced to nothing (all stop words) aborted the final cleaning; the moniker lists returned capitalized proper nouns ("I do know")
+
+o FIX: `convert2snafu` with a single dataset wrote an empty file
+
+o FIX: `qwerty_distance` and `singularize` were never exported; `bad.response` was defined twice and the unreviewed copy won at load time
+
+o FIX: several `1:length()`, `1:nrow()`, and `1:ncol()` ranges ran backwards on empty or one-row input
+
+Changes in version 1.3.6
+
+o FIX: major fixes to free association preprocessing pipeline
+
+
+Changes in version 1.3.5
+
+o UPDATE: added parallel processing for large spell checks
+
+o ADD: `textcleaner` functionality for free association response tasks (*hunspell* is used to expedite processing)
+
+o FIX: `singularize` handling of words ending in "es"
+
+o REMOVE: dependency *miniUI* and *editData*
+
+
+Changes in version 1.3.4
+
+o FIX: error in getting "automated" data from `textcleaner` into Shiny GUI
+
+
+Changes in version 1.3.3
+
+o FIX: `edit` error on Macs, switched to `editData`, and added *editData* dependency
+
+
+Changes in version 1.3.2
+
+o UPDATE: faster conversion between US and UK spellings
+
+o FIX: revert of `singularize`
+
+
+Changes in version 1.3.1
+
+o UPDATE: `textcleaner` now allows for either UK or US English spelling
+
+o FIX: `correct.changes` did not like vectors (see GitHub Issue #4)
+
+o FIX: bug for BAD STRING option in `textcleaner` fixed (see GitHub Issue #5)
+
+o UPDATE: new output and message for dictionary and monikers in `textcleaner`
+
+o FIX: bug for moniker check when `dictionary = "general"` in `textcleaner` (see GitHub Issue #7)
+
+o UPDATE: internal adjustment for parsing multiple words with the general dictionary (speeds up process)
+
+o ADD: preprocessing data from SemNA tutorial (`open.preprocess`)
+
+
+Changes in version 1.3.0
+
+o ADD: function to convert cleaned data to the SNAFU library's format in Python: `convert2snafu`
+
+o UPDATE: `correct.changes` included within `textcleaner` to streamline code for single function preprocessing
+
+o UPDATE: `edit` function added within the `correct.changes` function to allow more seamless interface
+
+o UPDATE: change tracking has been added to `correct.changes` in the output (`$spellcheck$changes`)
+
+o UPDATE: `textcleaner`'s help is now more helpful
+
+o UPDATE: text styling (face and color) are now adaptive to OS, software (R and RStudio), and RStudio theme
+
+
+Changes in version 1.2.0
+
+o **MAJOR UPDATE**: overhauled `textcleaner` and `correct.changes` system to be more functionally efficient, convenient, and aesthetically intuitive
+
+o ADD: a walkthrough has been added prior to the manual spell-check in `textcleaner`
+
+o ADD: a help option has been added to `textcleaner`
+
+o UPDATE: error catching added to `textcleaner` and `correct.changes` so not all is lost (data up to error will be saved and returned)
+
+o MOVE: `equate` and `finalize` moved from SemNetCleaner to SemNeT
+
+o UPDATE: moved many miscellaneous functions to internals to clean up package presentation
+
+o UPDATE: cleaned up textcleaner code to be more streamlined and readable
+
+o REMOVE: lead.word data was removed because the `rm.lead.space` function was moved to internals
+
+
+Changes in version 1.1.5
+
+o FIX: `read.data` bug for .csv files
+
+o FIX: NA bug in `textcleaner`
+
+o ADD: `resp2bin` converts response matrix to binary response matrix
+
+o FIX: naming output in `equate` function
+
+o FIX: `pluralize` handling of words ending in 'ion'
+
+
+Changes in version 1.1.4
+
+o diacritic characters bug fux in `qwerty.dist`
+
+o temporary bug fix in `correct.changes` (see code)
+
+o removed progress bar for Macs and Linux -- will work on progress bar solution at a later time
+
+o fixed diacritic character error for Macs
+
+
+Changes in version 1.1.3
+
+o fixed fatal bug in `correct.changes`
+
+
+Changes in version 1.1.2
+
+o updates to documentation
+
+o fixed obnoxious message bug in `textcleaner` function
+
+o changed progress bar in `spell.check.dictionary` to display words done out of words in total (rather than percentage)
+
+o updated citation (PsyArXiv)
+
+o added vignettes for preprocessing and estimating semantic networks
+
+
+Changes in version 1.1.1
+
+o `equate` now handles any number of groups (`equate.multi` is defunct and merged into `equate`)
+
+o added a group variable for the dataset 'open.animals'
+
+o removed option to save appendix dictionary to package (not allowed by CRAN policies)
+
+o added a general function to read in common types of data file extensions: `read.data`
+
+o updated `textcleaner` to bypass double query for adding a dictionary
+
+o bug fixes in `textcleaner` and `spell.check.dictionary`
+
+o updated `singularize` and `pluralize` rule sets
+
+o removed `autoConverge` and `autoDestr` functions
+
+o changed `corr.chn` to `correct.changes`
+
+
+Changes in version 1.1.0
+
+o cleaned up examples and removed unnecessary datasets ('convmat', 'rmat', and 'trial')
+
+o updated `spell.check.dictionary` to automate continuous string selection when continuous response length is greater than maximum continuous string length in dictionary
+
+o changed output to have quotes around words being asked to add into dictionary to decipher whether they are a string or separate words
+
+o updated `splitstr.check` so responses are not repeated after they've been corrected. Also no longer asks to split responses that are in the dictionary (splits them automatically)
+
+o updated `word.check.wrapper` so that 10 responses are always given if the original response is not auto-corrected
+
+o added additional nested list called `auto` to spellcheck object in `textcleaner` and `corr.chn` functions, which includes only the incorrect responses changed during the spell-check
+
+o fixed save dictionary bug in `spell.check.dictionary`
+
+o added a response option called, 'CONTEXT' to the `word.check.wrapper` function to give greater context around a participant's response
+
+o added third auto-correct function using `hunspell_suggest` function to the `word.check.wrapper` function
+
+o updated functionality of code -- improved speed of several lines in `textcleaner` and `spell.check.dictionary`
+
+o fixed multi-word bug in `spell.check.dictionary`
+
+
+Changes in version 1.0.0
+
+o fixed bug in `rm.lead.space` for Linux
+
+o updated `textcleaner` to default to `general.dictionary` when no dictionary is specified
+
+o updated citation
+
+o algorithm for `best.guess` was changed to Damerau-Levenshtein distance
+
+o `corr.chn` function code was cleaned up and streamlined
+
+o 'animals.database' has been moved to the 'SemNetDictionaries' package. It was renamed as 'animals.dictionary'
+
+o 'animals.misnomer' was removed
+
+o `textcleaner` function code was cleaned up and streamlined. Integrated functionality with the 'SemNetDicationaries' package
+
+o `autoConverge` function code was cleaned up and streamlined
+
+
+Changes in version 0.9.9
+
+o animals.database: a database for animals was added
+
+o animals.misnomer: common misnomers for animals was added
+
+o textcleaner: added database functionality, which makes the cleaning process more accurate, efficient, and reproducible
+
+o several wrapper functions added to aid textcleaning from a database
+
+
+Changes in version 0.1.2
+
+o autoConverge: significantly improved interface
+
+o separated all function files into individual files
+
+o semnetcleaner (changed to textcleaner): added argument to input participants by row or column; ids now included for output; added output to show what spellcheck changed
+
+o destr: improved functionality to allow selection of separating character
+
+o randwalk: added a function to simulate random walks on the network to examine spontaenous spreading activation
+
+o bin2resp: a function to change cleaned binary response data back into character data for each participant
+
+
+Changes in version 0.1.1
+
+o cosine: added cosine similarity
+
+o semnetboot: changed name to partboot and added the cosine similarity
+
+o semnetmeas: moved from NetworkToolbox
+
+o plot.partboot: a function that generates "raindrop" plots for bootstrapped data
+
+o org.plot: an organization function for plot.partboot (not for individual use)
+
+o convert2cytoscape: added a function to convert a network matrix into a sparse matrix for Cytoscape visualization
+
+o added new examples with corresponding data files
+
+
+Changes in version 0.1.0
+
+o autoConverge: created an automated converge function to eliminate the manual converge process
+
+o autoDeStr: created an automated de-string function to eliminate most manual de-stringing
+
+o fine-tuned most functions
+
+o semnetboot: moved from package NetworkToolbox

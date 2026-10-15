@@ -151,7 +151,7 @@ test_that("obtain_id() errors on multiple ALL-UNIQUE candidate columns, consiste
   # sibling check's own established precedent: a real, informative error
   # naming the ambiguous columns, for both types.
   d_fluency <- data.frame(
-    Timestamp = c("t1", "t2", "t3"), Email = c("a@x", "b@x", "c@x"),
+    Timestamp = c("t1", "t2", "t3"), Email = c("a1@x", "b2@x", "c3@x"),
     animal1 = c("cat", "dog", "bird")
   )
   expect_error(
@@ -162,7 +162,7 @@ test_that("obtain_id() errors on multiple ALL-UNIQUE candidate columns, consiste
   expect_error(suppressMessages(obtain_id(d_fluency, type = "fluency")), "Email")
 
   d_free <- data.frame(
-    Timestamp = c("t1", "t2", "t3", "t4"), Email = c("a@x", "b@x", "c@x", "d@x"),
+    Timestamp = c("t1", "t2", "t3", "t4"), Email = c("a1@x", "b2@x", "c3@x", "d4@x"),
     Cue = c("a", "b", "a", "b"), Response = c("x", "y", "z", "w")
   )
   expect_error(
@@ -198,5 +198,134 @@ test_that("obtain_id() detects a unique-value ID column when given a raw MATRIX,
 
   expect_equal(result$ids, c("s1", "s2", "s3"))
   expect_equal(colnames(result$data), c("animal1", "animal2"))
+
+})
+
+test_that("obtain_id() keeps a one-column matrix when only one response column remains (issue #16)", {
+
+  # Real bug fixed: `data[, -id_col]` collapsed to a plain vector with
+  # exactly one response column left, so textcleaner()'s
+  # `row.names(data) <- ids` failed ("attempt to set 'rownames' on an
+  # object with no dimensions")
+  data <- as.matrix(data.frame(ID = c("P1", "P2", "P3"), R1 = c("dog", "cat", "cow")))
+
+  result <- suppressMessages(obtain_id(data, type = "fluency"))
+
+  expect_true(is.matrix(result$data))
+  expect_equal(dim(result$data), c(3, 1))
+  expect_equal(result$ids, c("P1", "P2", "P3"))
+
+})
+
+test_that("obtain_id() recognizes plural/capitalized ID column names such as 'Participants' (issue #25)", {
+
+  data <- as.matrix(data.frame(
+    Participants = c(200, 202, 204), VF = c("a b c", "d e f", "g h i"), stringsAsFactors = FALSE
+  ))
+
+  result <- suppressMessages(obtain_id(data, type = "fluency"))
+
+  expect_equal(result$ids, c("200", "202", "204"))
+  expect_equal(colnames(result$data), "VF")
+
+  data_ids <- as.matrix(data.frame(IDs = 1:3, R1 = c("dog", "cat", "cow"), R2 = c("cat", "cow", "dog")))
+  expect_equal(suppressMessages(obtain_id(data_ids, type = "fluency"))$ids, c("1", "2", "3"))
+
+})
+
+test_that("obtain_id() treats a single participant with no named ID column as row 1, not as 'multiple possible ID columns'", {
+
+  # With one row every column trivially has "one unique value per row", so
+  # the unique-values heuristic cannot pick an ID column
+  one <- as.matrix(data.frame(R1 = "dog", R2 = "cat", R3 = "cow"))
+
+  result <- suppressMessages(obtain_id(one, type = "fluency"))
+
+  expect_equal(result$ids, 1L)
+  expect_equal(dim(result$data), c(1, 3))
+
+})
+
+test_that("obtain_id() rejects duplicated, missing or blank participant IDs instead of letting them be renamed (fluency)", {
+
+  # Real bug fixed: duplicated IDs were silently renamed downstream
+  # (`4`, `4` -> `X4`, `X4.1`) and a missing ID became "NA.", so the output no
+  # longer matched the input and nothing said so
+  make <- function(ids){ as.matrix(data.frame(ID = ids, R1 = c("dog", "cat", "cow", "pig"), R2 = c("cat", "dog", "pig", "cow"), stringsAsFactors = FALSE)) }
+
+  expect_error(obtain_id(make(c("4", "4", "7", "9")), "fluency"), "duplicated values: '4'")
+  expect_error(obtain_id(make(c("a", "b", "a", "b")), "fluency"), "duplicated values: 'a', 'b'")
+  expect_error(obtain_id(make(c("4", NA, "7", "9")), "fluency"), "missing or blank values in row 2")
+  expect_error(obtain_id(make(c("4", "", "7", " ")), "fluency"), "missing or blank values in rows 2, 4")
+
+  # distinct IDs are used exactly as given, including odd-looking ones
+  odd <- suppressMessages(obtain_id(make(c("P1", "P 2", "P-3", "3P")), "fluency"))
+  expect_equal(odd$ids, c("P1", "P 2", "P-3", "3P"))
+
+})
+
+test_that("obtain_id() allows repeated IDs for long-format free-association data but not missing ones", {
+
+  free <- as.matrix(data.frame(
+    ID = c("1", "1", "2", "2"), Cue = "dog", Response = c("cat", "bone", "cat", "leash"), stringsAsFactors = FALSE
+  ))
+
+  expect_equal(suppressMessages(obtain_id(free, "free"))$ids, c("1", "2"))
+
+  free[3, "ID"] <- NA
+  expect_error(obtain_id(free, "free"), "missing or blank values in row 3")
+
+})
+
+test_that("obtain_id() uses explicit row names as fluency IDs, behind a named ID column and ahead of the unique-values guess", {
+
+  # Real bug fixed (U2): ?textcleaner documents fluency IDs as the row names,
+  # but obtain_id() never looked at them -- it fell through to row numbers
+  # or, when every response in a column happened to be distinct, reported
+  # several "possible ID columns". This is also what makes partBY = "col"
+  # work: transposing turns the participants' column names into row names.
+  with_row_names <- as.matrix(data.frame(
+    R1 = c("dog", "cat", "cow"), R2 = c("cat", "dog", "pig"), row.names = c("alice", "bob", "carl")
+  ))
+
+  result <- suppressMessages(obtain_id(with_row_names, type = "fluency"))
+  expect_equal(result$ids, c("alice", "bob", "carl"))
+  expect_equal(dim(result$data), c(3, 2))
+
+  # a named ID column still wins over row names
+  named <- cbind(ID = c("1", "2", "3"), with_row_names)
+  expect_equal(unname(suppressMessages(obtain_id(named, type = "fluency"))$ids), c("1", "2", "3"))
+
+  # no row names at all -> row numbers, as before
+  repeats <- unname(matrix(c("dog", "dog", "cat", "cow", "cow", "cat", "dog", "cat", "cat"), nrow = 3))
+  expect_equal(suppressMessages(obtain_id(repeats, type = "fluency"))$ids, 1:3)
+
+  # duplicated row names are rejected like duplicated ID values
+  duplicated_names <- with_row_names
+  row.names(duplicated_names) <- c("a", "a", "b")
+  expect_error(obtain_id(duplicated_names, type = "fluency"), "duplicated values: 'a'")
+
+})
+
+test_that("obtain_id() never takes a column of response words as the IDs (undocumented inference tightened)", {
+
+  # Without a named ID column, a column whose values are all different used
+  # to be inferred as the IDs. In a small sample the first response column
+  # can easily be all different ("dog", "cat", "bird"), so it was silently
+  # taken as the IDs and dropped from the responses. Only columns that look
+  # like IDs (numeric, or every value containing a digit) are inferred now
+  words <- data.frame(A = c("dog", "cat", "bird"), B = c("cat", "fish", "cow"), C = c("pig", "dog", "hen"))
+  result <- suppressMessages(obtain_id(words, type = "fluency"))
+  expect_equal(result$ids, 1:3)
+  expect_equal(ncol(result$data), 3)
+
+  # a lone ID-looking column is still found
+  coded <- cbind(Code = c("P01", "P02", "P03"), words)
+  result <- suppressMessages(obtain_id(coded, type = "fluency"))
+  expect_equal(result$ids, c("P01", "P02", "P03"))
+  expect_equal(ncol(result$data), 3)
+
+  numbered <- cbind(Nr = 11:13, words)
+  expect_equal(suppressMessages(obtain_id(numbered, type = "fluency"))$ids, 11:13)
 
 })

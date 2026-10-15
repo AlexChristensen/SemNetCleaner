@@ -1,185 +1,226 @@
 #' @noRd
-# Builds and emits the position-aware "Response was <verb>: '...'" message
-# used by every context-branch (multi-word) word-option handler when
-# `keep_strings` is TRUE -- shows the surrounding context with the target
-# word replaced/bolded, correctly handling first/last/middle position in
-# the string. Extracted from 4 byte-identical first/middle/last if-else
-# blocks inside `spellcheck.menu()` (SKIP WORD, ADD WORD TO DICTIONARY,
-# TYPE MY OWN WORD, BAD WORD, and the response-option branch).
-# Real bug fixed (#53): the middle-position branch located the target's
-# own index via `which(context[check] == unlist(strsplit(context, split =
-# " ")))` -- a VALUE match, not a position lookup -- instead of just using
-# `check` directly. Since every element of `context` is already a single
-# token (space-splitting it is a no-op here; `unlist(strsplit(context, "
-# "))` is always identical to `context` itself), this only ever needed to
-# be `check`. Confirmed reachable and real via direct reproduction:
-# whenever the target word's value recurs elsewhere in the same multi-word
-# response (e.g. `context = c("the","cat","sat","cat")`, `check = 4`),
-# `which()` returns EVERY matching position (here `c(2, 4)`), and the
-# subsequent `1:(word_num - 1)` / `(word_num + 1):n_words` arithmetic
-# silently recycles/truncates to just the first match's position with an
-# "only the first element used" warning -- displaying the confirmation
-# message built around the WRONG occurrence of the word. Inherited
-# byte-identically from the untouched original (5 separate copies of this
-# exact pattern in `utils-SemNetCleaner.R`). Cosmetic-only (this function
-# only builds a user-facing message; `changes`/`context` themselves are
-# never touched here), but a real, silently-wrong-output bug all the same.
-# Updated 10.09.2026
-describe_word_change <- function(context, check, verb, replacement)
+# Describe word change ----
+# Emits the "Response was <verb>: '...'" message for a word option of a multi-word
+# response, showing the response with the target word replaced and in bold
+# Updated 14.10.2026
+describe_word_change <- function(
+    context, # words of the response
+    check, # positions of the target word
+    verb, # description of the decision
+    replacement # word shown in place of the target
+)
 {
 
-  n_words <- length(context)
-  styled <- style_text(replacement, defaults = "bold")
+  # `check` may hold several positions (a response that repeats the unknown word is decided
+  # once for all of its occurrences); every position is replaced
+  shown <- context
 
-  if(check == 1){
+  # Style the replacement
+  shown[check] <- style_text(replacement, defaults = "bold")
 
-    message(paste("\nResponse was ", verb, ": '",
-                  styled, " ", paste(context[-check], collapse = " "), "'",
-                  sep = "", collapse = " "))
-
-  }else if(check == n_words){
-
-    message(paste("\nResponse was ", verb, ": '",
-                  paste(context[-check], collapse = " "), " ", styled, "'",
-                  sep = "", collapse = " "))
-
-  }else{
-
-    message(paste("\nResponse was ", verb, ": '",
-                  paste(context[1:(check - 1)], collapse = " "), " ", styled, " ",
-                  paste(context[(check + 1):n_words], collapse = " "), "'",
-                  sep = "", collapse = " "))
-
-  }
+  # Let user know the change
+  message(paste("\nResponse was ", verb, ": '", paste(shown, collapse = " "), "'", sep = ""))
 
 }
 
 #' @noRd
-# For every one of `words` not already in `full_dictionary`, asks whether it
-# should be added and does so on "Yes". Extracted from 3 byte-identical
-# copies inside `spellcheck.menu()` (TYPE MY OWN WORD, TYPE MY OWN STRING,
-# and the single-response TYPE MY OWN). `seq_along(non_dict)` used in place
-# of the original's `1:length(non.dict)` for the established reverse-range
-# discipline, though not a live bug here -- this loop is only ever reached
-# when `non_dict` has at least one element.
-# Robustness/speed fix, per direct request: the original (and this
-# rebuild's first pass) called `words %in% full_dictionary` TWICE --
-# once to decide whether to enter the loop at all, again to compute
-# `non_dict` -- and `%in%` rebuilds its lookup from scratch every call, an
-# especially real cost against `cocaspell` (~109k words, the default
-# `free`-association dictionary). Replaced with one
-# `dictionary_contains()` call (helpers.R's memoized/hashed lookup,
-# already the established pattern at every other dictionary-membership
-# check site) feeding both the entry check and `non_dict`.
-# Updated 10.09.2026
-offer_add_missing_to_dictionary <- function(words, full_dictionary, reader = readline)
+# Parse typed words ----
+# Splits a "TYPE MY OWN" entry on commas and drops blanks; empty input returns
+# `character(0)` so that the caller can return to the menu
+# Updated 14.10.2026
+parse_typed_words <- function(
+    input # text typed by the user
+)
 {
 
+  # Split on commas
+  words <- trimws(unlist(strsplit(input, split = ",")))
+
+  # Drop blank words
+  return(words[nzchar(words)])
+
+}
+
+#' @noRd
+# Normalize typed words ----
+# Runs typed replacement words through the same cleaning as the rest of the data
+# (`normalize_fn`, built by `textcleaner()` from `allowPunctuations` and `allowNumbers`, plus
+# lowercasing); the "NA" bad-response marker is left alone and words that normalize away
+# (e.g., "123") are dropped
+# Updated 14.10.2026
+normalize_typed_words <- function(
+    words, # words typed by the user
+    normalize_fn = NULL # function used to clean words
+)
+{
+
+  # Check for nothing to normalize
+  if(is.null(normalize_fn) || length(words) == 0){
+
+    # Return words as typed
+    return(words)
+
+  }
+
+  # Find bad-response markers
+  marker <- words == "NA"
+
+  # Normalize all other words
+  words[!marker] <- normalize_fn(words[!marker])
+
+  # Drop words that normalize away
+  return(words[!is.na(words) & nzchar(words)])
+
+}
+
+#' @noRd
+# Offer add missing to dictionary ----
+# For every word of `words` that is not in `full_dictionary`, asks whether it should be
+# added and adds it on "Yes"
+# Updated 14.10.2026
+offer_add_missing_to_dictionary <- function(
+    words, # words typed by the user
+    full_dictionary, # dictionary used to check words
+    reader = readline # function used to read answers
+)
+{
+
+  # Check which words are in the dictionary
   in_dictionary <- dictionary_contains(words, full_dictionary)
 
+  # Check for missing words
   if(!all(in_dictionary)){
 
+    # Get missing words
     non_dict <- which(!in_dictionary)
 
+    # Loop over missing words
     for(i in seq_along(non_dict)){
 
+      # Let user know
       message(paste("\n'", words[non_dict[i]], "'", sep = ""), " was not found in the dictionary.\n")
 
+      # Ask whether to add the word
       dict_ans <- yes_no_menu(
         paste("Should ", paste("'", words[non_dict[i]], "'", sep = ""), " be added to the dictionary", sep = ""),
         reader = reader
       )
 
+      # Check for yes
       if(dict_ans == 1){
+
+        # Add word to dictionary
         full_dictionary <- SemNetDictionaries::append.dictionary(
           words[non_dict[i]], full_dictionary,
           dictionary.name = "full", save.location = "envir", textcleaner = TRUE
         )
+
       }
 
     }
 
   }
 
-  full_dictionary
+  # Return updated dictionary
+  return(full_dictionary)
 
 }
 
 #' @noRd
-# The actual per-response manual spell-check decision menu -- the wizard's
-# core interaction, called once per word (context-branch, for a multi-word
-# response) or once per response (single-response branch) from
-# `spellcheck_dictionary()`. Ported from `spellcheck.menu()`, rebuilt on
-# `read_input()`/a `reader = readline` parameter (binding decision #3) and
-# a `search_fn = searcher::search_site` parameter (same rationale -- a real
-# browser launch is just as wrong to fire during a test as a real
-# `readline()` block).
-#
-# Real bugs fixed:
-# - Bug #7 (3 identical `collpase = ""` typos, GOOGLE WORD/STRING/IT): a
-#   misspelled argument name silently absorbed by `paste()`'s `...` instead
-#   of setting `collapse`. Fixed to `collapse = ""` at all 3 sites.
-# - Bug #32: the "word already in dictionary" fast path built
-#   `res$target <- ifelse(is.null(context), dict_check, context)` --
-#   `ifelse()` is vectorized on its `test` argument (length 1 here), so it
-#   always returns a length-1 result, silently truncating a multi-word
-#   `context` down to just `context[1]` instead of the whole vector.
-#   Confirmed via direct reproduction. Fixed via a plain `if`/`else`.
-# - Bug #33: the BAD STRING branch (context mode) never set `end <- TRUE`,
-#   unlike every other whole-string-resolving branch (KEEP ORIGINAL, KEEP
-#   AUTO-CORRECT, TYPE MY OWN STRING). Confirmed via direct reproduction
-#   against the untouched original: choosing BAD STRING sets every word in
-#   `context` to `"NA"` but leaves `res$end` `FALSE`, so
-#   `spellcheck_dictionary()`'s caller-side multi-word loop does not stop
-#   early -- it continues to the next not-yet-checked word position, now
-#   searching for it inside a `context` that has already been fully
-#   overwritten to `"NA"`, finding nothing (`which(...)` returns
-#   `integer(0)`) and calling this menu again with `check = integer(0)`.
-# Updated 09.09.2026
+# Manual spell-check menu ----
+# The manual spell-check decision menu, called once per word of a multi-word response
+# (`context`) or once per response (single-response menu) from `spellcheck_dictionary()`.
+# `reader` and `search_fn` can be replaced so that the menu can be scripted
+# Updated 14.10.2026
 spellcheck_menu <- function(
-  check, context = NULL, possible, original,
-  current_index, changes, full_dictionary, category,
-  dictionary, keep_strings, go_back_count,
-  reader = readline, search_fn = searcher::search_site
+    check, # target word (or its positions in the response)
+    context = NULL, # words of the response or NULL
+    possible, # suggested corrections
+    original, # original response
+    current_index, # index of the current response
+    changes, # changes made so far
+    full_dictionary, # dictionary used to check words
+    category, # category used in web searches
+    dictionary, # names of dictionaries requested
+    keep_strings, # whether strings are kept
+    go_back_count, # number of decisions made
+    reader = readline, # function used to read answers
+    search_fn = searcher::search_site, # function used to search the web
+    normalize_fn = NULL # function used to clean typed words
 )
 {
 
+  # Set answer (30 returns to the menu)
   ans <- 30
+
+  # Initialize go back
   go_back <- FALSE
 
   # Check if word is already in dictionary (due to dictionary updates)
   if(!is.null(context)){
+
+    # Use words at the target positions
     dict_check <- unique(context[check])
-  }else{
+
+  }else{ # Single response
+
+    # Use the target word
     dict_check <- check
+
   }
 
+  # Check for word in dictionary
   if(dictionary_contains(dict_check, full_dictionary)){
 
+    # Check for multi-word response
     if(!is.null(context)){
+
+      # Let user know word was kept
       message(paste("\nResponse '",
                     style_text(dict_check, defaults = "bold"), "' in '", style_text(paste(context, collapse = " "), defaults = "bold"),
                     "' was KEPT AS IS based on a previous manual spell-check decision",
                     sep = ""))
-    }else{
+
+    }else{ # Single response
+
+      # Let user know word was kept
       message(paste("\nResponse '",
                     style_text(dict_check, defaults = "bold"),
                     "' was KEPT AS IS based on a previous manual spell-check decision",
                     sep = ""))
+
     }
 
+    # Initialize results
     res <- list()
+
+    # Set go back
     res$go_back <- go_back
+
+    # Set target
     res$target <- if(is.null(context)) dict_check else context
+
+    # Pass along changes
     res$changes <- changes
+
+    # Pass along dictionary
     res$full_dictionary <- full_dictionary
+
+    # Set end of response
     res$end <- if(is.null(context)) NULL else FALSE
+
+    # Count decision
     res$go_back_count <- go_back_count + 1
 
+    # Pause to read (unless general dictionary)
     if(!"general" %in% dictionary){
-      Sys.sleep(1)
+
+      # Pause to read
+      pause(1)
+
     }
 
+    # Return results
     return(res)
 
   }
@@ -187,141 +228,282 @@ spellcheck_menu <- function(
   # Set up based on context (multiple responses)
   if(!is.null(context)){
 
+    # Initialize end of response
     end <- FALSE
 
+    # Loop until a final decision
     while(ans == 30){
 
+      # The word being decided. `check` holds every position it occupies in
+      # the response (a repeated word, "gren gren gren", is decided ONCE, for
+      # all of its occurrences), so the word itself is the first of them
+      target_word <- context[check[1]]
+
+      # Check for kept strings
       if(keep_strings){
 
+        # Build title without auto-corrected string
         title <- paste(paste("\nOriginal string: ", "'", original, "'", sep = ""),
-                       paste("Target word: ", paste("'", color_text(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
+                       paste("Target word: ", paste("'", color_text(target_word, defaults = "highlight"), "'", sep = ""), sep = ""),
                        sep = "\n\n")
 
-      }else{
+      }else{ # Strings are split
 
+        # Build title with auto-corrected string
         title <- paste(paste("\nOriginal string: ", "'", original, "'", sep = ""),
                        paste("Auto-corrected string: ", paste("'", context, "'", sep = "", collapse = " "), sep = ""),
-                       paste("Target word: ", paste("'", color_text(context[check], defaults = "highlight"), "'", sep = ""), sep = ""),
+                       paste("Target word: ", paste("'", color_text(target_word, defaults = "highlight"), "'", sep = ""), sep = ""),
                        sep = "\n\n")
 
       }
 
+      # Set word options
       word <- c("SKIP WORD", "ADD WORD TO DICTIONARY", "TYPE MY OWN WORD", "GOOGLE WORD", "BAD WORD")
+
+      # Check for kept strings
       if(keep_strings){
+
+        # Set string options without auto-correct
         string <- c("KEEP ORIGINAL", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
-      }else{
+
+      }else{ # Strings are split
+
+        # Set string options
         string <- c("KEEP ORIGINAL", "KEEP AUTO-CORRECT", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
+
       }
 
+      # Combine menu options
       choices <- c(word, string, possible)
+
+      # Set default option
       default <- length(c(word, string))
 
+      # Print menu
       custom_menu(choices = choices, title = title, default = default)
 
+      # Print navigation keys
       message("Press 'B' to GO BACK, 'H' for HELP, or 'X' to EXIT.\n")
 
-      ans <- read_input("Selection (accepts lowercase): ", reader = reader)
+      # Read selection
+      ans <- trimws(read_input("Selection (accepts lowercase): ", reader = reader))
 
-      if(tolower(ans) == "x" || ans == ""){return("STOP")}
+      # Check for exit
+      if(tolower(ans) == "x" || ans == ""){
 
-      original_ans <- tolower(ans)
+        return("STOP")
 
-      ans <- appropriate_answer(answer = ans, choices = choices, default = default, reader = reader)
-
-      if(keep_strings){
-        if(ans >= 7 && ans <= length(choices)){
-          ans <- ans + 1
-        }
       }
 
-      if(ans == 1){ # SKIP WORD
+      # Check selection
+      ans <- appropriate_answer(answer = ans, choices = choices, default = default, exit = TRUE, reader = reader)
 
+      # Check for exit
+      if(ans == 0){
+
+        return("STOP")
+
+      }
+
+      # GO BACK and HELP are identified by their position right after `appropriate_answer()`
+      # (`length(choices) + 1` and `+ 2`), before the `keep_strings` renumbering below, because
+      # the renumbering moves other options onto those positions
+      navigation <- if(ans == length(choices) + 1){
+
+        # Set navigation to go back
+        "back"
+
+      }else if(ans == length(choices) + 2){
+
+        # Set navigation to help
+        "help"
+
+      }else{
+
+        # Set no navigation
+        "none"
+
+      }
+
+      # Renumber string options when strings are kept
+      if(keep_strings && navigation == "none"){
+
+        # Check for string option
+        if(ans >= 7 && ans <= length(choices)){
+
+          # Move past the removed option
+          ans <- ans + 1
+
+        }
+
+      }
+
+      if(navigation == "back"){ # GO BACK
+
+        # Flag go back
+        go_back <- TRUE
+
+      }else if(navigation == "help"){ # HELP
+
+        # Show help
+        textcleaner_help(check, context, original, possible, reader = reader, keep_strings = keep_strings)
+
+        # Return to menu
+        ans <- 30
+
+      }else if(ans == 1){ # SKIP WORD
+
+        # Check for kept strings
         if(keep_strings){
-          describe_word_change(context, check, "SKIPPED", context[check])
-        }else{
-          message(paste("\nResponse was SKIPPED:", paste("'", context[check], "'", sep = "")))
+
+          # Show skipped word within string
+          describe_word_change(context, check, "SKIPPED", target_word)
+
+        }else{ # Strings are split
+
+          # Show skipped word
+          message(paste("\nResponse was SKIPPED:", paste("'", target_word, "'", sep = "")))
+
         }
 
       }else if(ans == 2){ # ADD WORD TO DICTIONARY
 
-        full_dictionary <- SemNetDictionaries::append.dictionary(context[check],
+        # Add word to dictionary
+        full_dictionary <- SemNetDictionaries::append.dictionary(target_word,
                                                                   full_dictionary,
                                                                   dictionary.name = "full",
                                                                   save.location = "envir", textcleaner = TRUE)
 
+        # Check for kept strings
         if(keep_strings){
-          describe_word_change(context, check, "KEPT AS", context[check])
+
+          # Show kept word within string
+          describe_word_change(context, check, "KEPT AS", target_word)
+
         }
 
       }else if(ans == 3){ # TYPE MY OWN WORD
 
+        # Explain how to go back
         message("\nType '30' (no quotations) to go back to the other response options\n")
 
+        # Read typed words
         tmo <- read_input("Use commas for multiple words (dog, fish, etc.): ", reader = reader)
 
-        if(tmo != "30"){
+        # Parse and normalize typed words
+        tmo_split <- normalize_typed_words(parse_typed_words(tmo), normalize_fn)
 
-          tmo_split <- trimws(unlist(strsplit(tmo, split = ",")))
+        # Check for typed words
+        if(tmo != "30" && length(tmo_split) > 0){
 
-          change_mat <- t(as.matrix(c(context[check], tmo_split)))
+          # Create change matrix
+          change_mat <- t(as.matrix(c(target_word, tmo_split)))
+
+          # Name columns
           colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+          # Record change
           changes <- change_format(change_list = changes,
                                    change_matrix = change_mat,
                                    current_index = current_index)
 
+          # Offer to add typed words to dictionary
           full_dictionary <- offer_add_missing_to_dictionary(tmo_split, full_dictionary, reader = reader)
 
+          # Check for kept strings
           if(keep_strings){
+
+            # Show changed word within string
             describe_word_change(context, check, "CHANGED TO", paste(tmo_split, collapse = " "))
-          }else{
+
+          }else{ # Strings are split
+
+            # Show changed word
             message(paste("\nResponse was CHANGED TO:", paste("'", tmo_split, "'", sep = "", collapse = " ")))
+
           }
 
+          # every occurrence of the word is replaced (`[[<-` with several
+          # positions would index recursively instead)
           context_change <- as.list(context)
-          context_change[[check]] <- tmo_split
+
+          # Replace every occurrence of the word
+          context_change[check] <- list(tmo_split)
+
+          # Flatten words
           context <- unlist(context_change)
 
-        }else{ans <- 30}
+        }else{ # No typed words
+
+          # Let user know when nothing was entered
+          if(tmo != "30"){
+
+            message("\nNo response was entered. Returning to the response options.")
+
+          }
+
+          # Return to menu
+          ans <- 30
+
+        }
 
       }else if(ans == 4){ # GOOGLE WORD
 
-        search_fn(paste(category, " '", context[check], "'", sep = "", collapse = ""),
+        # Search the web
+        search_fn(paste(category, " '", target_word, "'", sep = "", collapse = ""),
                   site = "google", rlang = FALSE)
 
+        # Return to menu
         ans <- 30
 
       }else if(ans == 5){ # BAD WORD
 
-        change_mat <- t(as.matrix(c(context[check], NA)))
+        # Create change matrix
+        change_mat <- t(as.matrix(c(target_word, NA)))
+
+        # Name columns
         colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+        # Record change
         changes <- change_format(change_list = changes,
                                  change_matrix = change_mat,
                                  current_index = current_index)
 
+        # Check for kept strings
         if(keep_strings){
+
+          # Show bad word within string
           describe_word_change(context, check, "CHANGED TO", NA)
-        }else{
+
+        }else{ # Strings are split
+
+          # Show bad word
           message(paste("\nResponse was CHANGED TO:", paste(NA, sep = "", collapse = " ")))
+
         }
 
-        context_change <- as.list(context)
-        context_change[[check]] <- "NA"
-        context <- unlist(context_change)
+        # Mark target word as bad
+        context[check] <- "NA"
 
       }else if(ans == 6){ # KEEP ORIGINAL
 
+        # Let user know
         message(paste("\nString was REVERTED TO ORIGINAL:", paste("'", original, "'", sep = "")))
 
+        # Revert to original string
         context <- original
+
+        # End response
         end <- TRUE
 
+        # Check whether original is in dictionary
         if(!dictionary_contains(original, full_dictionary)){
 
+          # Let user know
           message(paste("\n'", original, "'", sep = ""),
                   " was not found in the dictionary.\n")
 
+          # Ask whether to add original
           dict_ans <- yes_no_menu(
             paste("Should ",
                   paste("'", original, "'", sep = ""),
@@ -329,136 +511,223 @@ spellcheck_menu <- function(
             reader = reader
           )
 
+          # Check for yes
           if(dict_ans == 1){
+
+            # Add original to dictionary
             full_dictionary <- SemNetDictionaries::append.dictionary(original,
                                                                      full_dictionary,
                                                                      dictionary.name = "full",
                                                                      save.location = "envir", textcleaner = TRUE)
+
           }
+
         }
 
       }else if(ans == 7){ # KEEP AUTO-CORRECT
 
+        # Let user know
         message(paste("\nString was KEPT AS AUTO-CORRECT:", paste("'", context, "'", sep = "", collapse = " ")))
 
+        # Keep auto-corrected string
         context <- context
+
+        # End response
         end <- TRUE
 
       }else if(ans == 8){ # TYPE MY OWN STRING
 
+        # Explain how to go back
         message("\nType '30' (no quotations) to go back to the other response options\n")
 
+        # Read typed string
         ams <- read_input("Use commas for multiple words (dog, fish, etc.): ", reader = reader)
 
-        if(ams != "30"){
+        # Parse and normalize typed words
+        ams_split <- normalize_typed_words(parse_typed_words(ams), normalize_fn)
 
-          ams_split <- trimws(unlist(strsplit(ams, split = ",")))
+        # Check for typed words
+        if(ams != "30" && length(ams_split) > 0){
 
+          # Create change matrix
           change_mat <- t(as.matrix(c(paste(context, collapse = " "), ams_split)))
+
+          # Name columns
           colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+          # Record change
           changes <- change_format(change_list = changes,
                                    change_matrix = change_mat,
                                    current_index = current_index)
 
+          # Offer to add typed words to dictionary
           full_dictionary <- offer_add_missing_to_dictionary(ams_split, full_dictionary, reader = reader)
 
+          # Let user know
           message(paste("\nString was CHANGED TO:", paste("'", ams_split, "'", sep = "", collapse = " ")))
 
+          # Replace string
           context <- ams_split
+
+          # End response
           end <- TRUE
 
-        }else{ans <- 30}
+        }else{ # No typed words
+
+          # Let user know when nothing was entered
+          if(ams != "30"){
+
+            message("\nNo response was entered. Returning to the response options.")
+
+          }
+
+          # Return to menu
+          ans <- 30
+
+        }
 
       }else if(ans == 9){ # GOOGLE STRING
 
+        # Search the web
         search_fn(paste(category, " '", original, "'", sep = "", collapse = ""),
                   site = "google", rlang = FALSE)
 
+        # Return to menu
         ans <- 30
 
       }else if(ans == 10){ # BAD STRING
 
+        # Create change matrix
         change_mat <- cbind(context, rep(NA, length(context)))
+
+        # Name columns
         colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+        # Record change
         changes <- change_format(change_list = changes,
                                  change_matrix = change_mat,
                                  current_index = current_index)
 
+        # Let user know
         message(paste("\nALL responses were CHANGED TO:", paste(NA, sep = "", collapse = " ")))
 
+        # Mark all words as bad
         context <- rep("NA", length(context))
+
+        # End response
         end <- TRUE
-
-      }else if(ans == length(choices) + 1 & original_ans == "b"){ # GO BACK
-
-        go_back <- TRUE
-
-      }else if(ans == length(choices) + 2 & original_ans == "h"){ # HELP
-
-        textcleaner_help(check, context, original, possible, reader = reader)
-
-        ans <- 30
 
       }else{ # RESPONSE OPTION
 
-        change_mat <- t(as.matrix(c(context[check], possible[ans - 10])))
+        # Create change matrix
+        change_mat <- t(as.matrix(c(target_word, possible[ans - 10])))
+
+        # Name columns
         colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+        # Record change
         changes <- change_format(change_list = changes,
                                  change_matrix = change_mat,
                                  current_index = current_index)
 
+        # Check for kept strings
         if(keep_strings){
+
+          # Show changed word within string
           describe_word_change(context, check, "CHANGED TO", possible[ans - 10])
-        }else{
+
+        }else{ # Strings are split
+
+          # Show changed word
           message(paste("\nResponse was CHANGED TO:", paste("'", possible[ans - 10], "'", sep = "")))
+
         }
 
+        # Replace target word
         context[check] <- possible[ans - 10]
+
       }
+
     }
 
+    # Initialize results
     res <- list()
+
+    # Set go back
     res$go_back <- go_back
+
+    # Set response
     res$target <- context
+
+    # Pass along changes
     res$changes <- changes
+
+    # Pass along dictionary
     res$full_dictionary <- full_dictionary
+
+    # Set end of response
     res$end <- end
+
+    # Count decisions
     res$go_back_count <- go_back_count
 
+    # Pause to read (unless general dictionary)
     if(!"general" %in% dictionary){
-      Sys.sleep(1)
+
+      # Pause to read
+      pause(1)
+
     }
 
+    # Return results
     return(res)
 
   }else{
 
     # Single response
+    # Loop until a final decision
     while(ans == 30){
 
+      # Build title
       title <- paste(paste("\nTarget word: ", paste("'", color_text(check, defaults = "highlight"), "'", sep = ""), sep = ""))
 
+      # Set menu options
       choices <- c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD WORD", possible)
 
+      # Print menu
       custom_menu(choices = choices, title = title, default = 5)
 
+      # Print navigation keys
       message("Press 'B' to GO BACK, 'H' for HELP, or 'X' to EXIT.\n")
 
-      ans <- read_input("Selection (accepts lowercase): ", reader = reader)
+      # Read selection
+      ans <- trimws(read_input("Selection (accepts lowercase): ", reader = reader))
 
-      if(tolower(ans) == "x" || ans == ""){return("STOP")}
+      # Check for exit
+      if(tolower(ans) == "x" || ans == ""){
 
-      ans <- appropriate_answer(answer = ans, choices = choices, default = 5, reader = reader)
+        return("STOP")
+
+      }
+
+      # Check selection
+      ans <- appropriate_answer(answer = ans, choices = choices, default = 5, exit = TRUE, reader = reader)
+
+      # Check for exit
+      if(ans == 0){
+
+        return("STOP")
+
+      }
 
       if(ans == 1){ # SKIP
 
+        # Let user know
         message(paste("\nResponse was SKIPPED:", paste("'", check, "'", sep = "")))
 
       }else if(ans == 2){ # ADD TO DICTIONARY
 
+        # Add word to dictionary
         full_dictionary <- SemNetDictionaries::append.dictionary(check,
                                                                   full_dictionary,
                                                                   dictionary.name = "full",
@@ -466,85 +735,145 @@ spellcheck_menu <- function(
 
       }else if(ans == 3){ # TYPE MY OWN
 
+        # Explain how to go back
         message("\nType '30' (no quotations) to go back to the other response options\n")
 
+        # Read typed words
         tmo <- read_input("Use commas for multiple words (dog, fish, etc.): ", reader = reader)
 
-        if(tmo != "30"){
+        # Parse and normalize typed words
+        tmo_split <- normalize_typed_words(parse_typed_words(tmo), normalize_fn)
 
-          tmo_split <- trimws(unlist(strsplit(tmo, split = ",")))
+        # Check for typed words
+        if(tmo != "30" && length(tmo_split) > 0){
 
+          # Create change matrix
           change_mat <- t(as.matrix(c(check, tmo_split)))
+
+          # Name columns
           colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+          # Record change
           changes <- change_format(change_list = changes,
                                    change_matrix = change_mat,
                                    current_index = current_index)
 
+          # Offer to add typed words to dictionary
           full_dictionary <- offer_add_missing_to_dictionary(tmo_split, full_dictionary, reader = reader)
 
+          # Let user know
           message(paste("\nResponse was CHANGED TO:", paste("'", tmo_split, "'", sep = "", collapse = " ")))
 
+          # Replace response
           check <- tmo_split
 
-        }else{ans <- 30}
+        }else{ # No typed words
+
+          # Let user know when nothing was entered
+          if(tmo != "30"){
+
+            message("\nNo response was entered. Returning to the response options.")
+
+          }
+
+          # Return to menu
+          ans <- 30
+
+        }
 
       }else if(ans == 4){ # GOOGLE IT
 
+        # Search the web
         search_fn(paste(category, " '", check, "'", sep = "", collapse = ""),
                   site = "google", rlang = FALSE)
 
+        # Return to menu
         ans <- 30
 
       }else if(ans == 5){ # BAD RESPONSE
 
+        # Create change matrix
         change_mat <- t(as.matrix(c(check, NA)))
+
+        # Name columns
         colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+        # Record change
         changes <- change_format(change_list = changes,
                                  change_matrix = change_mat,
                                  current_index = current_index)
 
+        # Let user know
         message(paste("\nResponse was CHANGED TO:", paste(NA, sep = "", collapse = " ")))
 
+        # Mark response as bad
         check <- "NA"
 
       }else if(ans == length(choices) + 1){ # GO BACK
 
+        # Flag go back
         go_back <- TRUE
 
       }else if(ans == length(choices) + 2){ # HELP
 
-        textcleaner_help(check, context, original, possible, reader = reader)
+        # Show help
+        textcleaner_help(check, context, original, possible, reader = reader, keep_strings = keep_strings)
 
+        # Return to menu
         ans <- 30
 
       }else{ # RESPONSE OPTION
 
+        # Create change matrix
         change_mat <- t(as.matrix(c(check, possible[ans - 5])))
+
+        # Name columns
         colnames(change_mat) <- c("from", paste("to", 1:(ncol(change_mat) - 1), sep = "_"))
 
+        # Record change
         changes <- change_format(change_list = changes,
                                  change_matrix = change_mat,
                                  current_index = current_index)
 
+        # Let user know
         message(paste("\nResponse was CHANGED TO:", paste("'", possible[ans - 5], "'", sep = "")))
 
+        # Replace response
         check <- possible[ans - 5]
+
       }
+
     }
 
+    # Initialize results
     res <- list()
+
+    # Set go back
     res$go_back <- go_back
+
+    # Set response
     res$target <- check
+
+    # Pass along changes
     res$changes <- changes
+
+    # Pass along dictionary
     res$full_dictionary <- full_dictionary
+
+    # Count decisions
     res$go_back_count <- go_back_count
 
+    # Pause to read (unless general dictionary)
     if(!"general" %in% dictionary){
-      Sys.sleep(1)
+
+      # Pause to read
+      pause(1)
+
     }
 
+    # Return results
     return(res)
+
   }
+
 }

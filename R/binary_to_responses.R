@@ -13,71 +13,41 @@
 #' @return A list containing objects for each participant and their responses
 #'
 #' @examples
-#' # Toy example
-#' raw <- open.animals[c(1:10), -c(1:3)]
+#' # Binary matrix of the first 10 participants of the cleaned data
+#' binary_matrix <- responses_to_binary(open.clean[1:10, ])
 #'
-#' if(interactive())
-#' {
-#'   # Clean and preprocess data
-#'   clean <- textcleaner(open.animals[, -c(1:2)], partBY = "row", dictionary = "animals")
+#' # Each participant's responses, as a list
+#' binary_to_responses(binary_matrix)
 #'
-#'   # Change binary response matrix to word response matrix
-#'   char_matrix <- binary_to_responses(clean$responses$binary)
-#' }
+#' # As a participants by responses matrix
+#' binary_to_responses(binary_matrix, to_data_frame = TRUE)
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
 #' @export
-# Binary to Response
-# Ported from `bin2resp()`, renamed per the naming convention (reuses
-# `../SemNeT`'s own established name for the paired concept). Real bugs
-# fixed: 4 separate `for(i in 1:n)`-style loops all reverse-range whenever
-# their respective dimension (ncol/nrow of `binary_matrix`, or the derived
-# participant count) is 0 -- a degenerate but reachable input (e.g. an
-# empty vocabulary, or every participant filtered out upstream). All 4
-# fixed via seq_len().
-# Follow-up review found a second, previously-masked bug: with 0
-# participants, `max(response_lengths)` on a length-0 vector returns
-# `-Inf` (with a warning), which then crashes `matrix(nrow = -Inf, ...)`.
-# In the ORIGINAL this was never reachable -- its own `1:p` reverse-range
-# bug (now fixed above) crashed first, on the main collection loop, before
-# ever reaching this later code. Guarded explicitly instead.
-#
-# Optimization pass (microbenchmark, real 516x368 open.clean-derived
-# data), both verified identical() against the original loop-based logic
-# on real data plus 0-participant/0-response/all-NA/single-row edge cases:
-# - The column-fill loop replaced with one vectorized
-#   `response_names[col(binary_matrix)]` construction -- ~4-5x faster
-#   (~16.8ms -> ~3.6ms, median).
-# - The participant-collection loop replaced with a single `which()` +
-#   `split()` pass -- ~7x faster (~10.9ms -> ~1.5ms, median). Confirmed
-#   the original never actually names each participant's individual
-#   responses (word_matrix carries no column names in either version), so
-#   no name-preservation logic was needed here.
-# Benchmarked and explicitly rejected: replacing the final padding loop
-# (inside `to_data_frame`) with a `sapply()`-based version measured no
-# improvement (~1.8ms either way) and wasn't `identical()` besides
-# (dimnames differences) -- not applied.
-# The vectorized column-fill introduced its own new regression, caught
-# immediately by the existing 0-column test: `colnames()` returns `NULL`
-# (not `character(0)`) for a 0-column matrix, which the original's loop
-# never noticed (seq_len(0) just skips it) but the vectorized one-shot
-# `response_names[col(binary_matrix)]` construction evaluates eagerly --
-# `matrix(NULL, ...)` errors outright. Guarded with an explicit
-# `is.null()` coalesce.
-# Updated 09.09.2026
-binary_to_responses <- function(binary_matrix, to_data_frame = FALSE)
+# Binary to responses ----
+# Converts a binary (0/1) response matrix back to each participant's responses, as a
+# list (or a participants-by-responses matrix when `to_data_frame = TRUE`)
+# Input with no participants or no responses is returned empty instead of failing
+# Updated 14.10.2026
+binary_to_responses <- function(
+    binary_matrix, # binary matrix of responses
+    to_data_frame = FALSE # return a data frame instead of a list
+)
 {
 
+  # Check for errors
   binary_to_responses_errors(binary_matrix, to_data_frame)
 
-  # Response (column) names. `colnames()` returns NULL (not `character(0)`)
-  # for a 0-column matrix, which `matrix()` below would reject outright
-  # ("'data' must be of a vector type, was 'NULL'") -- confirmed reachable
-  # via a 0-column `binary_matrix` with row names but no column names set
+  # Get response names (`colnames()` is `NULL` for a matrix without columns)
   response_names <- colnames(binary_matrix)
+
+  # Check for missing names
   if(is.null(response_names)){
+
+    # Set to empty
     response_names <- character(0)
+
   }
 
   # Fill in each column's response name wherever it was actually given
@@ -85,64 +55,99 @@ binary_to_responses <- function(binary_matrix, to_data_frame = FALSE)
     response_names[col(binary_matrix)],
     nrow = nrow(binary_matrix), ncol = ncol(binary_matrix)
   )
+
+  # Remove words that were not given
   word_matrix[binary_matrix != 1] <- NA
 
   # Number of participants
   n_participants <- nrow(binary_matrix)
 
-  # Collect each participant's given responses: every non-missing cell's
-  # (row, column) position, ordered so each participant's own responses
-  # stay in their original left-to-right column order, then split by row
+  # Get each participant's given responses in column order, then split by participant
   given <- which(!is.na(word_matrix), arr.ind = TRUE)
+
+  # Order by participant and column
   given <- given[order(given[, 1], given[, 2]), , drop = FALSE]
 
+  # Split by participant
   participant_list <- split(word_matrix[given], given[, 1])
 
-  # Participants with zero responses have no entry in 'given' at all --
-  # fill those back in as empty vectors, matching the original's own
-  # per-participant loop, which always creates a (possibly zero-length) entry
+  # Add participants without responses back as empty vectors
   full_list <- setNames(vector("list", n_participants), as.character(seq_len(n_participants)))
+
+  # Fill in participants with responses
   full_list[names(participant_list)] <- participant_list
+
+  # Find participants without responses
   empty_slots <- lengths(full_list) == 0
+
+  # Fill in empty participants
   full_list[empty_slots] <- replicate(sum(empty_slots), character(0), simplify = FALSE)
+
+  # Name by participant
   names(full_list) <- row.names(binary_matrix)
 
+  # Store full list
   participant_list <- full_list
 
   # Convert output to data frame
   if(to_data_frame){
 
-    # lengths() replaces the original's own per-element length() loop --
-    # ~14x faster (~62us -> ~4.5us, median) though this specific loop was
-    # never a meaningful share of the function's total runtime
+    # Get the number of responses of each participant
     response_lengths <- as.numeric(lengths(participant_list))
+
+    # Get number of participants
     n_lengths <- length(response_lengths)
 
+    # Get largest number of responses
     max_responses <- if(n_lengths == 0){ 0 }else{ max(response_lengths) }
 
+    # Initialize participant matrix
     participant_matrix <- matrix("", nrow = max_responses, ncol = n_lengths)
 
+    # Loop over participants
     for(i in seq_len(n_lengths)){
+
+      # Get amount of padding
       padding <- max_responses - response_lengths[i]
+
+      # Fill participant responses
       participant_matrix[, i] <- c(unlist(participant_list[[i]]), rep("", padding))
+
     }
 
+    # Convert to data frame
     participant_list <- as.data.frame(participant_matrix)
+
+    # Name columns
     colnames(participant_list) <- row.names(binary_matrix)
+
+    # Transpose to participants by responses
     participant_list <- t(participant_list)
 
   }
 
+  # Return responses
   return(participant_list)
 
 }
 
 #' @noRd
+# Binary to responses errors ----
 # Up-front validation for `binary_to_responses()`
-# Updated 08.09.2026
-binary_to_responses_errors <- function(binary_matrix, to_data_frame)
+# Updated 14.10.2026
+binary_to_responses_errors <- function(
+    binary_matrix, # binary matrix of responses
+    to_data_frame # return a data frame instead of a list
+)
 {
+
+  # Check input type
   object_error(binary_matrix, c("matrix", "data.frame"), "binary_to_responses")
+
+  # Check argument type
   typeof_error(to_data_frame, "logical", "binary_to_responses")
+
+  # Check argument length
   length_error(to_data_frame, 1, "binary_to_responses")
+
 }

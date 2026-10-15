@@ -143,3 +143,128 @@ test_that("correct_changes()'s edit_fn defaults to automated_edit(), not base ed
   expect_identical(formals(correct_changes)$edit_fn, quote(automated_edit))
 
 })
+
+test_that("correct_changes() accepts an edited table with an added column instead of 'non-conformable arrays' (issues #27/#29)", {
+
+  # Real bug fixed: `automated != changes` required both tables to have the
+  # same number of columns, so an `edit_fn` that returned an extra `to_#`
+  # column (base `edit()` allows typing into a new one) failed with
+  # "non-conformable arrays" -- and that message was then hidden entirely
+  # (see the finalize_textcleaner() test below).
+  add_column <- function(x){
+    x <- as.matrix(x)
+    x <- cbind(x, to_extra = NA_character_)
+    x[1, "to_extra"] <- "EXTRAWORD"
+    x
+  }
+
+  result <- correct_changes(
+    open.preprocess, type = "fluency",
+    reader = scripted_reader(c("", "", "")), edit_fn = add_column
+  )
+
+  expect_true("EXTRAWORD" %in% unlist(result$spellcheck$correspondence))
+  expect_length(result$spellcheck$verified, 1)
+
+})
+
+test_that("correct_changes() gives a readable error when the edited table loses rows", {
+
+  drop_row <- function(x){ as.matrix(x)[-1, , drop = FALSE] }
+
+  expect_error(
+    correct_changes(
+      open.preprocess, type = "fluency",
+      reader = scripted_reader(c("", "", "")), edit_fn = drop_row
+    ),
+    "Rows cannot be added or removed"
+  )
+
+})
+
+test_that("finalize_textcleaner() reports the real correct_changes() error, not the whole results object (issues #27/#29)", {
+
+  # Real bug fixed: `error_report(res, ...)` was handed the in-progress
+  # results object (v1 had the identical mistake) instead of the caught
+  # error, so the user saw a deparsed dump of `res` (beginning with the
+  # dictionary vector, as in #27) with the actual message buried or lost.
+  drop_row <- function(x){ as.matrix(x)[-1, , drop = FALSE] }
+
+  res <- open.preprocess
+  data <- res$responses$original
+  ids <- row.names(data)
+
+  output <- capture.output(
+    suppressMessages(
+      finalize_textcleaner(res, data, "fluency", ids, reader = scripted_reader(rep("", 5)), edit_fn = drop_row)
+    ),
+    type = "output"
+  )
+
+  expect_true(any(grepl("Rows cannot be added or removed", output)))
+  expect_lt(max(nchar(output)), 1000)
+
+})
+
+test_that("the review instructions open in a separate window, with one ENTER prompt, when the window is enabled", {
+
+  opened <- character(0)
+  open_fn <- function(path){ opened <<- c(opened, path); invisible(NULL) }
+
+  # a single scripted answer: the three console screens are replaced by one prompt
+  expect_message(
+    result <- correct_changes(
+      open.preprocess, type = "fluency", reader = scripted_reader(""),
+      edit_fn = function(x) x, window = TRUE, open_fn = open_fn
+    ),
+    "No responses changed"
+  )
+
+  expect_identical(result, open.preprocess)
+  expect_length(opened, 1)
+
+  page <- paste(readLines(opened), collapse = "\n")
+  last_column <- 3 + (ncol(open.preprocess$spellcheck$automated) - 2)
+
+  expect_match(page, "<title>SemNetCleaner review</title>", fixed = TRUE)
+  expect_match(page, "$spellcheck$correspondence", fixed = TRUE)
+  expect_match(page, paste0("3-", last_column), fixed = TRUE)
+  expect_match(page, "<code>NA</code>", fixed = TRUE)
+
+})
+
+test_that("the review instructions stay in the console when the window is off or cannot be opened", {
+
+  out <- capture.output(
+    correct_changes(
+      open.preprocess, type = "fluency", reader = scripted_reader(c("", "", "")),
+      edit_fn = function(x) x, window = FALSE
+    ),
+    type = "output"
+  )
+
+  expect_true(any(grepl("The first column of the spreadsheet", out, fixed = TRUE)))
+
+  # a window that cannot be opened falls back to the console instructions
+  out <- capture.output(
+    correct_changes(
+      open.preprocess, type = "fluency", reader = scripted_reader(c("", "", "")),
+      edit_fn = function(x) x, window = TRUE, open_fn = function(path) stop("no browser")
+    ),
+    type = "output"
+  )
+
+  expect_true(any(grepl("The first column of the spreadsheet", out, fixed = TRUE)))
+  expect_false(any(grepl("open in a separate window", out, fixed = TRUE)))
+
+})
+
+test_that("the help page is unchanged by sharing its frame with the review page", {
+
+  page <- build_help_html(FALSE)
+
+  expect_match(page, "<title>SemNetCleaner help</title>", fixed = TRUE)
+  expect_match(page, "One-word responses", fixed = TRUE)
+  expect_equal(lengths(gregexpr("<style>", page, fixed = TRUE)), 1)
+
+})

@@ -1,10 +1,14 @@
-test_that("multiple_words() matches the original on simple, single-merge cases", {
+test_that("multiple_words() merges simple single-merge cases (the original's duplicated word is fixed)", {
 
   dict <- SemNetDictionaries::animals.dictionary
 
   result <- multiple_words("polar bear", multi_min = 2, full_dictionary = dict, dictionary = "animals", spelling = "US")
-  expect_equal(result$response, c("polar bear", "bear"))
-  expect_equal(result$correct, c(TRUE, TRUE))
+  # The untouched original returned c("polar bear", "bear"): "polar" was
+  # replaced by its best guess, the two-word entry "polar bear", and the word
+  # "bear" that the entry already contains was kept as well, so the response
+  # read "polar bear bear". Real bug fixed (see drop_repeated_entry_words())
+  expect_equal(result$response, "polar bear")
+  expect_equal(result$correct, TRUE)
 
 })
 
@@ -110,5 +114,60 @@ test_that("multiple_words(keep_strings = TRUE) keeps the original word when it c
 
   expect_equal(result$response, "xyz qrs")
   expect_false(result$correct)
+
+})
+
+test_that("multiple_words() does not repeat the last word of an entry built by merging (english cocker spaniel)", {
+
+  # Found by the property checks: "cocker" is guessed as "cocker spaniel",
+  # merged with "english" into the entry "english cocker spaniel", and the
+  # typed "spaniel" used to stay behind as a second response
+  dict <- SemNetDictionaries::animals.dictionary
+
+  res <- multiple_words("english cocker spaniel", 3, dict, "animals", "US", keep_strings = FALSE)
+  expect_identical(res$response, "english cocker spaniel")
+
+  res <- multiple_words("english cocker spaniel xqzvk", 3, dict, "animals", "US", keep_strings = FALSE)
+  expect_identical(res$response, c("english cocker spaniel", "xqzvk"))
+
+  res <- multiple_words("english cocker spaniel xqzvk", 3, dict, "animals", "US", keep_strings = TRUE)
+  expect_identical(res$response, "english cocker spaniel xqzvk")
+
+})
+
+test_that("multiple_words() merges words that are a dictionary entry as typed, before guessing each word (sea sponge)", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+
+  # "sea" on its own would be guessed as "seal"
+  expect_identical(multiple_words("loris seal sea sponge", 3, dict, "animals", "US", keep_strings = FALSE)$response,
+                   c("loris", "seal", "sea sponge"))
+  expect_identical(multiple_words("loris seal sea sponge", 3, dict, "animals", "US", keep_strings = TRUE)$response,
+                   "loris seal sea sponge")
+
+})
+
+test_that("multiple_words() never drops a valid word of a two-word response (tardigrade goose)", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+
+  # the whole string "tardigrade goose" is closest to "tardigrade"
+  for(ks in c(TRUE, FALSE)){
+    res <- multiple_words("tardigrade goose", 3, dict, "animals", "US", keep_strings = ks)
+    expect_true(grepl("goose", paste(res$response, collapse = " ")), info = paste("keep_strings", ks))
+    expect_true(grepl("tardigrade", paste(res$response, collapse = " ")), info = paste("keep_strings", ks))
+  }
+  expect_true(grepl("goose", paste(multiple_words("goose tardigrade", 3, dict, "animals", "US")$response, collapse = " ")))
+
+})
+
+test_that("ind_word_check() keeps words that are a dictionary entry together and does not repeat an entry", {
+
+  dict <- SemNetDictionaries::animals.dictionary
+
+  expect_identical(unlist(ind_word_check("loris seal sea sponge", dict, "animals", "US")), "loris seal sea sponge")
+  # "tyrannosaurus" and "rex" were each guessed as "tyrannosaurus rex"
+  expect_identical(unlist(ind_word_check("tyrannosaurus rex frog alligator", dict, "animals", "US")), "tyrannosaurus rex frog alligator")
+  expect_identical(drop_repeated_entry_words(c("tyrannosaurus rex", "tyrannosaurus rex", "frog")), c("tyrannosaurus rex", "frog"))
 
 })

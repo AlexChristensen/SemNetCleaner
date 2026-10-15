@@ -200,3 +200,36 @@ test_that("automated_edit_server(id = ...): a namespaced module instance still r
   expect_equal(row.names(captured), row.names(sample_automated))
 
 })
+
+test_that("automated_edit_server(): an edit is recorded without redrawing the table (the user keeps their place)", {
+
+  captured <- NULL
+  spy <- function(x){ captured <<- x }
+
+  shiny::testServer(automated_edit_server(sample_automated, on_finish = spy), {
+
+    before <- output$x
+
+    # the row and column of the edited cell (column 2 is "to_1")
+    session$setInputs(x_cell_edit = list(row = 1, col = 2, value = "dog"))
+
+    # the rendered table is the same object: nothing was redrawn
+    expect_identical(output$x, before)
+
+    session$setInputs(done = 1)
+
+  })
+
+  # ... but the edit was recorded
+  expect_equal(unname(captured[1, 2]), "dog")
+
+})
+
+test_that("automated_edit_server(): the table is processed in the browser, not through server-side requests", {
+
+  body_text <- paste(deparse(body(automated_edit_server)), collapse = "\n")
+
+  expect_true(grepl("server = FALSE", body_text, fixed = TRUE))
+  expect_false(grepl("replaceData", body_text, fixed = TRUE))
+
+})

@@ -190,3 +190,49 @@ test_that("correct_data_free() counts a perseveration that only appears once a s
   expect_equal(result$corrected$Response[result$corrected$ID == "p1"], c("bird", "cat", "dog", "fish"))
 
 })
+
+test_that("correct_data_free() drops a response the automated check reduced to nothing instead of aborting (free-association fix)", {
+
+  # Real bug fixed (found driving the free-association wizard): a response
+  # whose every word was removed (e.g. only stop words, "i am") has an
+  # all-NA correspondence row. It left a NULL replacement for the response,
+  # which failed with "wrong sign in 'by' argument" and aborted the final
+  # cleaning step for the whole dataset; when it was a participant's only
+  # response for a cue, the next lookup failed too ("sequence must have at
+  # least one element")
+  data <- data.frame(
+    ID = c(1, 1, 2),
+    Cue = c("animal", "animal", "animal"),
+    Response = c("dog", "i am", "i am"),
+    stringsAsFactors = FALSE
+  )
+  row.names(data) <- as.character(seq_len(nrow(data)))
+
+  corr_mat <- matrix(
+    c("dog", "dog", "i am", NA),
+    nrow = 2, byrow = TRUE,
+    dimnames = list(NULL, c("from", "to_1"))
+  )
+
+  result <- correct_data_free(data, corr_mat, ids = c(1, 2))
+
+  expect_equal(as.character(result$corrected$Response), "dog")
+  expect_equal(as.numeric(result$corrected$ID), 1)
+
+})
+
+test_that("correct_data_free() returns an empty table when every response was reduced to nothing", {
+
+  data <- data.frame(ID = c(1, 2), Cue = "animal", Response = c("i am", "you are"), stringsAsFactors = FALSE)
+  row.names(data) <- as.character(seq_len(nrow(data)))
+
+  corr_mat <- matrix(
+    c("i am", NA, "you are", NA), nrow = 2, byrow = TRUE,
+    dimnames = list(NULL, c("from", "to_1"))
+  )
+
+  result <- correct_data_free(data, corr_mat, ids = c(1, 2))
+
+  expect_equal(nrow(result$corrected), 0)
+
+})

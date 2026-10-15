@@ -16,6 +16,10 @@ returned to the calling R session -- results are downloaded from within
 the app itself (see the app's own Export tab).
 }
 \description{
+\strong{Internal and experimental:} not exported while the
+app's known bugs are triaged. Call it as
+\code{SemNetCleaner:::textcleaner_shiny()}.
+
 Launches a Shiny app wrapping the entire
 \code{\link{textcleaner}} pipeline end to end -- upload, options,
 automated spell-check, manual spell-check wizard, automated-corrections
@@ -28,3 +32,4 @@ in-app search instead of a new browser window.
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>
 }
+\keyword{internal}

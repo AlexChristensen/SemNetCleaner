@@ -1,6 +1,10 @@
 #' Point-and-Click \code{textcleaner()} Wizard
 #'
-#' @description Launches a Shiny app wrapping the entire
+#' @description \strong{Internal and experimental:} not exported while the
+#' app's known bugs are triaged. Call it as
+#' \code{SemNetCleaner:::textcleaner_shiny()}.
+#'
+#' Launches a Shiny app wrapping the entire
 #' \code{\link{textcleaner}} pipeline end to end -- upload, options,
 #' automated spell-check, manual spell-check wizard, automated-corrections
 #' review, and download -- as a point-and-click alternative to the
@@ -18,18 +22,25 @@
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
-# New (Phase 11). Guards `shiny`/`DT` exactly like `automated_edit()`
-# (`R/automated_edit.R`), since the app embeds that function's own UI/server
-# as one of its steps.
-# Updated 12.09.2026
-textcleaner_shiny <- function(...)
+#' @keywords internal
+# Launch the {shiny} wizard ----
+# Guards `shiny` and `DT` like `automated_edit()`, since the app embeds that function's UI and server
+# Updated 14.10.2026
+textcleaner_shiny <- function(
+    ... # arguments passed to shiny::runApp
+)
 {
 
+  # Set required packages
   required_packages <- c("shiny", "DT")
+
+  # Find missing packages
   missing_packages <- required_packages[!vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)]
 
+  # Check for missing packages
   if(length(missing_packages) > 0){
+
+    # Send error
     stop(
       paste0(
         "In `textcleaner_shiny()`: the following packages are required but aren't installed: ",
@@ -38,8 +49,10 @@ textcleaner_shiny <- function(...)
       ),
       call. = FALSE
     )
+
   }
 
+  # Run the app
   shiny::runApp(system.file("Shiny", package = "SemNetCleaner"), ...)
 
 }

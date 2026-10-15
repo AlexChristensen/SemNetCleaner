@@ -24,46 +24,45 @@
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
-# The exact, position-ordered menu labels `spellcheck_menu()` itself
-# displays for a given `context`/`keep_strings` combination -- used by
-# `textcleaner_shiny()`'s wizard module (`mod_wizard.R`) to render one
-# button per meta-option, each labeled with its real text and sending its
-# real 1-indexed DISPLAY position as the raw answer.
+#' @keywords internal
+# Wizard menu labels ----
+# The menu labels, in display order, that `spellcheck_menu()` shows for a
+# `context`/`keep_strings` combination. The internal Shiny wizard labels one button per
+# option and sends its display position as the answer, which reproduces the menu's own
+# renumbering for `keepStrings = TRUE`
 #
-# This is deliberately the ONLY piece `mod_wizard.R` needs to get right for
-# the meta-options: `spellcheck_menu()`'s own `if(keep_strings){if(ans >= 7
-# && ans <= length(choices)){ans <- ans + 1}}` remap (needed because
-# `keep_strings = TRUE` displays 4 string options where `keep_strings =
-# FALSE` displays 5, but the if/else dispatch chain below it always checks
-# against the 5-option numbering) operates on the RAW typed number, not on
-# any "logical" choice identity -- so sending the exact position a real
-# console user would type for the SAME visible label reproduces the correct
-# remapped behavior automatically, with no need to replicate that remap
-# here. Verified end to end in `test-wizard_menu_labels.R` via
-# `advance_wizard()` against both `keep_strings` values, not just compared
-# against a hand-copied literal vector.
-#
-# Copied literally from `spellcheck_menu.R`'s own `word`/`string`/`choices`
-# construction (context branch) and its single-response `choices` vector
-# (non-context branch) -- keep these two files in sync if either changes.
-# Updated 12.09.2026
-wizard_menu_labels <- function(context, keep_strings)
+# Keep in sync with the `word`, `string`, and `choices` vectors in `spellcheck_menu()`
+# Updated 14.10.2026
+wizard_menu_labels <- function(
+    context, # NULL for single word or words of string
+    keep_strings # whether strings are kept
+)
 {
 
+  # Check for single-word menu
   if(is.null(context)){
+
+    # Return single-word labels
     return(c("SKIP", "ADD TO DICTIONARY", "TYPE MY OWN", "GOOGLE IT", "BAD WORD"))
+
   }
 
+  # Set word labels
   word <- c("SKIP WORD", "ADD WORD TO DICTIONARY", "TYPE MY OWN WORD", "GOOGLE WORD", "BAD WORD")
 
+  # Set string labels
   string <- if(keep_strings){
-    c("KEEP ORIGINAL", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
+
+    c("KEEP ORIGINAL", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING") # Strings are kept (no auto-correct option)
+
   }else{
-    c("KEEP ORIGINAL", "KEEP AUTO-CORRECT", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING")
+
+    c("KEEP ORIGINAL", "KEEP AUTO-CORRECT", "TYPE MY OWN STRING", "GOOGLE STRING", "BAD STRING") # Strings are split
+
   }
 
-  c(word, string)
+  # Return all labels
+  return(c(word, string))
 
 }
 
@@ -90,8 +89,15 @@ wizard_menu_labels <- function(context, keep_strings)
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
-wizard_response_letters <- function(n)
+#' @keywords internal
+# Wizard response letters ----
+# Updated 14.10.2026
+wizard_response_letters <- function(
+    n # number of suggestions
+)
 {
-  c("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")[seq_len(min(n, 10))]
+
+  # Return letters for suggestions (maximum of 10)
+  return(c("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")[seq_len(min(n, 10))])
+
 }

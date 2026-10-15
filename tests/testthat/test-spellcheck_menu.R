@@ -385,3 +385,248 @@ test_that("spellcheck_menu() single-response SKIP/ADD/TYPE-OWN/BAD/GO-BACK/RESPO
   expect_equal(stop_result, "STOP")
 
 })
+
+test_that("spellcheck_menu() TYPE MY OWN WORD/STRING treat blank input as 'go back' instead of crashing", {
+
+  # Real bug fixed: pressing ENTER at "Use commas for multiple words" split
+  # into zero words, and building the change matrix then failed with
+  # "length of 'dimnames' [2] not equal to array extent". Blank (or comma-
+  # only) input now returns to the menu, like typing '30'.
+  ctx <- c("turtle", "catdog", "elephant")
+
+  for(blank in c("", "  ", ",", " , ")){
+
+    # TYPE MY OWN WORD, then blank, then SKIP WORD (1)
+    word_result <- suppressMessages(spellcheck_menu(
+      check = 2, context = ctx, possible = c("cat", "dog"), original = "turtle catdog elephant",
+      current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+      dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+      reader = scripted_reader(c("3", blank, "1"))
+    ))
+
+    expect_equal(word_result$target, ctx)
+
+    # TYPE MY OWN STRING, then blank, then KEEP AUTO-CORRECT (7)
+    string_result <- suppressMessages(spellcheck_menu(
+      check = 2, context = ctx, possible = c("cat", "dog"), original = "turtle catdog elephant",
+      current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+      dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+      reader = scripted_reader(c("8", blank, "7"))
+    ))
+
+    expect_equal(string_result$target, ctx)
+    expect_true(string_result$end)
+
+  }
+
+})
+
+test_that("parse_typed_words() splits on commas and drops blanks", {
+
+  expect_equal(parse_typed_words("dog, cat ,bird"), c("dog", "cat", "bird"))
+  expect_equal(parse_typed_words(""), character(0))
+  expect_equal(parse_typed_words(" , ,"), character(0))
+  expect_equal(parse_typed_words("french window"), "french window")
+
+})
+
+test_that("spellcheck_menu() single-response TYPE MY OWN treats blank input as 'go back'", {
+
+  result <- suppressMessages(spellcheck_menu(
+    check = "catdog", context = NULL, possible = c("cat", "dog"), original = "catdog",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+    reader = scripted_reader(c("3", "", "1"))
+  ))
+
+  expect_equal(result$target, "catdog")
+
+})
+
+test_that("spellcheck_menu() context mode recognizes GO BACK / HELP after a mistyped answer (no word corrupted to NA)", {
+
+  # Real bug fixed: GO BACK/HELP were matched against the FIRST thing typed
+  # (`original_ans == "b"`), so "zz" followed by "b" fell through to the
+  # RESPONSE OPTION branch and replaced the target word with NA
+  # (`possible[ans - 10]` out of range)
+  ctx <- c("turtle", "catdog", "elephant")
+
+  for(ks in c(FALSE, TRUE)){
+
+    back <- suppressMessages(spellcheck_menu(
+      check = 2, context = ctx, possible = c("cat", "dog", "cow"), original = "turtle catdog elephant",
+      current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+      dictionary = "animals", keep_strings = ks, go_back_count = 1,
+      reader = scripted_reader(c("zz", "b"))
+    ))
+
+    expect_true(back$go_back)
+    expect_equal(back$target, ctx)
+
+    # HELP after a mistyped answer shows help (one ENTER) and keeps asking
+    helped <- suppressMessages(spellcheck_menu(
+      check = 2, context = ctx, possible = c("cat", "dog", "cow"), original = "turtle catdog elephant",
+      current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+      dictionary = "animals", keep_strings = ks, go_back_count = 1,
+      reader = scripted_reader(c("99", "h", "", "1"))
+    ))
+
+    expect_false(helped$go_back)
+    expect_equal(helped$target, ctx)
+
+  }
+
+})
+
+test_that("spellcheck_menu() with keepStrings = TRUE and no suggestions treats 'b' as GO BACK, not BAD STRING", {
+
+  # Real bug fixed: with `keep_strings = TRUE` and an empty `possible`,
+  # GO BACK's position (length(choices) + 1 = 10) collided with BAD STRING's
+  # renumbered position (9 -> 10), and the BAD STRING branch came first --
+  # pressing "b" marked EVERY word of the response NA and ended it
+  ctx <- c("turtle", "catdog", "elephant")
+
+  result <- suppressMessages(spellcheck_menu(
+    check = 2, context = ctx, possible = character(0), original = "turtle catdog elephant",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = TRUE, go_back_count = 1,
+    reader = scripted_reader("b")
+  ))
+
+  expect_true(result$go_back)
+  expect_equal(result$target, ctx)
+  expect_false(isTRUE(result$end))
+  expect_length(result$changes, 0)
+
+  # ...while the real BAD STRING (9 when keep_strings = TRUE) still works
+  bad <- suppressMessages(spellcheck_menu(
+    check = 2, context = ctx, possible = character(0), original = "turtle catdog elephant",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = TRUE, go_back_count = 1,
+    reader = scripted_reader("9")
+  ))
+
+  expect_equal(bad$target, rep("NA", 3))
+  expect_true(bad$end)
+
+})
+
+test_that("normalize_typed_words() applies the data's cleaning to typed words but leaves the NA marker alone", {
+
+  normalize <- function(words){ normalize_responses(words, "-", FALSE) }
+
+  expect_equal(normalize_typed_words(c("Dog", "CAT!", "123", "polar bear"), normalize), c("dog", "cat", "polar bear"))
+  expect_equal(normalize_typed_words(c("NA", "Dog"), normalize), c("NA", "dog"))
+  expect_equal(normalize_typed_words(c("Dog"), NULL), "Dog")
+  expect_equal(normalize_typed_words(character(0), normalize), character(0))
+  expect_equal(normalize_typed_words("123", normalize), character(0))
+
+})
+
+test_that("spellcheck_menu() cleans typed replacement words with normalize_fn (typed 'Dog' must not become a second vocabulary entry)", {
+
+  # Real bug fixed: typed words bypassed the lowercase/punctuation/number
+  # cleaning every other response went through
+  normalize <- function(words){ normalize_responses(words, "-", FALSE) }
+
+  single <- suppressMessages(spellcheck_menu(
+    check = "catdog", context = NULL, possible = c("cat", "dog"), original = "catdog",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+    reader = scripted_reader(c("3", "Dog, CAT!, 123")), normalize_fn = normalize
+  ))
+
+  expect_equal(single$target, c("dog", "cat"))
+
+  # A typed answer that cleans away to nothing returns to the menu, like blank input
+  empty <- suppressMessages(spellcheck_menu(
+    check = "catdog", context = NULL, possible = c("cat", "dog"), original = "catdog",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+    reader = scripted_reader(c("3", "123", "1")), normalize_fn = normalize
+  ))
+
+  expect_equal(empty$target, "catdog")
+
+})
+
+test_that("menu answers and Y/N responses tolerate surrounding whitespace", {
+
+  result <- suppressMessages(spellcheck_menu(
+    check = "catdog", context = NULL, possible = c("cat", "dog"), original = "catdog",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+    reader = scripted_reader(c(" q "))
+  ))
+
+  expect_equal(result$target, "cat")
+  expect_equal(yes_no_menu("Continue?", reader = scripted_reader(" Y ")), 1)
+  expect_equal(appropriate_answer(" 2 ", c("a", "b", "c"), default = 3, reader = scripted_reader(character(0))), 2)
+
+})
+
+test_that("spellcheck_menu() decides a repeated word once and replaces every occurrence (free-association multi-word fix)", {
+
+  # Real bug fixed (found driving the free-association multi-word menu): a
+  # response that repeats the unknown word ("teh cat teh") hands the menu
+  # several positions at once (`check = c(1, 3)`). The confirmation message
+  # used `if(check == 1)` (error "the condition has length > 1"), and TYPE MY
+  # OWN WORD/BAD WORD used `context_change[[check]] <- ...`, which indexes
+  # recursively with several positions
+  ctx <- c("teh", "cat", "teh")
+  run <- function(answers, keep_strings){
+    suppressMessages(spellcheck_menu(
+      check = c(1L, 3L), context = ctx, possible = c("the", "tea"), original = "teh cat teh",
+      current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+      dictionary = "animals", keep_strings = keep_strings, go_back_count = 1,
+      reader = scripted_reader(answers)
+    ))
+  }
+
+  for(keep_strings in c(TRUE, FALSE)){
+
+    suggestion <- run(if(keep_strings) "q" else "q", keep_strings)
+    expect_equal(suggestion$target, c("the", "cat", "the"))
+
+    typed <- run(c("3", "dog, fish", "n"), keep_strings)
+    expect_equal(typed$target, c("dog", "fish", "cat", "dog", "fish"))
+
+    bad <- run("5", keep_strings)
+    expect_equal(bad$target, c("NA", "cat", "NA"))
+
+    # the change log records the word once, not once per occurrence
+    expect_equal(unname(suggestion$changes[["1"]][, "from"]), "teh")
+
+  }
+
+  message_text <- paste(
+    testthat::capture_messages(describe_word_change(c("teh", "cat", "teh"), c(1L, 3L), "CHANGED TO", "the")),
+    collapse = ""
+  )
+  expect_match(gsub("\033\\[[0-9;]*m", "", message_text), "the cat the", fixed = TRUE)
+
+})
+
+test_that("spellcheck_menu() 'x' exits from the re-prompt after an invalid selection (both menus)", {
+
+  # The menu says "X to EXIT" at every prompt; the re-prompt after an invalid
+  # answer used to reject it
+  single <- suppressMessages(capture.output(res <- spellcheck_menu(
+    check = "dgo", context = NULL, possible = c("dog", "dig"), original = "dgo",
+    current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+    dictionary = "animals", keep_strings = FALSE, go_back_count = 1,
+    reader = scripted_reader(c("99", "x"))
+  )))
+  expect_identical(res, "STOP")
+
+  for(ks in c(TRUE, FALSE)){
+    capture.output(res <- suppressMessages(spellcheck_menu(
+      check = 2, context = c("big", "dgo", "runs"), possible = c("dog", "dig"), original = "big dgo runs",
+      current_index = 1, changes = list(), full_dictionary = dict, category = "animal",
+      dictionary = "animals", keep_strings = ks, go_back_count = 1,
+      reader = scripted_reader(c("99", ""))
+    )))
+    expect_identical(res, "STOP")
+  }
+
+})

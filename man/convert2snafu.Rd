@@ -54,9 +54,17 @@ input into the function (\code{...})
 }
 }
 \examples{
-# Convert data to SNAFU
+# Convert data to SNAFU (\code{reader} supplies the file name)
+convert2snafu(
+  open.clean[1:5, ], category = "animals", path = tempdir(),
+  reader = function(prompt = "") "snafu_example"
+)
+
 if(interactive())
-{convert2snafu(open.clean, category = "animals", path = tempdir())}
+{
+  # Asks for the file name
+  convert2snafu(open.clean, category = "animals", path = tempdir())
+}
 
 }
 \references{

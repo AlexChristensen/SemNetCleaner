@@ -23,43 +23,33 @@
 #'
 #' @author Alexander Christensen <alexpaulchristensen@gmail.com>
 #'
-#' @export
-# `search_fn` factory for `textcleaner_shiny()` (Phase 11).
-#
-# `spellcheck_menu()`'s GOOGLE WORD/STRING/IT options call
-# `search_fn(query, site = "google", rlang = FALSE)`, matching
-# `searcher::search_site()`'s own contract (the real default). Confirmed
-# directly (`searcher:::search_google()`/`searcher:::browse_url()`) that
-# this ultimately just calls `utils::browseURL()` -- opening a real new
-# browser window/tab, not something that can be embedded inside a Shiny
-# app's own page. A real Google results page also cannot be embedded via
-# iframe at all (it blocks framing via response headers) -- confirmed no
-# viable "Google, but embedded" option exists.
-#
-# Resolution: `make_shiny_search_fn()` returns a `search_fn`-shaped closure
-# that, instead of opening a browser window, builds a DuckDuckGo HTML
-# results URL (DuckDuckGo's lightweight, iframe-friendly endpoint) and
-# writes it into the injected `store` (a `shiny::reactiveVal()`) -- the
-# app's own search-modal module (`mod_search_modal.R`) observes `store()`
-# and renders the URL in an `shiny::tags$iframe()`. `site`/`rlang` are
-# accepted (matching the real call contract every `spellcheck_menu()` call
-# site uses) but not otherwise used -- DuckDuckGo is the only embeddable
-# target this function ever produces, regardless of which "site" argument
-# `spellcheck_menu()` happens to pass.
-# Updated 12.09.2026
-make_shiny_search_fn <- function(store)
+#' @keywords internal
+# Search function for the {shiny} wizard ----
+# Creates the `search_fn` for the internal Shiny wizard. The GOOGLE options call
+# `search_fn(query, site = "google", rlang = FALSE)`, which normally opens a new browser
+# window; Google results pages cannot be embedded, so this returns a function that builds a
+# DuckDuckGo results URL and stores it for the app's search modal to show in an iframe
+# (`site` and `rlang` are accepted and ignored)
+# Updated 14.10.2026
+make_shiny_search_fn <- function(
+    store # function that stores the search
+)
 {
 
+  # Create search function that stores the query instead of opening a browser
   function(query, site = "google", rlang = TRUE)
   {
 
+    # Build search URL
     url <- paste0(
       "https://duckduckgo.com/html/?q=",
       utils::URLencode(query, reserved = TRUE)
     )
 
+    # Store query and URL
     store(list(query = query, url = url))
 
+    # Return URL silently
     invisible(url)
 
   }

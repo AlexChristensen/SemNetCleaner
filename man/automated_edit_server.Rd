@@ -35,10 +35,11 @@ A \code{function(input, output, session)} suitable for
 The server half of the review app used to hand-correct
 automated spell-check changes mid-\code{\link{textcleaner}} pipeline
 (see \code{automated_edit()}). Exposed as a reusable, namespaceable
-building block (Phase 11) so a larger app (\code{textcleaner_shiny()})
+building block so a larger app (\code{textcleaner_shiny()})
 can embed it as one module of a bigger wizard instead of only launching
 it standalone.
 }
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>
 }
+\keyword{internal}

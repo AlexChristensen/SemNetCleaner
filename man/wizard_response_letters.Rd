@@ -31,3 +31,4 @@ Exported (not just internal) for the same reason as
 \author{
 Alexander Christensen <alexpaulchristensen@gmail.com>
 }
+\keyword{internal}
