@@ -133,6 +133,28 @@ test_that("correct_changes() normalizes a blank cell to real NA regardless of wh
 
 })
 
+test_that("correct_changes() treats a cell with only spaces as missing, so clearing TO_2 with a space does not leave a blank response", {
+
+  automated <- matrix(c("french window", "french", "window"), nrow = 1,
+                      dimnames = list("1", c("from", "to_1", "to_2")))
+  correspondence <- matrix(c("french window", "french", "window", "dog", "dog", NA), nrow = 2, byrow = TRUE,
+                           dimnames = list(c("1", "2"), c("from", "to_1", "to_2")))
+  tc_obj <- list(
+    spellcheck = list(automated = automated, correspondence = correspondence),
+    responses = list(original = matrix(c("french window", "dog"), ncol = 1))
+  )
+  class(tc_obj) <- "textcleaner"
+
+  result <- correct_changes(
+    tc_obj, type = "fluency", reader = scripted_reader(c("", "", "")),
+    edit_fn = function(x){ x["1", "to_1"] <- "french window"; x["1", "to_2"] <- "  "; x }
+  )
+
+  expect_identical(unname(result$spellcheck$correspondence["1", "to_1"]), "french window")
+  expect_true(is.na(result$spellcheck$correspondence["1", "to_2"]))
+
+})
+
 test_that("correct_changes()'s edit_fn defaults to automated_edit(), not base edit() (Phase 9: guards the OS-fork removal)", {
 
   # Real behavior change, documented in NEWS.md: the OS fork (Linux ->

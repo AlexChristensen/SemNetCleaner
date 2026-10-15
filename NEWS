@@ -18,6 +18,8 @@ o UPDATE: requires `SemNetDictionaries` (>= 0.3.0) (new category dictionaries an
 
 o FIX: saving the dictionary at the end of the manual spell-check under a name that already exists kept the old file and lost the words added in that session
 
+o FIX: a cell that holds only spaces in the review of the automated corrections is now treated as missing (a space typed to clear `to_2` left a blank response in the cleaned data)
+
 o FIX: the review app for the automated corrections (`automated_edit`) redrew the whole table after every edit, so the user lost their place; the table is now processed in the browser and an edit no longer redraws it
 
 o UPDATE: the review of the automated corrections shows only the responses the automated spell-check changed (`$spellcheck$automated`, as documented); responses that were already correct are no longer listed, and the review is skipped when nothing changed (open.animals: 462 rows instead of 793)

@@ -91,8 +91,8 @@ correct_changes <- function(
   # Convert edits to matrix
   changes <- as.matrix(changes)
 
-  # Set blank edits to missing
-  changes <- ifelse(changes == "", NA, changes)
+  # Set blank edits (empty or only spaces) to missing
+  changes <- ifelse(!is.na(changes) & !nzchar(trimws(changes)), NA, changes)
 
   # The edited table may have extra "to_" columns (base `edit()` allows typing into a
   # new column), so the narrower table is padded with `NA`. The number of rows must
