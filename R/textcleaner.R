@@ -577,22 +577,6 @@ check_free_columns <- function(
 #' with \code{continue = }
 #'
 #' @examples
-#' # Toy example (every response is a known animal, so there is no
-#' # manual spell-check; \code{edit_fn} skips the review app)
-#' toy <- data.frame(
-#'   Response_1 = c("dog", "cat", "bird"),
-#'   Response_2 = c("cat", "fish", "dog"),
-#'   Response_3 = c("fish", "bird", "cow")
-#' )
-#'
-#' clean <- textcleaner(
-#'   toy, partBY = "row", dictionary = "animals",
-#'   spelling = "US", edit_fn = function(x) x
-#' )
-#'
-#' # Cleaned responses
-#' clean$responses$clean
-#'
 #' if(interactive())
 #' {
 #'   # Full example with the manual spell-check
